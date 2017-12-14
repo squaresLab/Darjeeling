@@ -14,7 +14,7 @@ which is supplied by the following:
 
 Below is an example program description in JSON form:
 
-```
+```json
 {
   "source": "/home/chris/php",
   "build": {
