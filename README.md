@@ -74,3 +74,8 @@ terminating. These resource limits include:
 ## Approach
 
 Uses Relix and Rooibos to do all of the heavy lifting!
+
+* Uses Relix to safely collect coverage information and to evaluate candidate
+  patches. Darjeeling distributes the repair process over multiple machines
+  by using Relix to provision and interact with Docker containers on those
+  machines.
