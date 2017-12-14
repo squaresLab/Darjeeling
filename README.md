@@ -24,7 +24,7 @@ which is supplied by the following:
 * The path to the directory containing the source code for the program.
 * Instructions for building a Docker image for the program.
 
-Below is an example program description in JSON form:
+Below is an example program description.
 
 ```json
 {
@@ -44,6 +44,21 @@ resources should be described by the following:
 
 * URI of the Docker daemon on the node.
 * Number of logical cores.
+
+Below is an example list of compute nodes.
+
+```json
+[
+  {
+    "uri": "192.168.0.1:6000",
+    "cores": 4
+  },
+  {
+    "uri": "52.90.113.128:6000",
+    "cores": 2
+  }
+]
+```
 
 ### Resource Limits
 
