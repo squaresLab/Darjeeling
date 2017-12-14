@@ -9,8 +9,20 @@ Language-independent automated program repair
 Darjeeling should be provided with a description of the program under repair,
 which is supplied by the following:
 
-* The source code.
+* The path to the directory containing the source code for the program.
 * Instructions for building a Docker image for the program.
+
+Below is an example program description in JSON form:
+
+```
+{
+  "source": "/home/chris/php",
+  "build": {
+    "file": "Dockerfile",
+    "args": {}
+  }
+}
+```
 
 ### Compute Nodes
 
