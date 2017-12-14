@@ -10,11 +10,17 @@ which is supplied by the following:
 * The source code.
 * Instructions for building a Docker image for the program.
 
-Additionally, Darjeeling should be provided with a description of the compute
-resources that should be used by the repair, given by the following:
+Additionally, Darjeeling should be provided with a list of the compute
+nodes that should be made available to the repair process. Each of those
+resources should be described by the following:
 
-* A description of the available local and remote compute facilities
-  (i.e., *nodes*) that should be made available to the repair process.
-  Darjeeling will distribute the repair process over these nodes.
-* A set of resource limits (e.g., maximum wall-clock time, maximum test
-  suite evaluations, maximum candidate evaluations, etc.).
+* URI of the Docker daemon on the node.
+* Number of logical cores.
+
+Finally, Darjeeling should be provided with a set of resource limits that
+specify how many resources the repair process may consume before
+terminating. These resource limits include:
+
+* Maximum wall-clock time taken by repair.
+* Maximum number of test suite evaluations.
+* Maximum number of candidate repair evaluations.
