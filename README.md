@@ -79,3 +79,13 @@ Uses Relix and Rooibos to do all of the heavy lifting!
   patches. Darjeeling distributes the repair process over multiple machines
   by using Relix to provision and interact with Docker containers on those
   machines.
+
+## Installation
+
+```
+$ pip3 install darjeeling
+```
+
+## Usage
+
+Provide a "Hello World" example.
