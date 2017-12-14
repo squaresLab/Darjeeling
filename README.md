@@ -69,3 +69,8 @@ terminating. These resource limits include:
 * Maximum wall-clock time taken by repair.
 * Maximum number of test suite evaluations.
 * Maximum number of candidate repair evaluations.
+
+
+## Approach
+
+Uses Relix and Rooibos to do all of the heavy lifting!
