@@ -8,8 +8,7 @@ Darjeeling should be provided with a description of the program under repair,
 which is supplied by the following:
 
 * The source code.
-* A set of executable instructions for building a Docker image for the program
-  under repair.
+* Instructions for building a Docker image for the program.
 
 Additionally, Darjeeling should be provided with a description of the compute
 resources that should be used by the repair, given by the following:
