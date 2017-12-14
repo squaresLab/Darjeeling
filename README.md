@@ -4,6 +4,18 @@ Language-independent automated program repair
 
 ## Inputs
 
+```json
+{
+  "program": { ... },
+  "nodes": [
+    ...
+  ],
+  "limits": {
+    ...
+  }
+}
+```
+
 ### Program Under Repair
 
 Darjeeling should be provided with a description of the program under repair,
