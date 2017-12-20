@@ -11,14 +11,14 @@ class Line(object):
         self.__num = num
 
     @property
-    def filename(self):
+    def filename(self) -> str:
         """
         The name of the file to which this line belongs.
         """
         return self.__filename
 
     @property
-    def num(self):
+    def num(self) -> int:
         """
         The one-indexed number of this line.
         """
