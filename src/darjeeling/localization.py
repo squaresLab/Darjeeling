@@ -11,5 +11,16 @@ class Localization(object):
         self.__scores : Dict[Line, float] = {}
 
 
+    def score(self, line: Line) -> float:
+        """
+        Returns the suspiciousness score for a given line. If no suspiciousness
+        score is recorded for the given line, then a suspiciousness of zero
+        is returned instead.
+        """
+        return self.__scores.get(line, 0.0)
+
+    __getitem__ = score
+
+
     # TODO: restricted_to_files(loc, fns) -> Localization
     # TODO: restricted_to_functions(loc) -> Localization
