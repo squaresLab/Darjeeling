@@ -30,8 +30,8 @@ class Problem(object):
         # - coverage
         # - fault localisation?
 
-        self.__in_files = in_files[:]
-        self.__in_functions = in_functions[:]
+        self.__in_files = in_files[:] if in_files else None
+        self.__in_functions = in_functions[:] if in_functions else None
 
         # program (named bug, Docker image, or given as source code)
         self.__bug = None
