@@ -1,3 +1,4 @@
+from typing import List, Optional
 from bugzoo.bug import Bug
 
 
@@ -8,8 +9,8 @@ class Problem(object):
     """
     def __init__(self,
                  bug: Bug,
-                 in_files: List[str] = None,
-                 in_functions: List[str] = None
+                 in_files: Optional[List[str]] = None,
+                 in_functions: Optional[List[str]] = None
                  ) -> None:
         """
         Constructs a Darjeeling problem description.
