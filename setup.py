@@ -3,7 +3,7 @@ from glob import glob
 from setuptools import setup, find_packages
 
 setup(
-    name='hulk',
+    name='darjeeling',
     version='0.0.1',
     description='Language-independent, distributed search-based program repair',
     long_description='TBA',
