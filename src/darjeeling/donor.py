@@ -11,15 +11,9 @@ class Snippet(object):
     Represents a donor code snippet.
     """
     def __init__(self,
-                 line: FileLine,
                  content: str
                  ) -> None:
-        self.__line = line
         self.__content = content
-
-    @property
-    def line(self) -> FileLine:
-        return self.__line
 
     @property
     def content(self) -> str:
@@ -28,6 +22,12 @@ class Snippet(object):
         """
         return self.__content
 
+    def __eq__(self, other) -> bool:
+        return isinstance(other, Snippet) and self.content == other.content
+
+    def __hash__(self) -> int:
+        return hash(self.__content)
+
 
 class DonorPool(object):
     @staticmethod
@@ -35,7 +35,7 @@ class DonorPool(object):
         """
         Constructs a donor pool of snippets from the contents of a given file.
         """
-        snippets = []
+        snippets = set()
         container = bug.provision()
         fd, host_fn = tempfile.mkstemp()
         try:
@@ -47,11 +47,11 @@ class DonorPool(object):
 
             # fetch a list of source code lines
             with open(host_fn, 'r') as f:
-                lines = [l.rstrip('\n') for l in f]
+                lines = [l for l in f]
 
             # create a snippet for each line
-            for (num, content) in enumerate(lines, 1):
-                line = FileLine(filename, num)
+            for content in lines:
+                # line = FileLine(filename, num)
                 content = content.strip()
 
                 # comments
@@ -66,7 +66,7 @@ class DonorPool(object):
                 if not content.endswith(';'):
                     continue
 
-                snippets.append(Snippet(line, content))
+                snippets.add(Snippet(content))
 
         finally:
             container.destroy()
