@@ -31,6 +31,12 @@ class Snippet(object):
 
 class DonorPool(object):
     @staticmethod
+    def from_files(bug: Bug, filenames: List[str]) -> 'DonorPool':
+        file_snippets = [DonorPool.from_file(bug, fn) for fn in filenames]
+        all_snippets = [s for pool in file_snippets for s in pool]
+        return DonorPool(all_snippets)
+
+    @staticmethod
     def from_file(bug: Bug, filename: str) -> 'DonorPool':
         """
         Constructs a donor pool of snippets from the contents of a given file.
