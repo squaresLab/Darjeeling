@@ -48,7 +48,7 @@ class SourceFile(object):
         """
         return len(self.__lines)
 
-    def with_line_removed(self, num: int) -> SourceFile:
+    def with_line_removed(self, num: int) -> 'SourceFile':
         """
         Returns a variant of this file with a given line, specified by its
         one-indexed line number, removed.
@@ -57,7 +57,7 @@ class SourceFile(object):
         l2 = self.__lines[0:num] + self.__lines[num + 1:-1]
         return SourceFile(l2)
 
-    def with_line_replaced(self, num: int, replacement: str) -> SourceFile:
+    def with_line_replaced(self, num: int, replacement: str) -> 'SourceFile':
         """
         Returns a variant of this file with the contents of a given line,
         specified by its one-indexed line number, replaced by a provided string.
@@ -67,7 +67,7 @@ class SourceFile(object):
         l2[num] = replacement
         return SourceFile(l2)
 
-    def with_line_inserted(self, num: int, insertion: str) -> SourceFile:
+    def with_line_inserted(self, num: int, insertion: str) -> 'SourceFile':
         """
         Returns a variant of this file with a given line inserted at a
         specified location.
