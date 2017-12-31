@@ -3,6 +3,7 @@ import tempfile
 from typing import List, Iterator
 from bugzoo import Bug
 from bugzoo.coverage import FileLine
+from darjeeling.source import SourceFile
 from tempfile import NamedTemporaryFile
 
 
@@ -20,6 +21,9 @@ class Snippet(object):
         """
         Returns the contents of the snippet as a string.
         """
+        return self.__content
+
+    def __str__(self) -> str:
         return self.__content
 
     def __eq__(self, other) -> bool:
@@ -42,41 +46,25 @@ class DonorPool(object):
         Constructs a donor pool of snippets from the contents of a given file.
         """
         snippets = set()
-        container = bug.provision()
-        fd, host_fn = tempfile.mkstemp()
-        try:
-            # copy the source file from the container and to a temporary file
-            # on the host machine.
-            os.close(fd)
-            container_fn = os.path.join(bug.source_dir, filename)
-            container.copy_from(container_fn, host_fn)
+        src_file = SourceFile.load(bug, filename)
 
-            # fetch a list of source code lines
-            with open(host_fn, 'r') as f:
-                lines = [l for l in f]
+        # create a snippet for each line
+        for content in src_file:
+            content = content.strip()
 
-            # create a snippet for each line
-            for content in lines:
-                # line = FileLine(filename, num)
-                content = content.strip()
+            # skip comments
+            if content.startswith('/*') or content.startswith('/'):
+                continue
 
-                # comments
-                if content.startswith('/*') or content.startswith('/'):
-                    continue
+            # skip macros
+            if content.startswith('#'):
+                continue
 
-                # macros
-                if content.startswith('#'):
-                    continue
+            # restrict to statements
+            if not content.endswith(';'):
+                continue
 
-                # restrict to statements
-                if not content.endswith(';'):
-                    continue
-
-                snippets.add(Snippet(content))
-
-        finally:
-            container.destroy()
-            os.remove(host_fn)
+            snippets.add(Snippet(content))
 
         return DonorPool(snippets)
 
