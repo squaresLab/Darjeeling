@@ -1,4 +1,5 @@
 from typing import List, Iterator
+from bugzoo.patch import Patch
 from darjeeling.transformation import Transformation, \
                                       DeleteTransformation, \
                                       ReplaceTransformation, \
@@ -24,7 +25,7 @@ class Candidate(object):
         for t in self.__transformations:
             yield t
 
-    def diff(self, problem: Problem) -> str:
+    def diff(self, problem: Problem) -> Patch:
         """
         Computes a plaintext diff for this repair.
         """
@@ -57,8 +58,11 @@ class Candidate(object):
             transformed[fn] = src
 
         # compute a diff for each modified source code file
+        diffs = []
+        for (fn, source_after) in transformed.items():
+            source_before = problem.source(fn)
+            diffs.append(source_before.diff(source_after))
 
         # combine the diffs for each file into a single diff
-
-        raise NotImplementedError
-        return diff
+        diff = '\n'.join(diffs)
+        return Patch.from_unidiff(diff)
