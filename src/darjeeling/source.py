@@ -1,7 +1,9 @@
 import os
 import tempfile
+import difflib
 from typing import List, Iterator
 from bugzoo import Bug
+from bugzoo.patch import FilePatch
 
 
 class SourceFile(object):
@@ -20,13 +22,28 @@ class SourceFile(object):
 
             with open(host_fn, 'r') as f:
                 lines = [l.rstrip('\n') for l in f]
-                return SourceFile(lines)
+                return SourceFile(filename, lines)
         finally:
             container.destroy()
             os.remove(host_fn)
 
-    def __init__(self, lines: List[str]) -> None:
+    def __init__(self, name: str, lines: List[str]) -> None:
+        self.__name = name
         self.__lines = lines[:]
+
+    @property
+    def name(self) -> str:
+        """
+        The name of this source code file.
+        """
+        return self.__name
+
+    @property
+    def lines(self) -> List[str]:
+        """
+        Returns a copy of the lines contained within this file.
+        """
+        return self.__lines[:]
 
     def __getitem__(self, num: int) -> str:
         """
@@ -54,8 +71,8 @@ class SourceFile(object):
         one-indexed line number, removed.
         """
         num -= 1
-        l2 = self.__lines[0:num] + self.__lines[num + 1:-1]
-        return SourceFile(l2)
+        l2 = self.__lines[0:num] + self.__lines[num + 1:]
+        return SourceFile(self.name, l2)
 
     def with_line_replaced(self, num: int, replacement: str) -> 'SourceFile':
         """
@@ -65,7 +82,7 @@ class SourceFile(object):
         num -= 1
         l2 = self.__lines[:]
         l2[num] = replacement
-        return SourceFile(l2)
+        return SourceFile(self.name, l2)
 
     def with_line_inserted(self, num: int, insertion: str) -> 'SourceFile':
         """
@@ -75,4 +92,14 @@ class SourceFile(object):
         num -= 1
         l2 = self.__lines[:]
         l2.insert(num, insertion)
-        return SourceFile(l2)
+        return SourceFile(self.name, l2)
+
+    def diff(self,
+             other: 'SourceFile'
+             ) -> str:
+        a = ['{}\n'.format(l) for l in self.__lines]
+        b = ['{}\n'.format(l) for l in other.lines]
+        diff_lines = difflib.unified_diff(a, b,
+                                          fromfile=self.name,
+                                          tofile=other.name)
+        return ''.join(diff_lines)
