@@ -1,9 +1,13 @@
+import tempfile
 from typing import List, Optional, Dict, Iterator
 from bugzoo.coverage import FileLine
 from bugzoo.bug import Bug
 from bugzoo.testing import TestCase
 from bugzoo.coverage import ProjectLineCoverage
+from bugzoo.patch import Patch
 from darjeeling.donor import DonorPool
+from darjeeling.transformation import TransformationDatabase
+from darjeeling.source import SourceFile
 
 
 class Problem(object):
@@ -34,21 +38,35 @@ class Problem(object):
         assert len(in_files) > 0
         self.__bug = bug
 
-        # - transformation database
-        # - coverage
-        # - fault localisation?
-
+        # coverage
         # coverage = bug.coverage.restricted_to_files(in_files) if in_files \
         #            else bug.coverage
         # spectra = bug.spectra.restricted_to_files(in_files) if in_files \
         #           else bug.spectra
-        self.__in_files = in_files[:] if in_files else None
+
+        self.__in_files = in_files[:]
         self.__in_functions = in_functions[:] if in_functions else None
+
+        # stores the contents of each original source code file
+        self.__sources = \
+            {fn: SourceFile.load(bug, fn) for fn in self.__in_files}
+
+        # determine the implicated lines
+        self.__lines = []
+        for (fn, src) in self.__sources.items():
+            for (num, content) in enumerate(src, 1):
+                line = FileLine(fn, num)
+                self.__lines.append(line)
 
         # construct the donor pool
         self.__snippets = DonorPool.from_files(bug, in_files)
 
         # construct the transformation database
+        self.__transformations = \
+            TransformationDatabase.generate(bug,
+                                            self.__snippets,
+                                            self.__sources,
+                                            self.__lines)
 
     @property
     def bug(self) -> Bug:
@@ -56,6 +74,10 @@ class Problem(object):
         A description of the bug, provided by BugZoo.
         """
         return self.__bug
+
+    @property
+    def transformations(self) -> TransformationDatabase:
+        return self.__transformations
 
     @property
     def coverage(self) -> Dict[TestCase, ProjectLineCoverage]:
@@ -67,4 +89,11 @@ class Problem(object):
 
     @property
     def implicated_lines(self) -> Iterator[FileLine]:
-        raise NotImplementedError
+        for line in self.__lines:
+            yield line
+
+    def source(self, fn: str) -> SourceFile:
+        """
+        Returns the contents of a given source code file for this problem.
+        """
+        return self.__sources[fn]
