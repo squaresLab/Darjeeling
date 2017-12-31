@@ -80,6 +80,10 @@ class Problem(object):
         return self.__transformations
 
     @property
+    def tests(self) -> Iterator[TestCase]:
+        return self.bug.tests
+
+    @property
     def coverage(self) -> Dict[TestCase, ProjectLineCoverage]:
         """
         Line coverage information for each test within the test suite for the
