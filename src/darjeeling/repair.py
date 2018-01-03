@@ -4,6 +4,7 @@ from bugzoo import BugZoo
 from bugzoo.localization import SuspiciousnessMetric
 from darjeeling.problem import Problem
 from darjeeling.candidate import Candidate
+from darjeeling.search import RandomSearch
 
 
 class RepairReport(object):
@@ -35,47 +36,9 @@ class RepairReport(object):
         return self.__duration
 
 
-def evaluate(problem: Problem, candidate: Candidate) -> bool:
-    """
-    Determines whether a given candidate patch fixes the bug.
-    Returns True if the bug is fixed, or False if it is not.
-    """
-    print("Evaluating: {}".format(candidate))
-    container = problem.bug.provision()
-    patch = candidate.diff(problem)
-    try:
-        container.patch(patch)
-
-        # for now, execute all tests in no particular order
-        for test in problem.tests:
-            outcome = container.execute(test)
-            if not outcome.passed:
-                return False
-
-        return True
-    finally:
-        container.destroy()
-
-
 def repair(problem: Problem,
            metric: SuspiciousnessMetric,
+           threads: Optional[int] = 1
            ) -> RepairReport:
-    # connect to the BugZoo daemon
-    # - maybe it should be passed a client connection object?
-    # TODO: connect to multiple nodes
-    bugzoo = BugZoo()
-
-    # generate fault localization
-    # localization = Localization.from_spectra(spectra, metric)
-
-    # begin the search!
-    print("Beginning search...")
-
-    #
-    t = list(problem.transformations)[0]
-    candidate = Candidate([t])
-
-    # let's evaluate
-    outcome = evaluate(problem, candidate)
-    if outcome:
-        print("Repair found: {}".format(candidate))
+    searcher = RandomSearch(problem, threads)
+    searcher.run()
