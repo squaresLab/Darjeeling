@@ -25,7 +25,11 @@ Uses Relix and Rooibos to do all of the heavy lifting!
 ## Installation
 
 ```
-$ pip3 install darjeeling
+$ python3.6 -m venv .
+$ source bin/activate
+$ pip install . --upgrade
+$ git clone https://github.com/squaresLab/BugZoo bugzoo
+$ (cd bugzoo && pip install . --upgrade)
 ```
 
 ## Usage
