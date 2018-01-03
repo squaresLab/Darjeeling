@@ -1,17 +1,12 @@
 # Darjeeling
 
-Language-independent automated program repair
-
-### Resource Limits
-
-Finally, Darjeeling should be provided with a set of resource limits that
-specify how many resources the repair process may consume before
-terminating. These resource limits include:
-
-* Maximum wall-clock time taken by repair.
-* Maximum number of test suite evaluations.
-* Maximum number of candidate repair evaluations.
-
+Darjeeling is a work-in-progress language-independent automated program repair
+tool. Unlike other repair tools such as GenProg, SPR, and Nopol, Darjeeling
+delegates the responsibility of generating patches, obtaining coverage,
+analysing code, and executing tests to other services. (For the most part, those
+other services are also language independent.)
+Darjeeling is a lightweight framework for composing and executing repair
+algorithms.
 
 ## Approach
 
