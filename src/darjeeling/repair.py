@@ -42,4 +42,4 @@ def repair(problem: Problem,
            terminate_early: bool = True
            ) -> RepairReport:
     searcher = RandomSearch(problem, threads, terminate_early)
-    searcher.run(terminate_early)
+    searcher.run()

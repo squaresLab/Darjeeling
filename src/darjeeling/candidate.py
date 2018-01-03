@@ -16,6 +16,10 @@ class Candidate(object):
                  ) -> None:
         self.__transformations = frozenset(transformations)
 
+    def __str__(self) -> str:
+        transformations_s = \
+            ', '.join([str(t) for t in self.transformations])
+        return "<{}>".format(transformations_s)
 
     @property
     def transformations(self) -> Iterator[Transformation]:

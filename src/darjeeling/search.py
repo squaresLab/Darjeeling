@@ -88,6 +88,7 @@ class RandomSearch(object):
 
             # have all candidates been exhausted?
             if not implicated_lines:
+                print("Exhausted search space.")
                 self.halted = True
                 return None
 
@@ -111,9 +112,11 @@ class RandomSearch(object):
 
     def evaluate(self, candidate: Candidate) -> None:
         print("Evaluating: {}".format(candidate))
-        container = self.problem.bug.provision()
-        patch = candidate.diff(self.problem)
+        container = None
         try:
+            container = self.problem.bug.provision()
+            patch = candidate.diff(self.problem)
+
             container.patch(patch)
             container.compile()
 
@@ -124,7 +127,14 @@ class RandomSearch(object):
                     return
 
             # if we've found a repair, halt the search
-            print("FOUND REPAIR: {}".format(candidate))
-            self.halted = True
+            diff = candidate.diff(self.problem)
+            print("FOUND REPAIR: {}\n{}\n{}\n{}".format(candidate,
+                                                        ("=" * 80),
+                                                        diff,
+                                                        ("="*80)))
+            if self.terminate_early:
+                print("Terminating search")
+                self.halted = True
         finally:
-            container.destroy()
+            if container:
+                container.destroy()
