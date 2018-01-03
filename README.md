@@ -2,64 +2,6 @@
 
 Language-independent automated program repair
 
-## Inputs
-
-```json
-{
-  "program": { ... },
-  "nodes": [
-    ...
-  ],
-  "limits": {
-    ...
-  }
-}
-```
-
-### Program Under Repair
-
-Darjeeling should be provided with a description of the program under repair,
-which is supplied by the following:
-
-* The path to the directory containing the source code for the program.
-* Instructions for building a Docker image for the program.
-
-Below is an example program description.
-
-```json
-{
-  "source": "/home/chris/php",
-  "build": {
-    "file": "Dockerfile",
-    "args": {}
-  }
-}
-```
-
-### Compute Nodes
-
-Additionally, Darjeeling should be provided with a list of the compute
-nodes that should be made available to the repair process. Each of those
-resources should be described by the following:
-
-* URI of the Docker daemon on the node.
-* Number of logical cores.
-
-Below is an example list of compute nodes.
-
-```json
-[
-  {
-    "uri": "192.168.0.1:6000",
-    "cores": 4
-  },
-  {
-    "uri": "52.90.113.128:6000",
-    "cores": 2
-  }
-]
-```
-
 ### Resource Limits
 
 Finally, Darjeeling should be provided with a set of resource limits that
