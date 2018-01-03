@@ -5,8 +5,8 @@ tool. Unlike other repair tools such as GenProg, SPR, and Nopol, Darjeeling
 delegates the responsibility of generating patches, obtaining coverage,
 analysing code, and executing tests to other services. (For the most part, those
 other services are also language independent.)
-Darjeeling is a lightweight framework for composing and executing repair
-algorithms.
+Once those auxillary concerns are removed, what is left is a lightweight
+framework for composing and executing repair algorithms: Darjeeling.
 
 ## Approach
 
