@@ -118,7 +118,10 @@ class RandomSearch(object):
             patch = candidate.diff(self.problem)
 
             container.patch(patch)
-            container.compile()
+
+            # ensure that the patch compiles
+            if not container.compile().successful:
+                return
 
             # for now, execute all tests in no particular order
             for test in self.problem.tests:
