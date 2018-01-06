@@ -1,5 +1,6 @@
 import threading
 import random
+from timeit import default_timer as timer
 from typing import Optional
 from darjeeling.candidate import Candidate
 from darjeeling.problem import Problem
@@ -32,6 +33,7 @@ class RandomSearch(object):
                  ):
         assert num_threads > 0
         self.halted = False
+        self.__time_start = None
         self.__lock = threading.Lock()
         self.__problem = problem
         self.__num_threads = num_threads
@@ -76,7 +78,13 @@ class RandomSearch(object):
         """
         return self.__problem
 
-    def run(self) -> None:
+    def run(self, seed: Optional[int] = None) -> None:
+        if seed is None: # TODO: should be equiv?
+            random.seed()
+        else:
+            random.seed(seed)
+
+        self.__time_start = timer()
         workers = [Worker(self) for _ in range(self.num_threads)]
         for worker in workers:
             worker.join()
@@ -131,7 +139,12 @@ class RandomSearch(object):
 
             # if we've found a repair, halt the search
             diff = candidate.diff(self.problem)
-            print("FOUND REPAIR: {}\n{}\n{}\n{}".format(candidate,
+
+            # how long did it take to find a repair?
+            t = (timer() - self.__time_start).total_seconds()
+            t /= 60.0
+
+            print("FOUND REPAIR [{:.2f} minutes]: {}\n{}\n{}\n{}".format(t, candidate,
                                                         ("=" * 80),
                                                         diff,
                                                         ("="*80)))
