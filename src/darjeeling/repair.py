@@ -38,8 +38,9 @@ class RepairReport(object):
 
 def repair(problem: Problem,
            metric: SuspiciousnessMetric,
+           seed: Optional[int] = None,
            threads: Optional[int] = 1,
            terminate_early: bool = True
            ) -> RepairReport:
     searcher = RandomSearch(problem, threads, terminate_early)
-    searcher.run()
+    searcher.run(seed)
