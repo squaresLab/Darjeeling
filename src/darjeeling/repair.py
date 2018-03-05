@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from bugzoo import BugZoo
 from bugzoo.localization import SuspiciousnessMetric
 from darjeeling.problem import Problem
@@ -41,6 +41,14 @@ def repair(problem: Problem,
            seed: Optional[int] = None,
            threads: Optional[int] = 1,
            terminate_early: bool = True
-           ) -> RepairReport:
+           ) -> Tuple[List[Candidate], RepairReport]:
+    """
+    Attempts to repair a given program.
+
+    Returns:
+        A tuple of the form `(patches, report)`, where `patches` is a list
+        of all the candidate patches discovered during the search, and
+        `report` contains a summary of the search process.
+    """
     searcher = RandomSearch(problem, threads, terminate_early)
     searcher.run(seed)
