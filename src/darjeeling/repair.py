@@ -1,7 +1,9 @@
-from datetime import timedelta
 from typing import List, Optional, Tuple
-from bugzoo import BugZoo
+from datetime import timedelta
+
+import bugzoo
 from bugzoo.localization import SuspiciousnessMetric
+
 from darjeeling.problem import Problem
 from darjeeling.candidate import Candidate
 from darjeeling.search import RandomSearch
@@ -36,7 +38,8 @@ class RepairReport(object):
         return self.__duration
 
 
-def repair(problem: Problem,
+def repair(bugzoo: bugzoo.BugZoo,
+           problem: Problem,
            metric: SuspiciousnessMetric,
            seed: Optional[int] = None,
            threads: Optional[int] = 1,
@@ -50,5 +53,5 @@ def repair(problem: Problem,
         of all the candidate patches discovered during the search, and
         `report` contains a summary of the search process.
     """
-    searcher = RandomSearch(problem, threads, terminate_early)
+    searcher = RandomSearch(bugzoo, problem, threads, terminate_early)
     searcher.run(seed)

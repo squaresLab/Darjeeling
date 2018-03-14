@@ -1,9 +1,10 @@
+from typing import List, Iterator
 import os
 import tempfile
 import difflib
-from typing import List, Iterator
-from bugzoo import Bug
-from bugzoo.patch import FilePatch
+
+from bugzoo.core.bug import Bug
+from bugzoo.core.patch import FilePatch
 
 
 class SourceFile(object):

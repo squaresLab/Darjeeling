@@ -1,5 +1,7 @@
 from typing import List, Iterator
-from bugzoo.patch import Patch
+
+from bugzoo.core.patch import Patch
+
 from darjeeling.transformation import Transformation, \
                                       DeleteTransformation, \
                                       ReplaceTransformation, \

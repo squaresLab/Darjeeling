@@ -1,6 +1,8 @@
 from typing import List, Iterator, Dict
-from bugzoo.bug import Bug
-from bugzoo.coverage import FileLine
+
+from bugzoo.core.bug import Bug
+from bugzoo.core.coverage import FileLine
+
 from darjeeling.donor import Snippet, DonorPool
 from darjeeling.source import SourceFile
 

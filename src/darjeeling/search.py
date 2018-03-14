@@ -1,7 +1,10 @@
-import threading
-import random
 from timeit import default_timer as timer
 from typing import Optional
+import threading
+import random
+
+import bugzoo
+
 from darjeeling.candidate import Candidate
 from darjeeling.problem import Problem
 
@@ -27,12 +30,14 @@ class Worker(threading.Thread):
 
 class RandomSearch(object):
     def __init__(self,
+                 bugzoo: bugzoo.BugZoo,
                  problem: Problem,
                  num_threads: int,
                  terminate_early: Optional[bool] = True
                  ):
         assert num_threads > 0
         self.halted = False
+        self.__bugzoo = bugzoo
         self.__time_start = None
         self.__lock = threading.Lock()
         self.__problem = problem
@@ -87,9 +92,7 @@ class RandomSearch(object):
         self.__time_start = timer()
         workers = [Worker(self) for _ in range(self.num_threads)]
         for worker in workers:
-            worker.join()
-
-    def next(self) -> Optional[Candidate]:
+            worker.join( next(self) -> Optional[Candidate]:
         self.__lock.acquire()
         try:
             implicated_lines = list(self.__candidates.keys())
@@ -122,7 +125,7 @@ class RandomSearch(object):
         print("Evaluating: {}".format(candidate))
         container = None
         try:
-            container = self.problem.bug.provision()
+            container = self.__bugzoo.container.provision(self.problem.bug)
             patch = candidate.diff(self.problem)
 
             container.patch(patch)

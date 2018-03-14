@@ -1,10 +1,12 @@
-import tempfile
 from typing import List, Optional, Dict, Iterator
-from bugzoo.coverage import FileLine
-from bugzoo.bug import Bug
+import tempfile
+
+from bugzoo.core.coverage import FileLine
+from bugzoo.core.bug import Bug
+from bugzoo.core.coverage import ProjectLineCoverage
+from bugzoo.core.patch import Patch
 from bugzoo.testing import TestCase
-from bugzoo.coverage import ProjectLineCoverage
-from bugzoo.patch import Patch
+
 from darjeeling.donor import DonorPool
 from darjeeling.transformation import TransformationDatabase
 from darjeeling.source import SourceFile

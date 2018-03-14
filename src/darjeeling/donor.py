@@ -1,10 +1,12 @@
+from typing import List, Iterator
+from tempfile import NamedTemporaryFile
 import os
 import tempfile
-from typing import List, Iterator
-from bugzoo import Bug
-from bugzoo.coverage import FileLine
+
+from bugzoo.core.bug import Bug
+from bugzoo.core.coverage import FileLine
+
 from darjeeling.source import SourceFile
-from tempfile import NamedTemporaryFile
 
 
 class Snippet(object):
