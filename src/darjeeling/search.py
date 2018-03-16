@@ -39,6 +39,7 @@ class RandomSearch(object):
                  ):
         assert num_threads > 0
         self.halted = False
+        self.__running = False
         self.__time_start = None
         self.__bugzoo = bugzoo
         self.__lock = threading.Lock()
@@ -101,7 +102,8 @@ class RandomSearch(object):
         if not self.__running:
             raise Exception("search hasn't started")
 
-        return timer() - self.__time_start
+        secs = timer() - self.__time_start
+        return datetime.timedelta(seconds=secs)
 
     def run(self, seed: Optional[int] = None) -> None:
         if seed is None: # TODO: should be equiv?
@@ -110,6 +112,7 @@ class RandomSearch(object):
             random.seed(seed)
 
         self.__time_start = timer()
+        self.__running = True
         workers = [Worker(self) for _ in range(self.num_threads)]
         for worker in workers:
             worker.join()
@@ -150,20 +153,21 @@ class RandomSearch(object):
 
     def evaluate(self, candidate: Candidate) -> None:
         print("Evaluating: {}".format(candidate))
+        bz = self.__bugzoo
         container = None
         try:
-            container = self.__bugzoo.container.provision(self.problem.bug)
+            container = bz.containers.provision(self.problem.bug)
             patch = candidate.diff(self.problem)
 
-            container.patch(patch)
+            bz.containers.patch(container, patch)
 
             # ensure that the patch compiles
-            if not container.compile().successful:
+            if not bz.containers.compile(container).successful:
                 return
 
             # for now, execute all tests in no particular order
             for test in self.problem.tests:
-                outcome = container.execute(test)
+                outcome = bz.containers.execute(container, test)
                 if not outcome.passed:
                     return
 
@@ -182,5 +186,6 @@ class RandomSearch(object):
                 print("Terminating search")
                 self.halted = True
         finally:
+            print("Evaluated: {}".format(candidate))
             if container:
-                container.destroy()
+                del bz.containers[container.uid]
