@@ -2,6 +2,7 @@ from timeit import default_timer as timer
 from typing import Optional
 import threading
 import random
+import datetime
 
 import bugzoo
 
@@ -33,16 +34,18 @@ class RandomSearch(object):
                  bugzoo: bugzoo.BugZoo,
                  problem: Problem,
                  num_threads: int,
-                 terminate_early: Optional[bool] = True
+                 terminate_early: Optional[bool] = True,
+                 time_limit: Optional[datetime.timedelta] = None
                  ):
         assert num_threads > 0
         self.halted = False
-        self.__bugzoo = bugzoo
         self.__time_start = None
+        self.__bugzoo = bugzoo
         self.__lock = threading.Lock()
         self.__problem = problem
         self.__num_threads = num_threads
         self.__terminate_early = terminate_early
+        self.__time_limit = time_limit
 
         candidates = {}
         for t in problem.transformations:
@@ -83,6 +86,23 @@ class RandomSearch(object):
         """
         return self.__problem
 
+    @property
+    def time_limit(self) -> Optional[datetime.timedelta]:
+        """
+        An optional time limit that is imposed upon the search process.
+        """
+        return self.__time_limit
+
+    @property
+    def time_running(self) -> datetime.timedelta:
+        """
+        The length of time that has passed since the search begun.
+        """
+        if not self.__running:
+            raise Exception("search hasn't started")
+
+        return timer() - self.__time_start
+
     def run(self, seed: Optional[int] = None) -> None:
         if seed is None: # TODO: should be equiv?
             random.seed()
@@ -98,6 +118,11 @@ class RandomSearch(object):
         self.__lock.acquire()
         try:
             implicated_lines = list(self.__candidates.keys())
+
+            if self.time_limit and self.time_running > self.time_limit:
+                print("Reached time limit.")
+                self.halted = True
+                return None
 
             # have all candidates been exhausted?
             if not implicated_lines:
