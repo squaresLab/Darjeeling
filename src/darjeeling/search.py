@@ -92,7 +92,9 @@ class RandomSearch(object):
         self.__time_start = timer()
         workers = [Worker(self) for _ in range(self.num_threads)]
         for worker in workers:
-            worker.join( next(self) -> Optional[Candidate]:
+            worker.join()
+
+    def next(self) -> Optional[Candidate]:
         self.__lock.acquire()
         try:
             implicated_lines = list(self.__candidates.keys())
