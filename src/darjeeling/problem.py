@@ -1,6 +1,7 @@
 from typing import List, Optional, Dict, Iterator
 import tempfile
 
+import bugzoo
 from bugzoo.core.coverage import FileLine
 from bugzoo.core.bug import Bug
 from bugzoo.core.coverage import ProjectLineCoverage
@@ -18,6 +19,7 @@ class Problem(object):
     information pertinent to its solution (e.g., coverage, transformations).
     """
     def __init__(self,
+                 bz: bugzoo.BugZoo,
                  bug: Bug,
                  in_files: List[str],
                  in_functions: Optional[List[str]] = None
@@ -51,7 +53,7 @@ class Problem(object):
 
         # stores the contents of each original source code file
         self.__sources = \
-            {fn: SourceFile.load(bug, fn) for fn in self.__in_files}
+            {fn: SourceFile.load(bz, bug, fn) for fn in self.__in_files}
 
         # determine the implicated lines
         self.__lines = []
@@ -61,7 +63,7 @@ class Problem(object):
                 self.__lines.append(line)
 
         # construct the donor pool
-        self.__snippets = DonorPool.from_files(bug, in_files)
+        self.__snippets = DonorPool.from_files(bz, bug, in_files)
 
         # construct the transformation database
         self.__transformations = \

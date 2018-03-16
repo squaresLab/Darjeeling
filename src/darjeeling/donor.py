@@ -3,6 +3,7 @@ from tempfile import NamedTemporaryFile
 import os
 import tempfile
 
+import bugzoo
 from bugzoo.core.bug import Bug
 from bugzoo.core.coverage import FileLine
 
@@ -37,18 +38,24 @@ class Snippet(object):
 
 class DonorPool(object):
     @staticmethod
-    def from_files(bug: Bug, filenames: List[str]) -> 'DonorPool':
-        file_snippets = [DonorPool.from_file(bug, fn) for fn in filenames]
+    def from_files(bz: bugzoo.BugZoo,
+                   bug: Bug,
+                   filenames: List[str]
+                   ) -> 'DonorPool':
+        file_snippets = [DonorPool.from_file(bz, bug, fn) for fn in filenames]
         all_snippets = [s for pool in file_snippets for s in pool]
         return DonorPool(all_snippets)
 
     @staticmethod
-    def from_file(bug: Bug, filename: str) -> 'DonorPool':
+    def from_file(bz: bugzoo.BugZoo,
+                  bug: Bug,
+                  filename: str
+                  ) -> 'DonorPool':
         """
         Constructs a donor pool of snippets from the contents of a given file.
         """
         snippets = set()
-        src_file = SourceFile.load(bug, filename)
+        src_file = SourceFile.load(bz, bug, filename)
 
         # create a snippet for each line
         for content in src_file:

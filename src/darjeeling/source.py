@@ -3,29 +3,30 @@ import os
 import tempfile
 import difflib
 
+import bugzoo
 from bugzoo.core.bug import Bug
 from bugzoo.core.patch import FilePatch
 
 
 class SourceFile(object):
     @staticmethod
-    def load(bug: Bug, filename: str) -> 'SourceFile':
+    def load(bz: bugzoo.BugZoo, bug: Bug, filename: str) -> 'SourceFile':
         """
         Loads a specified source-code file belonging to a provided faulty
         program version.
         """
-        container = bug.provision()
+        container = bz.containers.provision(bug)
         fd, host_fn = tempfile.mkstemp()
         try:
             os.close(fd)
             container_fn = os.path.join(bug.source_dir, filename)
-            container.copy_from(container_fn, host_fn)
+            bz.containers.copy_from(container, container_fn, host_fn)
 
             with open(host_fn, 'r') as f:
                 lines = [l.rstrip('\n') for l in f]
                 return SourceFile(filename, lines)
         finally:
-            container.destroy()
+            del bz.containers[container.uid]
             os.remove(host_fn)
 
     def __init__(self, name: str, lines: List[str]) -> None:
