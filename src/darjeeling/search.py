@@ -184,6 +184,7 @@ class RandomSearch(object):
                 return
 
             # for now, execute all tests in no particular order
+            # TODO perform test ordering
             for test in self.problem.tests:
                 print("Executing test: {} ({})".format(test.name, candidate))
                 self.__num_evals_tests += 1
@@ -198,7 +199,7 @@ class RandomSearch(object):
             diff = candidate.diff(self.problem)
 
             # how long did it take to find a repair?
-            time_repair = self.time_running.seconds = 60.0
+            time_repair = self.time_running.seconds / 60.0
             print("FOUND REPAIR [{:.2f} minutes]: {}\n{}\n{}\n{}".format(time_repair, candidate,
                                                         ("=" * 80),
                                                         diff,
