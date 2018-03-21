@@ -12,6 +12,7 @@ setup(
     url='https://github.com/squaresLab/Darjeeling',
     license='mit',
     install_requires=[
+        'bugzoo',
         'requests',
         'flask'
     ],
