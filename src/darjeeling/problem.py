@@ -5,7 +5,6 @@ import logging
 import bugzoo
 from bugzoo.core.fileline import FileLine, FileLineSet
 from bugzoo.core.bug import Bug
-from bugzoo.core.coverage import ProjectLineCoverage
 from bugzoo.core.patch import Patch
 from bugzoo.core.coverage import TestSuiteCoverage
 from bugzoo.testing import TestCase
@@ -75,9 +74,9 @@ class Problem(object):
                 print("executing test: {}".format(test))
                 outcome = bz.containers.execute(container_sanity, test)
                 if outcome.passed:
-                    self.__tests_failing.add(test)
-                else:
                     self.__tests_passing.add(test)
+                else:
+                    self.__tests_failing.add(test)
 
         finally:
             del bz.containers[container_sanity.uid]
@@ -87,11 +86,11 @@ class Problem(object):
         self.__logger.debug("- failing tests: %s", ' '.join([t.name for t in self.__tests_failing]))
 
         # determine the implicated lines
-        self.__lines = []
+        lines = []
         for (fn, src) in self.__sources.items():
             for (num, content) in enumerate(src, 1):
                 line = FileLine(fn, num)
-                self.__lines.append(line)
+                lines.append(line)
 
         self.__lines = FileLineSet.from_list(lines)
         if restrict_to_lines is not None:
@@ -122,7 +121,18 @@ class Problem(object):
 
     @property
     def tests(self) -> Iterator[TestCase]:
-        return self.bug.tests
+        for test in self.__tests_failing:
+            yield test
+        for test in self.__tests_passing:
+            yield test
+
+    @property
+    def tests_failing(self) -> Iterator[TestCase]:
+        return self.__tests_failing.__iter__()
+
+    @property
+    def tests_passing(self) -> Iterator[TestCase]:
+        return self.__tests_passing.__iter__()
 
     @property
     def coverage(self) -> TestSuiteCoverage:
