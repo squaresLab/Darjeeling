@@ -1,5 +1,5 @@
 from timeit import default_timer as timer
-from typing import Optional
+from typing import Optional, List
 import threading
 import random
 import datetime
@@ -48,6 +48,10 @@ class RandomSearch(object):
         self.__terminate_early = terminate_early
         self.__time_limit = time_limit
 
+        self.__num_evals_candidates = 0
+        self.__num_evals_tests = 0
+        self.__repairs = []
+
         candidates = {}
         for t in problem.transformations:
             candidate = Candidate([t])
@@ -71,6 +75,18 @@ class RandomSearch(object):
         been hit or the search space has been exhausted.
         """
         return self.__terminate_early
+
+    @property
+    def num_evals_tests(self) -> int:
+        return self.__num_evals_tests
+
+    @property
+    def num_evals_candidates(self) -> int:
+        return self.__num_evals_candidates
+
+    @property
+    def repairs(self) -> List[Candidate]:
+        return self.__repairs[:]
 
     @property
     def num_threads(self) -> int:
@@ -114,7 +130,7 @@ class RandomSearch(object):
         self.__time_start = timer()
         self.__running = True
         workers = [Worker(self) for _ in range(self.num_threads)]
-        for worker in workers:
+        for worker in workers: # TODO this is bad
             worker.join()
 
     def next(self) -> Optional[Candidate]:
@@ -153,6 +169,7 @@ class RandomSearch(object):
 
     def evaluate(self, candidate: Candidate) -> None:
         print("Evaluating: {}".format(candidate))
+        self.__num_evals_candidates += 1
         bz = self.__bugzoo
         container = None
         try:
@@ -163,22 +180,26 @@ class RandomSearch(object):
 
             # ensure that the patch compiles
             if not bz.containers.compile(container).successful:
+                print("Failed to compile: {}".format(candidate))
                 return
 
             # for now, execute all tests in no particular order
             for test in self.problem.tests:
+                print("Executing test: {} ({})".format(test.name, candidate))
+                self.__num_evals_tests += 1
                 outcome = bz.containers.execute(container, test)
                 if not outcome.passed:
+                    print("Failed test: {} ({})".format(test.name, candidate))
                     return
+                print("Passed test: {} ({})".format(test.name, candidate))
 
             # if we've found a repair, halt the search
+            self.__repairs.append(candidate)
             diff = candidate.diff(self.problem)
 
             # how long did it take to find a repair?
-            t = (timer() - self.__time_start).total_seconds()
-            t /= 60.0
-
-            print("FOUND REPAIR [{:.2f} minutes]: {}\n{}\n{}\n{}".format(t, candidate,
+            time_repair = self.time_running.seconds = 60.0
+            print("FOUND REPAIR [{:.2f} minutes]: {}\n{}\n{}\n{}".format(time_repair, candidate,
                                                         ("=" * 80),
                                                         diff,
                                                         ("="*80)))
