@@ -8,7 +8,7 @@ setup(
     description='Language-independent, distributed search-based program repair',
     long_description='TBA',
     author='Chris Timperley',
-    author_email='ctimperley@cs.cmu.edu',
+    author_email='christimperley@googlemail.com',
     url='https://github.com/squaresLab/Darjeeling',
     license='mit',
     install_requires=[
