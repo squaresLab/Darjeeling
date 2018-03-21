@@ -11,7 +11,10 @@ from darjeeling.search import RandomSearch
 
 
 class RepairReport(object):
-    def __init__(self):
+    def __init__(self,
+                 num_candidate_evals: int,
+                 num_test_evals: int,
+                 duration: timedelta):
         self.__num_candidate_evals = None
         self.__num_test_evals = None
         self.__duration = None
@@ -61,3 +64,7 @@ def repair(bugzoo: bugzoo.BugZoo,
                             terminate_early=terminate_early,
                             time_limit=time_limit)
     searcher.run(seed)
+    report = RepairReport(searcher.num_evals_candidates,
+                          searcher.num_evals_tests,
+                          searcher.time_running)
+    return (searcher.repairs, report)
