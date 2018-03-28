@@ -24,7 +24,9 @@ class Problem(object):
                  bug: Bug,
                  in_files: Optional[List[str]],
                  in_functions: Optional[List[str]] = None,
-                 restrict_to_lines: Optional[FileLineSet] = None
+                 restrict_to_lines: Optional[FileLineSet] = None,
+                 failing_tests: Optional[List[str]] = None,
+                 passing_tests: Optional[List[str]] = None
                  ) -> None:
         """
         Constructs a Darjeeling problem description.
@@ -49,22 +51,22 @@ class Problem(object):
         self.__logger.setLevel(logging.DEBUG)
         self.__logger.debug("creating problem for bug: %s", bug.name)
 
-        # coverage
-        # coverage = bug.coverage.restricted_to_files(in_files) if in_files \
-        #            else bug.coverage
+        self.__logger.debug("fetching coverage information from BugZoo")
+        self.__coverage = bz.bugs.coverage(bug)
+        self.__logger.debug("fetched coverage information from BugZoo")
+
         # spectra = bug.spectra.restricted_to_files(in_files) if in_files \
         #           else bug.spectra
 
         self.__in_files = in_files[:]
         self.__in_functions = in_functions[:] if in_functions else None
 
-        # stores the contents of each original source code file
         self.__logger.debug("storing contents of source code files")
         self.__sources = \
             {fn: SourceFile.load(bz, bug, fn) for fn in self.__in_files}
         self.__logger.debug("finished storing contents of source code files")
 
-        # TODO determine the passing (positive) and failing (negative) tests
+        # determine passing and failing tests
         self.__logger.debug("determining passing and failing tests")
         try:
             container_sanity = bz.containers.provision(bug)
@@ -80,7 +82,6 @@ class Problem(object):
 
         finally:
             del bz.containers[container_sanity.uid]
-
         self.__logger.debug("determined passing and failing tests")
         self.__logger.debug("- passing tests: %s", ' '.join([t.name for t in self.__tests_passing]))
         self.__logger.debug("- failing tests: %s", ' '.join([t.name for t in self.__tests_failing]))
@@ -96,12 +97,21 @@ class Problem(object):
         if restrict_to_lines is not None:
             self.__lines = self.__lines.intersection(restrict_to_lines)
 
+        # determine the implicated files
+
+        # filter the implicated files
+        # - remove comments from consideration
+
+        # TODO don't consider code outside function definitions
+
         # construct the donor pool
+        # TODO what should be included?
         self.__logger.debug("constructing donor pool")
         self.__snippets = DonorPool.from_files(bz, bug, in_files)
         self.__logger.debug("constructed donor pool")
 
         # construct the transformation database
+        # TODO let's try to be more efficient
         self.__transformations = \
             TransformationDatabase.generate(bug,
                                             self.__snippets,
@@ -144,6 +154,10 @@ class Problem(object):
 
     @property
     def implicated_lines(self) -> Iterator[FileLine]:
+        """
+        Returns an iterator over the lines that are implicated by the
+        description of this problem.
+        """
         return self.__lines.__iter()
 
     def source(self, fn: str) -> SourceFile:
