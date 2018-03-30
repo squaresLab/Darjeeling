@@ -23,7 +23,7 @@ class Problem(object):
                  bz: bugzoo.BugZoo,
                  bug: Bug,
                  *,
-                 in_files: Optional[List[str]],
+                 in_files: List[str],
                  in_functions: Optional[List[str]] = None,
                  restrict_to_lines: Optional[FileLineSet] = None,
                  cache_coverage: bool = True,
@@ -48,6 +48,7 @@ class Problem(object):
         self.__bug = bug
         self.__verbose = verbose
 
+
         self.__logger = \
             logging.getLogger('darjeeling.problem').getChild(bug.name)
         # TODO stream logging info for now
@@ -68,6 +69,13 @@ class Problem(object):
             finally:
                 del bz.containers[container.uid]
             self.__logger.debug("computed coverage information")
+
+        # restrict coverage information to specified files
+        self.__logger.debug("restricting coverage information to files: %s",
+                            ', '.join(in_files))
+        self.__coverage = self.__coverage.restricted_to_files(in_files)
+        self.__logger.debug("restricted coverage information to files: %s",
+                            ', '.join(in_files))
 
         # determine the passing and failing tests by using coverage information
         self.__logger.debug("using test execution used to generate coverage to determine passing and failing tests")
@@ -100,8 +108,8 @@ class Problem(object):
 
 
         # determine the implicated lines
+        # 0. we already restricted to lines that occur in specified files
         # 1. restrict to lines covered by failing tests
-        # 2. restrict to lines that occur in specified files
         # 3. restrict to lines with suspiciousness greater than zero
         # 4. restrict to lines that are optionally provided
         self.__logger.info("Determining implicated lines")
@@ -117,7 +125,8 @@ class Problem(object):
         self.__logger.info("# implicated lines: %d", len(self.__lines))
         self.__logger.info("# implicated files: %d", len(self.__lines.files))
         self.__logger.info("implicated lines:\n%s", self.__lines)
-        self.__logger.info("implicated files:\n%s", self.__lines.files)
+        self.__logger.info("implicated files:\n%s",
+                           ', '.join(self.__lines.files))
 
         # TODO filter out }
         # TODO don't consider code outside function definitions
