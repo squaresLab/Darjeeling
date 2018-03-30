@@ -50,7 +50,9 @@ class Problem(object):
 
         self.__logger = \
             logging.getLogger('darjeeling.problem').getChild(bug.name)
+        # TODO stream logging info for now
         self.__logger.setLevel(logging.DEBUG)
+        self.__logger.addHandler(logging.StreamHandler())
         self.__logger.debug("creating problem for bug: %s", bug.name)
 
         self.__logger.debug("fetching coverage information from BugZoo")
@@ -76,7 +78,9 @@ class Problem(object):
             self.__tests_passing = set()
             for test in bug.tests:
                 print("executing test: {}".format(test))
-                outcome = bz.containers.execute(container_sanity, test)
+                outcome = bz.containers.execute(container_sanity,
+                                                test,
+                                                verbose=True)
                 if outcome.passed:
                     self.__tests_passing.add(test)
                 else:
