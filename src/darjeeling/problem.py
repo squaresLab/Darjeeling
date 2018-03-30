@@ -55,6 +55,7 @@ class Problem(object):
         self.__logger.addHandler(logging.StreamHandler())
         self.__logger.debug("creating problem for bug: %s", bug.name)
 
+        # fetch coverage information
         if cache_coverage:
             self.__logger.debug("fetching coverage information from BugZoo")
             self.__coverage = bz.bugs.coverage(bug)
@@ -82,7 +83,6 @@ class Problem(object):
                 self.__tests_failing.add(test)
 
         # TODO throw an error if there are no failing tests
-
         self.__logger.info("determined passing and failing tests")
         self.__logger.info("passing tests: %s", ', '.join([t.name for t in self.__tests_passing]))
         self.__logger.info("failing tests: %s", ', '.join([t.name for t in self.__tests_failing]))
@@ -100,24 +100,26 @@ class Problem(object):
 
 
         # determine the implicated lines
-        lines = []
-        for (fn, src) in self.__sources.items():
-            for (num, content) in enumerate(src, 1):
-                line = FileLine(fn, num)
-                lines.append(line)
+        # 1. restrict to lines covered by failing tests
+        # 2. restrict to lines that occur in specified files
+        # 3. restrict to lines with suspiciousness greater than zero
+        # 4. restrict to lines that are optionally provided
+        self.__logger.info("Determining implicated lines")
+        self.__lines = self.__coverage.failing.lines
 
-        self.__lines = FileLineSet.from_list(lines)
         if restrict_to_lines is not None:
             self.__lines = self.__lines.intersection(restrict_to_lines)
 
+        implicated_files = self.__lines.files
+
+        # report implicated lines and files
+        self.__logger.info("Determing implicated lines")
+        self.__logger.info("# implicated lines: %d", len(self.__lines))
+        self.__logger.info("# implicated files: %d", len(self.__lines.files))
         self.__logger.info("implicated lines:\n%s", self.__lines)
+        self.__logger.info("implicated files:\n%s", self.__lines.files)
 
-        # determine the implicated files
-        print(self.__lines)
-
-        # filter the implicated files
-        # - remove comments from consideration
-
+        # TODO filter out }
         # TODO don't consider code outside function definitions
 
         # construct the donor pool
