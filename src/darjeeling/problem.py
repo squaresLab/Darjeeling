@@ -22,11 +22,11 @@ class Problem(object):
     def __init__(self,
                  bz: bugzoo.BugZoo,
                  bug: Bug,
+                 *,
                  in_files: Optional[List[str]],
                  in_functions: Optional[List[str]] = None,
                  restrict_to_lines: Optional[FileLineSet] = None,
-                 failing_tests: Optional[List[str]] = None,
-                 passing_tests: Optional[List[str]] = None,
+                 cache_coverage: bool = True,
                  verbose: bool = False
                  ) -> None:
         """
@@ -55,9 +55,29 @@ class Problem(object):
         self.__logger.addHandler(logging.StreamHandler())
         self.__logger.debug("creating problem for bug: %s", bug.name)
 
+        # TODO: toggle whether or not to use cached information
         self.__logger.debug("fetching coverage information from BugZoo")
         self.__coverage = bz.bugs.coverage(bug)
         self.__logger.debug("fetched coverage information from BugZoo")
+
+        # determine the passing and failing tests by using coverage information
+        self.__logger.debug("using test execution used to generate coverage to determine passing and failing tests")
+
+        self.__tests_failing = set()
+        self.__tests_passing = set()
+        for test_name in self.__coverage:
+            test = bug.harness[test_name]
+            test_coverage = self.__coverage[test_name]
+            if test_coverage.outcome.passed:
+                self.__tests_passing.add(test)
+            else:
+                self.__tests_failing.add(test)
+
+        # TODO throw an error if there are no failing tests
+
+        self.__logger.info("determined passing and failing tests")
+        self.__logger.info("passing tests: %s", ', '.join([t.name for t in self.__tests_passing]))
+        self.__logger.info("failing tests: %s", ', '.join([t.name for t in self.__tests_failing]))
 
         # spectra = bug.spectra.restricted_to_files(in_files) if in_files \
         #           else bug.spectra
@@ -70,27 +90,6 @@ class Problem(object):
             {fn: SourceFile.load(bz, bug, fn) for fn in self.__in_files}
         self.__logger.debug("finished storing contents of source code files")
 
-        # determine passing and failing tests
-        self.__logger.debug("determining passing and failing tests")
-        try:
-            container_sanity = bz.containers.provision(bug)
-            self.__tests_failing = set()
-            self.__tests_passing = set()
-            for test in bug.tests:
-                print("executing test: {}".format(test))
-                outcome = bz.containers.execute(container_sanity,
-                                                test,
-                                                verbose=True)
-                if outcome.passed:
-                    self.__tests_passing.add(test)
-                else:
-                    self.__tests_failing.add(test)
-
-        finally:
-            del bz.containers[container_sanity.uid]
-        self.__logger.debug("determined passing and failing tests")
-        self.__logger.debug("- passing tests: %s", ' '.join([t.name for t in self.__tests_passing]))
-        self.__logger.debug("- failing tests: %s", ' '.join([t.name for t in self.__tests_failing]))
 
         # determine the implicated lines
         lines = []
@@ -183,3 +182,14 @@ class Problem(object):
         Returns the contents of a given source code file for this problem.
         """
         return self.__sources[fn]
+
+    def check_sanity(self) -> bool:
+        """
+
+        Returns:
+            True if the outcomes of the test executions match those that are
+            expected by the parameters to this method.
+        """
+        # determine passing and failing tests
+        self.__logger.debug("sanity checking...")
+        raise NotImplementedError
