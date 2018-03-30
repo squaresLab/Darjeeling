@@ -26,7 +26,8 @@ class Problem(object):
                  in_functions: Optional[List[str]] = None,
                  restrict_to_lines: Optional[FileLineSet] = None,
                  failing_tests: Optional[List[str]] = None,
-                 passing_tests: Optional[List[str]] = None
+                 passing_tests: Optional[List[str]] = None,
+                 verbose: bool = False
                  ) -> None:
         """
         Constructs a Darjeeling problem description.
@@ -45,6 +46,7 @@ class Problem(object):
         """
         assert len(in_files) > 0
         self.__bug = bug
+        self.__verbose = verbose
 
         self.__logger = \
             logging.getLogger('darjeeling.problem').getChild(bug.name)
@@ -97,7 +99,10 @@ class Problem(object):
         if restrict_to_lines is not None:
             self.__lines = self.__lines.intersection(restrict_to_lines)
 
+        self.__logger.info("implicated lines:\n%s", self.__lines)
+
         # determine the implicated files
+        print(self.__lines)
 
         # filter the implicated files
         # - remove comments from consideration
@@ -131,6 +136,9 @@ class Problem(object):
 
     @property
     def tests(self) -> Iterator[TestCase]:
+        """
+        Returns an iterator over the tests for this problem.
+        """
         for test in self.__tests_failing:
             yield test
         for test in self.__tests_passing:
@@ -138,10 +146,16 @@ class Problem(object):
 
     @property
     def tests_failing(self) -> Iterator[TestCase]:
+        """
+        Returns an iterator over the failing tests for this problem.
+        """
         return self.__tests_failing.__iter__()
 
     @property
     def tests_passing(self) -> Iterator[TestCase]:
+        """
+        Returns an iterator over the passing tests for this problem.
+        """
         return self.__tests_passing.__iter__()
 
     @property
