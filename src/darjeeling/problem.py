@@ -92,8 +92,8 @@ class Problem(object):
 
         # TODO throw an error if there are no failing tests
         self.__logger.info("determined passing and failing tests")
-        self.__logger.info("passing tests: %s", ', '.join([t.name for t in self.__tests_passing]))
-        self.__logger.info("failing tests: %s", ', '.join([t.name for t in self.__tests_failing]))
+        self.__logger.info("* passing tests: %s", ', '.join([t.name for t in self.__tests_passing]))
+        self.__logger.info("* failing tests: %s", ', '.join([t.name for t in self.__tests_failing]))
 
         # spectra = bug.spectra.restricted_to_files(in_files) if in_files \
         #           else bug.spectra
@@ -118,6 +118,8 @@ class Problem(object):
         if restrict_to_lines is not None:
             self.__lines = self.__lines.intersection(restrict_to_lines)
 
+        # TODO raise an exception if there are no implicated lines
+
         implicated_files = self.__lines.files
 
         # report implicated lines and files
@@ -125,8 +127,8 @@ class Problem(object):
         self.__logger.info("# implicated lines: %d", len(self.__lines))
         self.__logger.info("# implicated files: %d", len(self.__lines.files))
         self.__logger.info("implicated lines:\n%s", self.__lines)
-        self.__logger.info("implicated files:\n%s",
-                           ', '.join(self.__lines.files))
+        self.__logger.info("implicated files:\n* %s",
+                           '\n* '.join(self.__lines.files))
 
         # TODO filter out }
         # TODO don't consider code outside function definitions
