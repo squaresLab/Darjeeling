@@ -55,10 +55,18 @@ class Problem(object):
         self.__logger.addHandler(logging.StreamHandler())
         self.__logger.debug("creating problem for bug: %s", bug.name)
 
-        # TODO: toggle whether or not to use cached information
-        self.__logger.debug("fetching coverage information from BugZoo")
-        self.__coverage = bz.bugs.coverage(bug)
-        self.__logger.debug("fetched coverage information from BugZoo")
+        if cache_coverage:
+            self.__logger.debug("fetching coverage information from BugZoo")
+            self.__coverage = bz.bugs.coverage(bug)
+            self.__logger.debug("fetched coverage information from BugZoo")
+        else:
+            self.__logger.debug("computing coverage information")
+            try:
+                container = bz.containers.provision(bug)
+                self.__coverage = bz.coverage.coverage(container, bug.tests)
+            finally:
+                del bz.containers[container.uid]
+            self.__logger.debug("computed coverage information")
 
         # determine the passing and failing tests by using coverage information
         self.__logger.debug("using test execution used to generate coverage to determine passing and failing tests")
@@ -183,12 +191,26 @@ class Problem(object):
         """
         return self.__sources[fn]
 
-    def check_sanity(self) -> bool:
+    def check_sanity(self,
+                     expected_to_pass: List[TestCase],
+                     expected_to_fail: List[TestCase]
+                     ) -> bool:
         """
+
+        Parameters:
+            expected_to_pass: a list of test cases for the program that are
+                expected to pass.
+            expected_to_fail: a list o test cases for the program that are
+                expected to fail.
 
         Returns:
             True if the outcomes of the test executions match those that are
             expected by the parameters to this method.
+
+        Raises:
+            errors.UnexpectedTestOutcomes: if the outcomes of the program
+                under test, observed while computing coverage information for
+                the problem, differ from those that were expected.
         """
         # determine passing and failing tests
         self.__logger.debug("sanity checking...")
