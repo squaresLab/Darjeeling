@@ -1,4 +1,4 @@
-from typing import Iterable, Iterator
+from typing import Iterable, Iterator, Optional
 from timeit import default_timer as timer
 import datetime
 import threading
@@ -19,7 +19,7 @@ class Searcher(object):
                  candidates: Iterable[Candidate],
                  *,
                  threads: int = 1,
-                 time_limit: Optional[timedelta] = None
+                 time_limit: Optional[datetime.timedelta] = None
                  ) -> None:
         """
         Constructs a new searcher for a given source of candidate patches.
@@ -50,14 +50,14 @@ class Searcher(object):
         self.__exhausted_candidates = False
         self.__time_running = datetime.timedelta()
         self.__error_occurred = False
-        self.__next_patch = None
+        self.__next_patch = None # type: Optional[Candidate]
 
     @property
     def paused(self) -> bool:
         """
         Indicates whether this searcher is paused.
         """
-        return self.__paused or self.exhausted
+        return (self.__next_patch is not None) or self.exhausted
 
     @property
     def exhausted(self) -> bool:
@@ -102,7 +102,8 @@ class Searcher(object):
         """
         The amount of time that has been spent searching for patches.
         """
-        duration_iteration = timer() - self.__time_start_iteration
+        duration_iteration = \
+            datetime.timedelta(timer() - self.__time_iteration_begun)
         return self.__time_running + duration_iteration
 
     def __iter__(self) -> Iterator[Candidate]:
@@ -120,9 +121,9 @@ class Searcher(object):
                 been exhausted.
         """
         self.__time_iteration_begun = timer()
-        threads = []
+        threads = [] # type: List[threading.Thread]
 
-        # TODO there's a bit of a bug: any patches that were read from the
+        # TODO there's a bit of a bug: any patches # type: List[threading.Thread] # type: List[threading.Thread] # type: List[threading.Thread] that were read from the
         #   generator by the worker and were still stored in its
         #   `candidate` variable will be discarded. fixable by adding a
         #   buffer to `_try_next`.
@@ -140,11 +141,11 @@ class Searcher(object):
             self.__error_occurred = True
         finally:
             # TODO this is bad -- use while instead
-            for worker in workers:
-                worker.join()
+            for t in threads:
+                t.join()
 
-        duration_iteration = timer() - self.__time_start_iteration
-        self.__time_running += duration_iteration
+        duration_iteration = timer() - self.__time_iteration_begun
+        self.__time_running += datetime.timedelta(seconds=duration_iteration)
 
         # if we have a patch, return it
         if self.__next_patch:
@@ -162,7 +163,6 @@ class Searcher(object):
             a boolean indicating whether the calling thread should continue to
             evaluate candidate patches.
         """
-        # TODO have we run out of precious resources?
         if self.paused:
             return False
 
