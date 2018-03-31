@@ -1,6 +1,7 @@
 from typing import Iterator, List, Iterable, Tuple
 import random
 
+from bugzoo.localization import Localization
 from bugzoo.core.fileline import FileLine
 
 from .snippet import Snippet, SnippetDatabase
@@ -158,7 +159,9 @@ class AllTransformationsAtLine(TransformationGenerator):
     """
     def __init__(self,
                  line: FileLine,
-                 snippets: SnippetDatabase
+                 snippets: SnippetDatabase,
+                 *,
+                 randomize: bool = True
                  ) -> None:
         # TODO clean up iterator ugliness
         self.__sources = [
@@ -167,7 +170,10 @@ class AllTransformationsAtLine(TransformationGenerator):
             AppendGenerator(iter([line]), snippets)
         ] # type: List[TransformationGenerator]
 
+        # TODO implement randomize
+
     def __next__(self) -> Transformation:
+        # TODO random/deterministic
         # choose a source at random
         try:
             source = random.choice(self.__sources)
@@ -176,6 +182,34 @@ class AllTransformationsAtLine(TransformationGenerator):
 
         # attempt to fetch a transformation from that source
         # if the source is exhausted, discard it and try again
+        try:
+            return next(source)
+        except StopIteration:
+            self.__sources.remove(source)
+            return self.__next__()
+
+
+# TODO: exhibits suspicious memory usage
+class SampleByLocalization(TransformationGenerator):
+    def __init__(self,
+                 localization: Localization,
+                 snippets: SnippetDatabase,
+                 *,
+                 randomize: bool = True
+                 ) -> None:
+        # TODO compute a weighted map using suspiciousness values
+        self.__sources = [
+            AllTransformationsAtLine(line, snippets, randomize=randomize)
+            for line in localization
+        ]
+
+    def __next__(self) -> Transformation:
+        # TODO use fault localization as distribution
+        try:
+            source = random.choice(self.__sources)
+        except IndexError:
+            raise StopIteration
+
         try:
             return next(source)
         except StopIteration:

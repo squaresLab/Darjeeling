@@ -12,7 +12,8 @@ from .generator import DeletionGenerator, \
                        ReplacementGenerator, \
                        AppendGenerator, \
                        SingleEditPatches, \
-                       AllTransformationsAtLine
+                       AllTransformationsAtLine, \
+                       SampleByLocalization
 
 
 __ALL__ = ['RepairReport', 'repair']
@@ -41,7 +42,6 @@ class RepairReport(object):
         """
         return self.__num_test_evals
 
-
     @property
     def duration(self) -> timedelta:
         """
@@ -65,11 +65,10 @@ def repair(bugzoo: bugzoo.BugZoo,
         of all the candidate patches discovered during the search, and
         `report` contains a summary of the search process.
     """
-    # generate the search space
-    # transformations = AppendGenerator(lines=problem.lines,
-    #                                   snippets=problem.snippets)
-    line = FileLine('ArduCopter/mode_guided.cpp', 450)
-    transformations = AllTransformationsAtLine(line, problem.snippets)
+    transformations = \
+        SampleByLocalization(problem.localization,
+                             problem.snippets,
+                             randomize=False)
     candidates = SingleEditPatches(transformations)
 
     searcher = Searcher(bugzoo,
