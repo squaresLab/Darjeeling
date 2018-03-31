@@ -3,10 +3,13 @@ import tempfile
 import logging
 
 import bugzoo
+import bugzoo.localization.suspiciousness as metrics
 from bugzoo.core.fileline import FileLine, FileLineSet
 from bugzoo.core.bug import Bug
 from bugzoo.core.patch import Patch
 from bugzoo.core.coverage import TestSuiteCoverage
+from bugzoo.core.spectra import Spectra
+from bugzoo.localization import SuspiciousnessMetric
 from bugzoo.testing import TestCase
 
 import darjeeling.filters as filters
@@ -24,8 +27,8 @@ class Problem(object):
                  bz: bugzoo.BugZoo,
                  bug: Bug,
                  *,
+                 suspiciousness_metric: Optional[SuspiciousnessMetric] = None,
                  in_files: List[str],
-                 in_functions: Optional[List[str]] = None,
                  restrict_to_lines: Optional[FileLineSet] = None,
                  cache_coverage: bool = True,
                  verbose: bool = False
@@ -49,13 +52,16 @@ class Problem(object):
         self.__bug = bug
         self.__verbose = verbose
 
-
         self.__logger = \
             logging.getLogger('darjeeling.problem').getChild(bug.name)
         # TODO stream logging info for now
         self.__logger.setLevel(logging.DEBUG)
         self.__logger.addHandler(logging.StreamHandler())
         self.__logger.debug("creating problem for bug: %s", bug.name)
+
+        if suspiciousness_metric is None:
+            self.__logger.debug("no suspiciousness metric provided: using Tarantula as a default.")
+            suspiciousness_metric = metrics.tarantula
 
         # fetch coverage information
         if cache_coverage:
@@ -95,18 +101,6 @@ class Problem(object):
         self.__logger.info("* passing tests: %s", ', '.join([t.name for t in self.__tests_passing]))
         self.__logger.info("* failing tests: %s", ', '.join([t.name for t in self.__tests_failing]))
 
-        # spectra = bug.spectra.restricted_to_files(in_files) if in_files \
-        #           else bug.spectra
-
-        self.__in_files = in_files[:]
-        self.__in_functions = in_functions[:] if in_functions else None
-
-        self.__logger.debug("storing contents of source code files")
-        self.__sources = \
-            {fn: SourceFile.load(bz, bug, fn) for fn in self.__in_files}
-        self.__logger.debug("finished storing contents of source code files")
-
-
         # determine the implicated lines
         # 0. we already restricted to lines that occur in specified files
         # 1. restrict to lines covered by failing tests
@@ -117,6 +111,13 @@ class Problem(object):
 
         if restrict_to_lines is not None:
             self.__lines = self.__lines.intersection(restrict_to_lines)
+
+        # cache contents of implicated files
+        # FIXME this method of construction is slow and error-prone
+        self.__logger.debug("storing contents of source code files")
+        self.__sources = \
+            {fn: SourceFile.load(bz, bug, fn) for fn in self.__lines.files}
+        self.__logger.debug("finished storing contents of source code files")
 
         # restrict attention to statements
         # FIXME for now, we approximate this -- going forward, we can use
@@ -131,15 +132,22 @@ class Problem(object):
             self.__lines = self.__lines.filter(fltr_line)
 
         # TODO raise an exception if there are no implicated lines
-        implicated_files = self.__lines.files
+
+        # once again, restrict coverage to implicated files to save memory,
+        # then generate a spectra and use it to compute the localization
+        self.__coverage = \
+            self.__coverage.restricted_to_files(self.__lines.files)
+        self.__spectra = Spectra.from_coverage(self.__coverage)
 
         # report implicated lines and files
-        self.__logger.info("Determing implicated lines")
-        self.__logger.info("# implicated lines: %d", len(self.__lines))
-        self.__logger.info("# implicated files: %d", len(self.__lines.files))
-        self.__logger.info("implicated lines:\n%s", self.__lines)
-        self.__logger.info("implicated files:\n* %s",
+        self.__logger.info("implicated lines [%d]:\n%s",
+                           len(self.__lines), self.__lines)
+        self.__logger.info("implicated files [%d]:\n* %s",
+                           len(self.__lines.files),
                            '\n* '.join(self.__lines.files))
+
+        # FIXME remove files that are no longer implicated from the cache
+
 
     @property
     def bug(self) -> Bug:
@@ -178,7 +186,15 @@ class Problem(object):
         Line coverage information for each test within the test suite for the
         program under repair.
         """
-        raise NotImplementedError
+        return self.__coverage
+
+    @property
+    def spectra(self) -> Spectra:
+        """
+        Provides a concise summary of the number of passing and failing tests
+        that cover each implicated line.
+        """
+        return self.__spectra
 
     @property
     def lines(self) -> Iterator[FileLine]:
