@@ -48,7 +48,11 @@ class SnippetDatabase(object):
         """
         return len(self.__snippets)
 
-    def add(self, snippet: Snippet, *, origin: Optional[FileLine]) -> None:
+    def add(self,
+            snippet: Snippet,
+            *,
+            origin: Optional[FileLine] = None
+            ) -> None:
         """
         Adds a snippet to this database in-place.
 
