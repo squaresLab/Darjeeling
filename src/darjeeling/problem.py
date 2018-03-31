@@ -9,9 +9,10 @@ from bugzoo.core.patch import Patch
 from bugzoo.core.coverage import TestSuiteCoverage
 from bugzoo.testing import TestCase
 
-from darjeeling.donor import DonorPool
-from darjeeling.transformation import TransformationDatabase
-from darjeeling.source import SourceFile
+import darjeeling.filters as filters
+from .donor import DonorPool
+from .transformation import TransformationDatabase
+from .source import SourceFile
 
 
 class Problem(object):
@@ -117,8 +118,19 @@ class Problem(object):
         if restrict_to_lines is not None:
             self.__lines = self.__lines.intersection(restrict_to_lines)
 
-        # TODO raise an exception if there are no implicated lines
+        # restrict attention to statements
+        # FIXME for now, we approximate this -- going forward, we can use
+        #   Rooibos to determine transformation targets
+        line_content_filters = [
+            filters.ends_with_semi_colon,
+            filters.has_balanced_delimiters
+        ]
+        for fltr_content in line_content_filters:
+            fltr_line = \
+                lambda fl: fltr_content(self.__sources[fl.filename][fl.num])
+            self.__lines = self.__lines.filter(fltr_line)
 
+        # TODO raise an exception if there are no implicated lines
         implicated_files = self.__lines.files
 
         # report implicated lines and files
@@ -128,9 +140,6 @@ class Problem(object):
         self.__logger.info("implicated lines:\n%s", self.__lines)
         self.__logger.info("implicated files:\n* %s",
                            '\n* '.join(self.__lines.files))
-
-        # TODO filter out { and }
-
 
     @property
     def bug(self) -> Bug:
