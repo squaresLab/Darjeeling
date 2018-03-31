@@ -107,5 +107,22 @@ class ReplacementGenerator(CandidateGenerator):
 
 
 class AppendGenerator(CandidateGenerator):
-    def __init__(self) -> None:
-        pass
+    def __init__(self,
+                 lines: Iterable[FileLine],
+                 snippets: SnippetDatabase
+                 ) -> None:
+        self.__generator_line_snippet = \
+            LineSnippetGenerator(lines, snippets)
+
+    def __next__(self) -> Candidate:
+        try:
+            line, snippet = next(self.__generator_line_snippet)
+        except StopIteration:
+            raise StopIteration
+
+        # TODO additional static analysis goes here
+        # * don't append after a return
+        # * don't append after a break statement
+
+        transformation = AppendTransformation(line, snippet)
+        return Candidate([transformation])
