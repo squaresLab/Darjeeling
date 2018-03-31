@@ -1,26 +1,13 @@
 from typing import Iterable, Iterator
 from timeit import default_timer as timer
 import datetime
+import threading
 
 from .candidate import Candidate
 from .problem import Problem
 
 
 __ALL__ = ['Searcher']
-
-
-class Worker(threading.Thread):
-    def __init__(self, searcher: 'Searcher') -> None:
-        super().__init__()
-        self.daemon = True
-        self.__searcher = searcher
-        self.start()
-
-    # TODO: collapse into a closure
-    def run(self) -> None:
-        while True:
-            if not self.__searcher._try_next():
-                break
 
 
 class Searcher(object):
@@ -47,22 +34,26 @@ class Searcher(object):
 
         self.__problem = problem
         self.__candidates = candidates
-        self.__time_running = datetime.timedelta()
-        self.__time_limit = time_limita
+        self.__time_limit = time_limit
         self.__num_threads = threads
 
         # records the time at which the current iteration begun
         self.__time_iteration_begun = None
 
+        self.__lock_candidates = threading.Lock() # type: threading.Lock
         self.__counter_candidates = 0
         self.__counter_tests = 0
+        self.__exhausted_candidates = False
+        self.__time_running = datetime.timedelta()
+        self.__error_occurred = False
+        self.__next_patch = None
 
     @property
-    def running(self) -> bool:
+    def paused(self) -> bool:
         """
-        Indicates whether this searcher is currently searching for patches.
+        Indicates whether this searcher is paused.
         """
-        return self.__running
+        return self.__paused or self.exhausted
 
     @property
     def exhausted(self) -> bool:
@@ -70,9 +61,12 @@ class Searcher(object):
         Indicates whether or not the resources available to this searcher have
         been exhausted.
         """
+        if self.__error_occurred:
+            return True
+        if self.__exhausted_candidates:
+            return True
         if self.__time_limit is None:
             return False
-
         return self.time_running > self.time_limit
 
     @property
@@ -106,24 +100,39 @@ class Searcher(object):
                 been exhausted.
         """
         self.__time_iteration_begun = timer()
+        threads = []
+
+        # TODO there's a bit of a bug: any patches that were read from the
+        #   generator by the worker and were still stored in its
+        #   `candidate` variable will be discarded. fixable by adding a
+        #   buffer to `_try_next`.
         try:
-            workers = [Worker(self) for _ in range(self.__num_threads)]
+            def worker(searcher: 'Searcher') -> None:
+                while True:
+                    if not searcher._try_next():
+                        break
 
-            # block until time has expired or we've found another repair
-            pass
-
-            self.__paused = True
-
+            for _ in range(self.__num_threads):
+                t = threading.Thread(target=worker, args=(self,), daemon=True)
+                threads.append(t)
+                t.start()
+        except:
+            self.__error_occurred = True
         finally:
             # TODO this is bad -- use while instead
-            # TODO there's a bit of a bug: any patches that were read from the
-            #   generator by the worker and were still stored in its
-            #   `candidate` variable will be discarded
             for worker in workers:
                 worker.join()
 
-            duration_iteration = timer() - self.__time_start_iteration
-            self.__time_running += duration_iteration
+        duration_iteration = timer() - self.__time_start_iteration
+        self.__time_running += duration_iteration
+
+        # if we have a patch, return it
+        if self.__next_patch:
+            self.__next_patch = None
+            return self.__next_patch
+
+        # if not, we're done
+        raise StopIteration
 
     def _try_next(self) -> bool:
         """
@@ -134,13 +143,18 @@ class Searcher(object):
             evaluate candidate patches.
         """
         # TODO have we run out of precious resources?
+        if self.paused:
+            return False
 
-        # TODO: this MUST be protected
+        self.__lock_candidates.acquire()
         try:
             candidate = next(self.__candidates)
         except StopIteration:
             print("exhausted all candidate patches!")
+            self.__exhausted_candidates = True
             return False
+        finally:
+            self.__lock_candidates.release()
 
         print("Evaluating: {}".format(candidate))
         self.__counter_candidates += 1
@@ -166,17 +180,21 @@ class Searcher(object):
                     return True
                 print("Passed test: {} ({})".format(test.name, candidate))
 
+            # FIXME possible race condition if two workers report repairs at
+            #   the same time?
             # if we've found a repair, pause the search
-            self.__repairs.append(candidate)
+            self.__next_patch = candidate
             diff = candidate.diff(self.problem)
 
-            # how long did it take to find a repair?
+            # TODO make this prettier
+            # report the patch
             time_repair = self.time_running.seconds / 60.0
-            print("FOUND REPAIR [{:.2f} minutes]: {}\n{}\n{}\n{}".format(time_repair, candidate,
-                                                        ("=" * 80),
-                                                        diff,
-                                                        ("="*80)))
+            msg = "FOUND REPAIR [{:.2f} minutes]: {}\n{}\n{}\n{}"
+            msg = msg.format(time_repair, candidate, ("=" * 80), diff, ("="*80))
+            print(msg)
+
             return True
+
         finally:
             print("Evaluated: {}".format(candidate))
             if container:
