@@ -171,7 +171,7 @@ class Problem(object):
         for line in self.__coverage.lines:
             content = self.__sources[line.filename][line.num].strip()
             if all(fltr(content) for fltr in snippet_filters):
-                self.__logger.debug("* found snippet at %s: %s", line, content)
+                # self.__logger.debug("* found snippet at %s: %s", line, content)
                 snippet = Snippet(content)
                 self.__snippets.add(snippet, origin=line)
 
