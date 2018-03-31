@@ -1,4 +1,4 @@
-from typing import List, Iterator, Set, Iterable
+from typing import List, Iterator, Set, Iterable, Optional
 from tempfile import NamedTemporaryFile
 import os
 import tempfile
@@ -34,21 +34,21 @@ class Snippet(object):
         return hash(self.__content)
 
 
-class DonorPool(object):
+class SnippetDatabase(object):
     @staticmethod
     def from_files(bz: bugzoo.BugZoo,
                    bug: Bug,
                    filenames: List[str]
-                   ) -> 'DonorPool':
-        file_snippets = [DonorPool.from_file(bz, bug, fn) for fn in filenames]
+                   ) -> 'SnippetDatabase':
+        file_snippets = [SnippetDatabase.from_file(bz, bug, fn) for fn in filenames]
         all_snippets = [s for pool in file_snippets for s in pool]
-        return DonorPool(all_snippets)
+        return SnippetDatabase(all_snippets)
 
     @staticmethod
     def from_file(bz: bugzoo.BugZoo,
                   bug: Bug,
                   filename: str
-                  ) -> 'DonorPool':
+                  ) -> 'SnippetDatabase':
         """
         Constructs a donor pool of snippets from the contents of a given file.
         """
@@ -73,13 +73,21 @@ class DonorPool(object):
 
             snippets.add(Snippet(content))
 
-        return DonorPool(snippets)
+        return SnippetDatabase(snippets)
 
-    def __init__(self, snippets: Iterable[Snippet]):
-        self.__snippets = frozenset(snippets)
+    def __init__(self, snippets: Optional[Iterable[Snippet]] = None) -> None:
+        if snippets is None:
+            self.__snippets = set()
+        else:
+            self.__snippets = set(snippets)
 
     def __iter__(self) -> Iterator[Snippet]:
         """
         Returns an iterator over the snippets contained in this donor pool.
         """
         return self.__snippets.__iter__()
+
+
+class SnippetFinder(object):
+    def __init__(self, database: SnippetDatabase) -> None:
+        self.__database = database

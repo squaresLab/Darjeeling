@@ -13,8 +13,7 @@ from bugzoo.localization import SuspiciousnessMetric, Localization
 from bugzoo.testing import TestCase
 
 import darjeeling.filters as filters
-from .donor import DonorPool
-from .transformation import TransformationDatabase
+from .snippet import SnippetDatabase
 from .source import SourceFile
 
 

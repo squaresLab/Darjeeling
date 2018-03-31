@@ -2,7 +2,7 @@ from typing import Iterator, List, Iterable
 
 from bugzoo.core.fileline import FileLine
 
-from .donor import Snippet
+from .snippet import Snippet
 from .candidate import Candidate
 from .transformation import Transformation, \
                             AppendTransformation, \
