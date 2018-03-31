@@ -177,7 +177,7 @@ class Problem(object):
         Returns an iterator over the lines that are implicated by the
         description of this problem.
         """
-        return self.__lines.__iter()
+        return self.__lines.__iter__()
 
     def source(self, fn: str) -> SourceFile:
         """
