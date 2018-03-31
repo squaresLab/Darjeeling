@@ -1,4 +1,5 @@
 from typing import Iterable, Iterator
+from timeit import default_timer as timer
 import datetime
 
 from .candidate import Candidate
@@ -30,8 +31,11 @@ class Searcher(object):
         self.__problem = problem
         self.__candidates = candidates
         self.__time_running = datetime.timedelta()
-        self.__time_limit = time_limit
+        self.__time_limit = time_limita
         self.__num_threads = threads
+
+        # records the time at which the current iteration begun
+        self.__time_iteration_begun = None
 
     @property
     def exhausted(self) -> bool:
@@ -57,8 +61,8 @@ class Searcher(object):
         """
         The amount of time that has been spent searching for patches.
         """
-        # TODO: we need to do some clever things here
-        return self.__time_running
+        duration_iteration = timer() - self.__time_start_iteration
+        return self.__time_running + duration_iteration
 
     def __iter__(self) -> Iterator[Candidate]:
         return self
@@ -74,11 +78,11 @@ class Searcher(object):
             StopIteration: if the search space or available resources have
                 been exhausted.
         """
-        # TODO this is where the magic happens
+        self.__time_iteration_begun = timer()
         try:
             raise NotImplementedError
 
         # ensure all the patch evaluators are killed
-        # also, update the clocks
         finally:
-            pass
+            duration_iteration = timer() - self.__time_start_iteration
+            self.__time_running += duration_iteration
