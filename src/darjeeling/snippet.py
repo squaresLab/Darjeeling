@@ -1,4 +1,4 @@
-from typing import List, Iterator, Set, Iterable, Optional
+from typing import List, Iterator, Set, Iterable, Optional, Dict
 
 from bugzoo.core.coverage import FileLine
 
@@ -30,11 +30,9 @@ class Snippet(object):
 class SnippetDatabase(object):
     # TODO: implement load and save functionality (use cPickle)
 
-    def __init__(self, snippets: Optional[Iterable[Snippet]] = None) -> None:
-        if snippets is None:
-            self.__snippets = set()
-        else:
-            self.__snippets = set(snippets)
+    def __init__(self) -> None:
+        self.__snippets = set()
+        self.__snippets_by_file = {} # type: Dict[str, Set[Snippet]]
 
     def __iter__(self) -> Iterator[Snippet]:
         """
@@ -47,6 +45,17 @@ class SnippetDatabase(object):
         Returns the number of unique snippets contained within the database.
         """
         return len(self.__snippets)
+
+    def in_file(self, fn: str) -> Iterator[Snippet]:
+        """
+        Returns an iterator over all of the snippets that were sourced from
+        a given file.
+        """
+        if fn in self.__snippets_by_file:
+            yield from self.__snippets_by_file[fn]
+        else:
+            yield from ()
+        return
 
     def add(self,
             snippet: Snippet,
@@ -65,7 +74,11 @@ class SnippetDatabase(object):
             nothing.
         """
         self.__snippets.add(snippet)
-        # FIXME index by origin
+
+        if origin is not None:
+            if origin.filename not in self.__snippets_by_file:
+                self.__snippets_by_file[origin.filename] = set()
+            self.__snippets_by_file[origin.filename].add(snippet)
 
 
 class SnippetFinder(object):

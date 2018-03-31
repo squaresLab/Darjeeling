@@ -75,7 +75,7 @@ class LineSnippetGenerator(object):
                 # - add use/def restrictions
                 self.__current_line = next(self.__lines)
                 self.__snippets_at_line = \
-                    self.__snippets.__iter__()
+                    self.__snippets.in_file(self.__current_line.filename)
                 return self.__next__()
             except StopIteration:
                 raise StopIteration

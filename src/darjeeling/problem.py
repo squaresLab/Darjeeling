@@ -173,10 +173,13 @@ class Problem(object):
             if all(fltr(content) for fltr in snippet_filters):
                 self.__logger.debug("* found snippet at %s: %s", line, content)
                 snippet = Snippet(content)
-                self.__snippets.add(snippet)
+                self.__snippets.add(snippet, origin=line)
 
         self.__logger.info("construct snippet database: %d snippets",
                            len(self.__snippets))
+        for fn in self.__lines.files:
+            self.__logger.info("* %d snippets in %s",
+                               len(list(self.__snippets.in_file(fn))), fn)
 
         self.__logger.debug("reducing memory footprint by discarding extraneous data")
         self.__coverage.restricted_to_files(self.__lines.files)

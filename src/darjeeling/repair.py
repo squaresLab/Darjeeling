@@ -65,6 +65,9 @@ def repair(bugzoo: bugzoo.BugZoo,
         of all the candidate patches discovered during the search, and
         `report` contains a summary of the search process.
     """
+    # line = FileLine("ArduCopter/Log.cpp", 577)
+    # transformations = \
+    #     AllTransformationsAtLine(line, problem.snippets)
     transformations = \
         SampleByLocalization(problem.localization,
                              problem.snippets,
