@@ -74,6 +74,22 @@ class Searcher(object):
         return self.time_running > self.time_limit
 
     @property
+    def num_test_evals(self) -> int:
+        """
+        The number of test case evaluations that have been performed during
+        this search process.
+        """
+        return self.__counter_tests
+
+    @property
+    def num_candidate_evals(self) -> int:
+        """
+        The number of candidate patches that have been evaluated over the
+        course of this search process.
+        """
+        return self.__counter_candidates
+
+    @property
     def time_limit(self) -> Optional[datetime.timedelta]:
         """
         An optional limit on the length of time that may be spent searching
