@@ -1,4 +1,4 @@
-from typing import Iterator, List, Iterable
+from typing import Iterator, List, Iterable, Tuple
 
 from bugzoo.core.fileline import FileLine
 
@@ -16,11 +16,41 @@ class CandidateGenerator(object):
     stream of candidate patches. For now, candidate generators implement
     one-way communications: they do not accept inputs.
     """
-    def __init__(self) -> Iterator[Candidate]:
+    def __iter__(self) -> Iterator[Candidate]:
         return self
 
     def __next__(self) -> Candidate:
         raise NotImplementedError
+
+
+class LineSnippetGenerator(object):
+    def __init__(self,
+                 lines: Iterable[FileLine],
+                 snippets: SnippetDatabase
+                 ) -> None:
+        self.__lines = lines
+        self.__snippets = snippets
+        self.__current_line = None # type: Optional[FileLine]
+        self.__snippets_at_line = iter([]) # type: Iterable[Snippet]
+
+    def __next__(self) -> Tuple[FileLine, Snippet]:
+        # fetch the next snippet at the current line
+        # if there are no snippets left at this line, move onto
+        # the next line. if there are no lines left, stop iterating.
+        try:
+            snippet = next(self.__snippets_at_line)
+            return (self.__current_line, snippet)
+        except StopIteration:
+            try:
+                # TODO use snippet generator here
+                # - return snippets at current file
+                # - add use/def restrictions
+                self.__current_line = next(self.__lines)
+                self.__snippets_at_line = \
+                    self.__snippets.__iter__()
+                return self.__next__()
+            except StopIteration:
+                raise StopIteration
 
 
 class DeletionGenerator(CandidateGenerator):
@@ -53,42 +83,26 @@ class DeletionGenerator(CandidateGenerator):
 
 class ReplacementGenerator(CandidateGenerator):
     """
-    Uses a provided donor pool of code snippets to generate all legal
-    replacement transformations for a stream of transformation targets.
+    Uses a provided snippet database to generate all legal replacement
+    transformations for a sequence of transformation targets.
     """
     def __init__(self,
                  lines: Iterable[FileLine],
                  snippets: SnippetDatabase
                  ) -> None:
-        self.__lines = reversed(list(lines))
-        self.__snippets = snippets
-        self.__current_line = None # type: Optional[FileLine]
-        self.__snippets_at_line = iter([]) # type: Iterable[Snippet]
+        self.__generator_line_snippet = \
+            LineSnippetGenerator(lines, snippets)
 
     def __next__(self) -> Candidate:
-        # fetch the next snippet at the current line
-        # if there are no snippets left at this line, move onto
-        # the next line. if there are no lines left, stop iterating.
         try:
-            next_snippet = next(self.__snippets_at_line)
+            line, snippet = next(self.__generator_line_snippet)
         except StopIteration:
-            try:
-                # TODO use snippet generator here
-                # - return snippets at current file
-                # - add use/def restrictions
-                self.__current_line = next(self.__lines)
-                self.__snippets_at_line = \
-                    self.__snippets.__iter__()
-                return self.__next__()
-            except StopIteration:
-                raise StopIteration
+            raise StopIteration
 
         # TODO additional static analysis goes here
         # don't replace line with an equivalent
 
-        # construct the transformation
-        transformation = ReplaceTransformation(self.__current_line,
-                                               next_snippet)
+        transformation = ReplaceTransformation(line, snippet)
         return Candidate([transformation])
 
 
