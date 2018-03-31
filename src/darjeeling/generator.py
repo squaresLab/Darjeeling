@@ -1,4 +1,4 @@
-from typing import Iterator
+from typing import Iterator, List, Iterable
 
 from bugzoo.core.fileline import FileLine
 
@@ -23,7 +23,7 @@ class CandidateGenerator(object):
 
 
 class DeletionGenerator(object):
-    def __init__(self, lines: List[FileLine]) -> None:
+    def __init__(self, lines: Iterable[FileLine]) -> None:
         """
         Constructs a deletion generator.
 
@@ -31,7 +31,7 @@ class DeletionGenerator(object):
             lines: a sequence of lines for which deletion transformations
                 should be generated.
         """
-        self.__lines = reversed(lines)
+        self.__lines = reversed(list(lines))
 
     def __next__(self) -> Candidate:
         """
