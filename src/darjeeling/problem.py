@@ -71,11 +71,10 @@ class Problem(object):
             self.__logger.debug("computed coverage information")
 
         # restrict coverage information to specified files
-        self.__logger.debug("restricting coverage information to files: %s",
-                            ', '.join(in_files))
+        self.__logger.debug("restricting coverage information to files:\n* %s",
+                            '\n* '.join(in_files))
         self.__coverage = self.__coverage.restricted_to_files(in_files)
-        self.__logger.debug("restricted coverage information to files: %s",
-                            ', '.join(in_files))
+        self.__logger.debug("restricted coverage information.")
 
         # determine the passing and failing tests by using coverage information
         self.__logger.debug("using test execution used to generate coverage to determine passing and failing tests")
@@ -130,8 +129,7 @@ class Problem(object):
         self.__logger.info("implicated files:\n* %s",
                            '\n* '.join(self.__lines.files))
 
-        # TODO filter out }
-        # TODO don't consider code outside function definitions
+        # TODO filter out { and }
 
         # construct the donor pool
         # TODO what should be included?
