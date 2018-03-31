@@ -176,12 +176,13 @@ class Searcher(object):
         finally:
             self.__lock_candidates.release()
 
-        print("Evaluating: {}".format(candidate))
         self.__counter_candidates += 1
         bz = self.__bugzoo
         container = bz.containers.provision(self.__problem.bug)
         try:
             patch = candidate.diff(self.__problem)
+            diff = candidate.diff(self.__problem)
+            print("Evaluating: {}\n{}\n".format(candidate, diff))
             bz.containers.patch(container, patch)
 
             # ensure that the patch compiles
@@ -204,7 +205,6 @@ class Searcher(object):
             #   the same time?
             # if we've found a repair, pause the search
             self.__next_patch = candidate
-            diff = candidate.diff(self.__problem)
 
             # TODO make this prettier
             # report the patch
@@ -215,6 +215,7 @@ class Searcher(object):
 
             return True
 
+        # TODO ensure a bool is returned when an exception occurs
         finally:
             print("Evaluated: {}".format(candidate))
             if container:
