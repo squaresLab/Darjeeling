@@ -47,7 +47,6 @@ class RepairReport(object):
 
 def repair(bugzoo: bugzoo.BugZoo,
            problem: Problem,
-           metric: SuspiciousnessMetric,
            seed: Optional[int] = None,
            threads: Optional[int] = 1,
            terminate_early: Optional[bool] = True,
