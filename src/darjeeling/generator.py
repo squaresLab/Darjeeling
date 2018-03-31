@@ -23,6 +23,32 @@ class CandidateGenerator(object):
         raise NotImplementedError
 
 
+class TransformationGenerator(object):
+    def __iter__(self) -> Iterator[Transformation]:
+        return self
+
+    def __next__(self) -> Transformation:
+        raise NotImplementedError
+
+
+class SingleEditPatches(CandidateGenerator):
+    """
+    Provides a stream of single-transformation candidate patches composed using
+    a provided stream of transformations.
+    """
+    def __init__(self,
+                 transformations: Iterator[Transformation]
+                 ) -> None:
+        self.__transformations = transformations
+
+    def __next__(self) -> Candidate:
+        try:
+            transformation = next(self.__transformations)
+        except StopIteration:
+            raise StopIteration
+        return Candidate([transformation])
+
+
 class LineSnippetGenerator(object):
     def __init__(self,
                  lines: Iterable[FileLine],
@@ -53,7 +79,7 @@ class LineSnippetGenerator(object):
                 raise StopIteration
 
 
-class DeletionGenerator(CandidateGenerator):
+class DeletionGenerator(TransformationGenerator):
     def __init__(self, lines: Iterable[FileLine]) -> None:
         """
         Constructs a deletion generator.
@@ -64,7 +90,7 @@ class DeletionGenerator(CandidateGenerator):
         """
         self.__lines = reversed(list(lines))
 
-    def __next__(self) -> Candidate:
+    def __next__(self) -> Transformation:
         """
         Returns the next deletion transformation from this generator.
         """
@@ -76,12 +102,10 @@ class DeletionGenerator(CandidateGenerator):
         # TODO add static analysis
         # should we delete this line?
         # * don't delete declarations
-
-        transformation = DeleteTransformation(next_line)
-        return Candidate([transformation])
+        return DeleteTransformation(next_line)
 
 
-class ReplacementGenerator(CandidateGenerator):
+class ReplacementGenerator(TransformationGenerator):
     """
     Uses a provided snippet database to generate all legal replacement
     transformations for a sequence of transformation targets.
@@ -93,7 +117,7 @@ class ReplacementGenerator(CandidateGenerator):
         self.__generator_line_snippet = \
             LineSnippetGenerator(lines, snippets)
 
-    def __next__(self) -> Candidate:
+    def __next__(self) -> Transformation:
         try:
             line, snippet = next(self.__generator_line_snippet)
         except StopIteration:
@@ -102,11 +126,10 @@ class ReplacementGenerator(CandidateGenerator):
         # TODO additional static analysis goes here
         # don't replace line with an equivalent
 
-        transformation = ReplaceTransformation(line, snippet)
-        return Candidate([transformation])
+        return ReplaceTransformation(line, snippet)
 
 
-class AppendGenerator(CandidateGenerator):
+class AppendGenerator(TransformationGenerator):
     def __init__(self,
                  lines: Iterable[FileLine],
                  snippets: SnippetDatabase
@@ -114,7 +137,7 @@ class AppendGenerator(CandidateGenerator):
         self.__generator_line_snippet = \
             LineSnippetGenerator(lines, snippets)
 
-    def __next__(self) -> Candidate:
+    def __next__(self) -> Transformation:
         try:
             line, snippet = next(self.__generator_line_snippet)
         except StopIteration:
@@ -124,5 +147,16 @@ class AppendGenerator(CandidateGenerator):
         # * don't append after a return
         # * don't append after a break statement
 
-        transformation = AppendTransformation(line, snippet)
-        return Candidate([transformation])
+        return AppendTransformation(line, snippet)
+
+
+class AllTransformationsAtLine(TransformationGenerator):
+    """
+    Provides a stream of all the possible transformations that can be made at
+    a single line using a given snippet database.
+    """
+    def __init__(self,
+                 lines: Iterable[FileLine],
+                 snippets: SnippetDatabase
+                 ) -> None:
+        pass

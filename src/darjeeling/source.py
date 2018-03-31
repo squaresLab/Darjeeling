@@ -9,6 +9,7 @@ from bugzoo.core.patch import FilePatch
 
 
 class SourceFile(object):
+    # FIXME refactor
     @staticmethod
     def load(bz: bugzoo.BugZoo, bug: Bug, filename: str) -> 'SourceFile':
         """

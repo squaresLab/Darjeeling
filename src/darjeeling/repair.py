@@ -9,7 +9,8 @@ from .candidate import Candidate
 from .searcher import Searcher
 from .generator import DeletionGenerator, \
                        ReplacementGenerator, \
-                       AppendGenerator
+                       AppendGenerator, \
+                       SingleEditPatches
 
 
 __ALL__ = ['RepairReport', 'repair']
@@ -64,8 +65,11 @@ def repair(bugzoo: bugzoo.BugZoo,
     """
     # generate the search space
     # candidates = DeletionGenerator(lines=probem.lines)
-    candidates = ReplacementGenerator(lines=problem.lines,
+    # candidates = ReplacementGenerator(lines=problem.lines,
+    #                                   snippets=problem.snippets)
+    transformations = AppendGenerator(lines=problem.lines,
                                       snippets=problem.snippets)
+    candidates = SingleEditPatches(transformations)
 
     searcher = Searcher(bugzoo,
                         problem,
