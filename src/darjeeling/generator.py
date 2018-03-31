@@ -22,7 +22,7 @@ class CandidateGenerator(object):
         raise NotImplementedError
 
 
-class DeletionGenerator(object):
+class DeletionGenerator(CandidateGenerator):
     def __init__(self, lines: Iterable[FileLine]) -> None:
         """
         Constructs a deletion generator.
@@ -31,15 +31,30 @@ class DeletionGenerator(object):
             lines: a sequence of lines for which deletion transformations
                 should be generated.
         """
-        self.__lines = list(reversed(list(lines)))
+        self.__lines = reversed(list(lines))
 
     def __next__(self) -> Candidate:
         """
         Returns the next deletion transformation from this generator.
         """
         try:
-            next_line = self.__lines.pop()
-        except IndexError:
+            next_line = next(self.__lines)
+        except StopIteration:
             raise StopIteration
 
-        return DeleteTransformation(next_line)
+        # TODO add static analysis
+        # should we delete this line?
+        # * don't delete declarations
+
+        transformation = DeleteTransformation(next_line)
+        return Candidate([transformation])
+
+
+class ReplacementGenerator(CandidateGenerator):
+    def __init__(self, lines: Iterable[FileLine]) -> None:
+        pass
+
+
+class AppendGenerator(CandidateGenerator):
+    def __init__(self) -> None:
+        pass
