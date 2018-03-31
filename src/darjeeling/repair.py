@@ -2,6 +2,7 @@ from typing import List, Optional, Tuple
 from datetime import timedelta
 
 import bugzoo
+from bugzoo.core.fileline import FileLine
 from bugzoo.localization import SuspiciousnessMetric
 
 from .problem import Problem
@@ -10,7 +11,8 @@ from .searcher import Searcher
 from .generator import DeletionGenerator, \
                        ReplacementGenerator, \
                        AppendGenerator, \
-                       SingleEditPatches
+                       SingleEditPatches, \
+                       AllTransformationsAtLine
 
 
 __ALL__ = ['RepairReport', 'repair']
@@ -64,11 +66,10 @@ def repair(bugzoo: bugzoo.BugZoo,
         `report` contains a summary of the search process.
     """
     # generate the search space
-    # candidates = DeletionGenerator(lines=probem.lines)
-    # candidates = ReplacementGenerator(lines=problem.lines,
+    # transformations = AppendGenerator(lines=problem.lines,
     #                                   snippets=problem.snippets)
-    transformations = AppendGenerator(lines=problem.lines,
-                                      snippets=problem.snippets)
+    line = FileLine('ArduCopter/mode_guided.cpp', 450)
+    transformations = AllTransformationsAtLine(line, problem.snippets)
     candidates = SingleEditPatches(transformations)
 
     searcher = Searcher(bugzoo,
@@ -76,6 +77,7 @@ def repair(bugzoo: bugzoo.BugZoo,
                         candidates,
                         threads=threads,
                         time_limit=time_limit)
+    # FIXME implement terminate_early functionality!
     repairs = list(searcher)
     report = RepairReport(searcher.num_candidate_evals,
                           searcher.num_test_evals,

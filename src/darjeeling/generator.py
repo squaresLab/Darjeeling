@@ -1,4 +1,5 @@
 from typing import Iterator, List, Iterable, Tuple
+import random
 
 from bugzoo.core.fileline import FileLine
 
@@ -156,7 +157,27 @@ class AllTransformationsAtLine(TransformationGenerator):
     a single line using a given snippet database.
     """
     def __init__(self,
-                 lines: Iterable[FileLine],
+                 line: FileLine,
                  snippets: SnippetDatabase
                  ) -> None:
-        pass
+        # TODO clean up iterator ugliness
+        self.__sources = [
+            DeletionGenerator(iter([line])),
+            ReplacementGenerator(iter([line]), snippets),
+            AppendGenerator(iter([line]), snippets)
+        ] # type: List[TransformationGenerator]
+
+    def __next__(self) -> Transformation:
+        # choose a source at random
+        try:
+            source = random.choice(self.__sources)
+        except IndexError:
+            raise StopIteration
+
+        # attempt to fetch a transformation from that source
+        # if the source is exhausted, discard it and try again
+        try:
+            return next(source)
+        except StopIteration:
+            self.__sources.remove(source)
+            return self.__next__()
