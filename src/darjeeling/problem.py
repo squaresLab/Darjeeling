@@ -178,7 +178,7 @@ class Problem(object):
         self.__logger.info("construct snippet database: %d snippets",
                            len(self.__snippets))
         for fn in self.__lines.files:
-            self.__logger.info("* %d snippets in %s",
+            self.__logger.info("* %d unique snippets in %s",
                                len(list(self.__snippets.in_file(fn))), fn)
 
         self.__logger.debug("reducing memory footprint by discarding extraneous data")
