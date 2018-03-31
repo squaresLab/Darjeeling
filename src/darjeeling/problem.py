@@ -13,7 +13,7 @@ from bugzoo.localization import SuspiciousnessMetric, Localization
 from bugzoo.testing import TestCase
 
 import darjeeling.filters as filters
-from .snippet import SnippetDatabase
+from .snippet import SnippetDatabase, Snippet
 from .source import SourceFile
 
 
@@ -156,6 +156,28 @@ class Problem(object):
                            len(self.__lines.files),
                            '\n* '.join(self.__lines.files))
 
+        # construct the snippet database from the parts of the program that
+        # were executed by the test suite (both passing and failing tests)
+        # TODO add a snippet extractor component
+        self.__logger.info("constructing snippet database")
+        self.__snippets = SnippetDatabase()
+
+        # TODO allow additional snippet filters to be provided as params
+        snippet_filters = [
+            filters.ends_with_semi_colon,
+            filters.has_balanced_delimiters
+        ]
+
+        for line in self.__coverage.lines:
+            content = self.__sources[line.filename][line.num].strip()
+            if all(fltr(content) for fltr in snippet_filters):
+                print("* snippet [{}]: {}".format(line, content))
+                snippet = Snippet(content)
+                self.__snippets.add(snippet)
+
+        self.__logger.info("construct snippet database: %d snippets",
+                           len(self.__snippets))
+
         self.__logger.debug("reducing memory footprint by discarding extraneous data")
         self.__coverage.restricted_to_files(self.__lines.files)
         self.__spectra.restricted_to_files(self.__lines.files)
@@ -165,6 +187,12 @@ class Problem(object):
             del self.__sources[fn]
         self.__logger.debug("finished reducing memory footprint")
 
+    @property
+    def snippets(self) -> SnippetDatabase:
+        """
+        The snippet database that should be used to generate new code.
+        """
+        return self.__snippets
 
     @property
     def bug(self) -> Bug:
