@@ -79,8 +79,15 @@ def repair(bugzoo: bugzoo.BugZoo,
                         candidates,
                         threads=threads,
                         time_limit=time_limit)
-    # FIXME implement terminate_early functionality!
-    repairs = list(searcher)
+
+    if terminate_early:
+        try:
+            repairs = [next(searcher)]
+        except StopIteration:
+            repairs = []
+    else:
+        repairs = list(searcher)
+
     report = RepairReport(searcher.num_candidate_evals,
                           searcher.num_test_evals,
                           searcher.time_running)
