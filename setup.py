@@ -1,18 +1,26 @@
 #!/usr/bin/env python
+import os
 from glob import glob
 from setuptools import setup, find_packages
 
+
+path = os.path.join(os.path.dirname(__file__), 'src/darjeeling/version.py')
+with open(path, 'r') as f:
+    exec(f.read())
+
+
 setup(
     name='darjeeling',
-    version='0.0.1',
-    description='Language-independent, distributed search-based program repair',
+    version=__version__,
+    description='Distributed, Language-independent, compositional search-based program repair',
     long_description='TBA',
     author='Chris Timperley',
-    author_email='christimperley@googlemail.com',
+    author_email='ctimperley@cmu.edu',
     url='https://github.com/squaresLab/Darjeeling',
     license='mit',
+    python_requires='>=3.5',
     install_requires=[
-        'bugzoo>=2.0.6',
+        'bugzoo==2.0.7',
         'requests',
         'flask'
     ],
