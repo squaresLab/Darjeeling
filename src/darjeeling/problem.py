@@ -172,7 +172,7 @@ class Problem(object):
         raise NotImplementedError
 
     @property
-    def implicated_lines(self) -> Iterator[FileLine]:
+    def lines(self) -> Iterator[FileLine]:
         """
         Returns an iterator over the lines that are implicated by the
         description of this problem.
