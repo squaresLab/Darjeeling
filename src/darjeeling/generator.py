@@ -31,7 +31,7 @@ class DeletionGenerator(object):
             lines: a sequence of lines for which deletion transformations
                 should be generated.
         """
-        self.__lines = reversed(list(lines))
+        self.__lines = list(reversed(list(lines)))
 
     def __next__(self) -> Candidate:
         """

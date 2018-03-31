@@ -191,7 +191,7 @@ class Searcher(object):
 
             # for now, execute all tests in no particular order
             # TODO perform test ordering
-            for test in self.problem.tests:
+            for test in self.__problem.tests:
                 print("Executing test: {} ({})".format(test.name, candidate))
                 self.__counter_tests += 1
                 outcome = bz.containers.execute(container, test)
@@ -204,7 +204,7 @@ class Searcher(object):
             #   the same time?
             # if we've found a repair, pause the search
             self.__next_patch = candidate
-            diff = candidate.diff(self.problem)
+            diff = candidate.diff(self.__problem)
 
             # TODO make this prettier
             # report the patch
