@@ -71,7 +71,7 @@ def repair(bugzoo: bugzoo.BugZoo,
                         threads=threads,
                         time_limit=time_limit)
     repairs = list(searcher)
-    report = RepairReport(searcher.num_candidates_evals,
+    report = RepairReport(searcher.num_candidate_evals,
                           searcher.num_test_evals,
                           searcher.time_running)
     return (repairs, report)
