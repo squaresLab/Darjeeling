@@ -1,13 +1,6 @@
 from typing import List, Iterator, Set, Iterable, Optional
-from tempfile import NamedTemporaryFile
-import os
-import tempfile
 
-import bugzoo
-from bugzoo.core.bug import Bug
 from bugzoo.core.coverage import FileLine
-
-from .source import SourceFile
 
 
 class Snippet(object):
@@ -35,45 +28,7 @@ class Snippet(object):
 
 
 class SnippetDatabase(object):
-    @staticmethod
-    def from_files(bz: bugzoo.BugZoo,
-                   bug: Bug,
-                   filenames: List[str]
-                   ) -> 'SnippetDatabase':
-        file_snippets = [SnippetDatabase.from_file(bz, bug, fn) for fn in filenames]
-        all_snippets = [s for pool in file_snippets for s in pool]
-        return SnippetDatabase(all_snippets)
-
-    @staticmethod
-    def from_file(bz: bugzoo.BugZoo,
-                  bug: Bug,
-                  filename: str
-                  ) -> 'SnippetDatabase':
-        """
-        Constructs a database of snippets from the contents of a given file.
-        """
-        snippets = set()
-        src_file = SourceFile.load(bz, bug, filename)
-
-        # create a snippet for each line
-        for content in src_file:
-            content = content.strip()
-
-            # skip comments
-            if content.startswith('/*') or content.startswith('/'):
-                continue
-
-            # skip macros
-            if content.startswith('#'):
-                continue
-
-            # restrict to statements
-            if not content.endswith(';'):
-                continue
-
-            snippets.add(Snippet(content))
-
-        return SnippetDatabase(snippets)
+    # TODO: implement load and save functionality (use cPickle)
 
     def __init__(self, snippets: Optional[Iterable[Snippet]] = None) -> None:
         if snippets is None:
@@ -92,6 +47,21 @@ class SnippetDatabase(object):
         Returns the number of unique snippets contained within the database.
         """
         return len(self.__snippets)
+
+    def add(self, snippet: Snippet, *, origin: Optional[FileLine]) -> None:
+        """
+        Adds a snippet to this database in-place.
+
+        Parameters:
+            snippet: the snippet to add.
+            origin: an optional parameter that may be used to specify the
+                origin of the snippet.
+
+        Returns:
+            nothing.
+        """
+        self.__snippets.add(snippet)
+        # FIXME index by origin
 
 
 class SnippetFinder(object):
