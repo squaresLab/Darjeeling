@@ -1,4 +1,4 @@
-from typing import List, Iterator
+from typing import List, Iterator, Set, Iterable
 from tempfile import NamedTemporaryFile
 import os
 import tempfile
@@ -7,16 +7,14 @@ import bugzoo
 from bugzoo.core.bug import Bug
 from bugzoo.core.coverage import FileLine
 
-from darjeeling.source import SourceFile
+from .source import SourceFile
 
 
 class Snippet(object):
     """
     Represents a donor code snippet.
     """
-    def __init__(self,
-                 content: str
-                 ) -> None:
+    def __init__(self, content: str):
         self.__content = content
 
     @property
@@ -77,12 +75,11 @@ class DonorPool(object):
 
         return DonorPool(snippets)
 
-    def __init__(self, snippets: List[Snippet]):
-        self.__snippets = snippets
+    def __init__(self, snippets: Iterable[Snippet]):
+        self.__snippets = frozenset(snippets)
 
     def __iter__(self) -> Iterator[Snippet]:
         """
         Returns an iterator over the snippets contained in this donor pool.
         """
-        for snippet in self.__snippets:
-            yield snippet
+        return self.__snippets.__iter__()
