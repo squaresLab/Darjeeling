@@ -9,7 +9,7 @@ from bugzoo.core.bug import Bug
 from bugzoo.core.patch import Patch
 from bugzoo.core.coverage import TestSuiteCoverage
 from bugzoo.core.spectra import Spectra
-from bugzoo.localization import SuspiciousnessMetric
+from bugzoo.localization import SuspiciousnessMetric, Localization
 from bugzoo.testing import TestCase
 
 import darjeeling.filters as filters
@@ -131,13 +131,24 @@ class Problem(object):
                 lambda fl: fltr_content(self.__sources[fl.filename][fl.num])
             self.__lines = self.__lines.filter(fltr_line)
 
-        # TODO raise an exception if there are no implicated lines
-
-        # once again, restrict coverage to implicated files to save memory,
-        # then generate a spectra and use it to compute the localization
+        # compute fault localization
         self.__coverage = \
             self.__coverage.restricted_to_files(self.__lines.files)
         self.__spectra = Spectra.from_coverage(self.__coverage)
+        self.__localization = \
+            Localization.from_spectra(self.__spectra, suspiciousness_metric)
+        self.__localization = \
+            self.__localization.restricted_to_lines(self.__lines)
+        self.__logger.info("removing non-suspicious lines from consideration")
+        num_lines_before = len(self.__lines)
+        self.__lines = \
+            self.__lines.filter(lambda l: self.__localization.score(l) > 0)
+        num_lines_after = len(self.__lines)
+        num_lines_removed = num_lines_before - num_lines_after
+        self.__logger.info("removed %d non-suspicious lines from consideration",
+                           num_lines_removed)
+
+        # TODO raise an exception if there are no implicated lines
 
         # report implicated lines and files
         self.__logger.info("implicated lines [%d]:\n%s",
@@ -146,7 +157,14 @@ class Problem(object):
                            len(self.__lines.files),
                            '\n* '.join(self.__lines.files))
 
-        # FIXME remove files that are no longer implicated from the cache
+        self.__logger.debug("reducing memory footprint by discarding extraneous data")
+        self.__coverage.restricted_to_files(self.__lines.files)
+        self.__spectra.restricted_to_files(self.__lines.files)
+        extraneous_source_fns = \
+            set(self.__sources.keys()) - set(self.__lines.files)
+        for fn in extraneous_source_fns:
+            del self.__sources[fn]
+        self.__logger.debug("finished reducing memory footprint")
 
 
     @property
@@ -179,6 +197,14 @@ class Problem(object):
         Returns an iterator over the passing tests for this problem.
         """
         return self.__tests_passing.__iter__()
+
+    @property
+    def localization(self) -> Localization:
+        """
+        The fault localization for this problem is used to encode the relative
+        suspiciousness of source code lines.
+        """
+        return self.__localization
 
     @property
     def coverage(self) -> TestSuiteCoverage:
