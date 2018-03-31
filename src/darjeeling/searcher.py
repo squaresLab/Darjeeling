@@ -3,6 +3,8 @@ from timeit import default_timer as timer
 import datetime
 import threading
 
+import bugzoo
+
 from .candidate import Candidate
 from .problem import Problem
 
@@ -12,6 +14,7 @@ __ALL__ = ['Searcher']
 
 class Searcher(object):
     def __init__(self,
+                 bugzoo: bugzoo.BugZoo,
                  problem: Problem,
                  candidates: Iterable[Candidate],
                  *,
@@ -32,6 +35,7 @@ class Searcher(object):
         assert time_limit is None or time_limit > 0, \
             "if specified, time limit should be greater than zero."
 
+        self.__bugzoo = bugzoo
         self.__problem = problem
         self.__candidates = candidates
         self.__time_limit = time_limit
