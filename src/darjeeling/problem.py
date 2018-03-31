@@ -131,19 +131,6 @@ class Problem(object):
 
         # TODO filter out { and }
 
-        # construct the donor pool
-        # TODO what should be included?
-        self.__logger.debug("constructing donor pool")
-        self.__snippets = DonorPool.from_files(bz, bug, in_files)
-        self.__logger.debug("constructed donor pool")
-
-        # construct the transformation database
-        # TODO let's try to be more efficient
-        self.__transformations = \
-            TransformationDatabase.generate(bug,
-                                            self.__snippets,
-                                            self.__sources,
-                                            self.__lines)
 
     @property
     def bug(self) -> Bug:
@@ -151,10 +138,6 @@ class Problem(object):
         A description of the bug, provided by BugZoo.
         """
         return self.__bug
-
-    @property
-    def transformations(self) -> TransformationDatabase:
-        return self.__transformations
 
     @property
     def tests(self) -> Iterator[TestCase]:
