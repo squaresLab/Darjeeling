@@ -2,12 +2,15 @@ from typing import List, Optional, Tuple
 from datetime import timedelta
 
 import bugzoo
-import bugzoo.localization
 from bugzoo.localization import SuspiciousnessMetric
 
-from darjeeling.problem import Problem
-from darjeeling.candidate import Candidate
-from darjeeling.search import RandomSearch
+from .problem import Problem
+from .candidate import Candidate
+from .searcher import Searcher
+from .generator import DeletionGenerator
+
+
+__ALL__ = ['RepairReport', 'repair']
 
 
 class RepairReport(object):
@@ -58,13 +61,17 @@ def repair(bugzoo: bugzoo.BugZoo,
         of all the candidate patches discovered during the search, and
         `report` contains a summary of the search process.
     """
-    searcher = RandomSearch(bugzoo,
-                            problem=problem,
-                            num_threads=threads,
-                            terminate_early=terminate_early,
-                            time_limit=time_limit)
-    searcher.run(seed)
-    report = RepairReport(searcher.num_evals_candidates,
-                          searcher.num_evals_tests,
+    # generate the search space
+    lines = problem.lines
+    candidates = DeletionGenerator(lines)
+
+    searcher = Searcher(bugzoo,
+                        problem,
+                        candidates,
+                        threads=threads,
+                        time_limit=time_limit)
+    repairs = list(searcher)
+    report = RepairReport(searcher.num_candidates_evals,
+                          searcher.num_test_evals,
                           searcher.time_running)
-    return (searcher.repairs, report)
+    return (repairs, report)
