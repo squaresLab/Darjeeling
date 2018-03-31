@@ -50,7 +50,7 @@ class SnippetDatabase(object):
                   filename: str
                   ) -> 'SnippetDatabase':
         """
-        Constructs a donor pool of snippets from the contents of a given file.
+        Constructs a database of snippets from the contents of a given file.
         """
         snippets = set()
         src_file = SourceFile.load(bz, bug, filename)
@@ -83,11 +83,20 @@ class SnippetDatabase(object):
 
     def __iter__(self) -> Iterator[Snippet]:
         """
-        Returns an iterator over the snippets contained in this donor pool.
+        Returns an iterator over the snippets contained in this databse.
         """
         return self.__snippets.__iter__()
+
+    def __len__(self) -> int:
+        """
+        Returns the number of unique snippets contained within the database.
+        """
+        return len(self.__snippets)
 
 
 class SnippetFinder(object):
     def __init__(self, database: SnippetDatabase) -> None:
         self.__database = database
+
+    def __next__(self) -> Iterator[Snippet]:
+        return self.__database.__iter__()
