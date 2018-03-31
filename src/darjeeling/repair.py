@@ -7,7 +7,9 @@ from bugzoo.localization import SuspiciousnessMetric
 from .problem import Problem
 from .candidate import Candidate
 from .searcher import Searcher
-from .generator import DeletionGenerator
+from .generator import DeletionGenerator, \
+                       ReplacementGenerator, \
+                       AppendGenerator
 
 
 __ALL__ = ['RepairReport', 'repair']
@@ -61,8 +63,9 @@ def repair(bugzoo: bugzoo.BugZoo,
         `report` contains a summary of the search process.
     """
     # generate the search space
-    lines = problem.lines
-    candidates = DeletionGenerator(lines)
+    # candidates = DeletionGenerator(lines=probem.lines)
+    candidates = ReplacementGenerator(lines=problem.lines,
+                                      snippets=problem.snippets)
 
     searcher = Searcher(bugzoo,
                         problem,

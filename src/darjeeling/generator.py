@@ -2,7 +2,7 @@ from typing import Iterator, List, Iterable
 
 from bugzoo.core.fileline import FileLine
 
-from .snippet import Snippet
+from .snippet import Snippet, SnippetDatabase
 from .candidate import Candidate
 from .transformation import Transformation, \
                             AppendTransformation, \
@@ -56,8 +56,12 @@ class ReplacementGenerator(CandidateGenerator):
     Uses a provided donor pool of code snippets to generate all legal
     replacement transformations for a stream of transformation targets.
     """
-    def __init__(self, lines: Iterable[FileLine]) -> None:
+    def __init__(self,
+                 lines: Iterable[FileLine],
+                 snippets: SnippetDatabase
+                 ) -> None:
         self.__lines = reversed(list(lines))
+        self.__snippets = snippets
         self.__current_line = None # type: Optional[FileLine]
         self.__snippets_at_line = iter([]) # type: Iterable[Snippet]
 
@@ -73,17 +77,14 @@ class ReplacementGenerator(CandidateGenerator):
                 # - return snippets at current file
                 # - add use/def restrictions
                 self.__current_line = next(self.__lines)
-                snippets = [
-                    'return;',
-                    'break;'
-                ]
-                snippets = [Snippet(s) for s in snippets]
-                self.__snippets_at_line = iter(snippets)
+                self.__snippets_at_line = \
+                    self.__snippets.__iter__()
                 return self.__next__()
             except StopIteration:
                 raise StopIteration
 
         # TODO additional static analysis goes here
+        # don't replace line with an equivalent
 
         # construct the transformation
         transformation = ReplaceTransformation(self.__current_line,
