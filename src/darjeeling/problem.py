@@ -17,6 +17,7 @@ from bugzoo.testing import TestCase
 import darjeeling.filters as filters
 from .snippet import SnippetDatabase, Snippet
 from .source import SourceFile
+from .util import get_lines
 
 
 class Problem(object):
@@ -123,9 +124,7 @@ class Problem(object):
             for fn in self.__lines.files:
                 fn_ctr = os.path.join(bug.source_dir, fn)
                 bz.containers.copy_from(ctr_source_files, fn_ctr, fn_host_temp)
-                with open(fn_host_temp, 'r') as f:
-                    src = SourceFile(fn, [l.rstrip('\n') for l in f])
-                self.__sources[fn] = src
+                self.__sources[fn] = SourceFile(fn, get_lines(fn_host_temp))
             duration = timer() - t_start
         finally:
             os.remove(fn_host_temp)
