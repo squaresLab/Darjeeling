@@ -2,6 +2,8 @@ from typing import Iterable, Iterator, Optional
 from timeit import default_timer as timer
 import datetime
 import threading
+import time
+import signal
 
 import bugzoo
 
@@ -10,6 +12,10 @@ from .problem import Problem
 
 
 __ALL__ = ['Searcher']
+
+
+class Shutdown(Exception):
+    pass
 
 
 class Searcher(object):
@@ -123,6 +129,13 @@ class Searcher(object):
         self.__time_iteration_begun = timer()
         threads = [] # type: List[threading.Thread]
 
+        # setup signal handlers to ensure that threads are cleanly killed
+        # causes a Shutdown exception to be thrown in the search loop below
+        def shutdown_handler():
+            raise Shutdown
+        signal.signal(signal.SIGINT, shutdown_handler)
+        signal.signal(signal.SIGTERM, shutdown_handler)
+
         # TODO there's a bit of a bug: any patches # type: List[threading.Thread] # type: List[threading.Thread] # type: List[threading.Thread] that were read from the
         #   generator by the worker and were still stored in its
         #   `candidate` variable will be discarded. fixable by adding a
@@ -134,13 +147,15 @@ class Searcher(object):
                         break
 
             for _ in range(self.__num_threads):
-                t = threading.Thread(target=worker, args=(self,), daemon=True)
+                t = threading.Thread(target=worker, args=(self,))
                 threads.append(t)
                 t.start()
+
+            for t in threads:
+                t.join()
         except:
             self.__error_occurred = True
         finally:
-            # TODO this is bad -- use while instead
             for t in threads:
                 t.join()
 
@@ -219,4 +234,5 @@ class Searcher(object):
         finally:
             print("Evaluated: {}".format(candidate))
             if container:
+                print("destroying container: {}".format(container.uid))
                 del bz.containers[container.uid]
