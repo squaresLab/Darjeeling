@@ -1,6 +1,8 @@
 from typing import List, Optional, Dict, Iterator
+from timeit import default_timer as timer
 import tempfile
 import logging
+import os
 
 import bugzoo
 import bugzoo.localization.suspiciousness as metrics
@@ -112,11 +114,24 @@ class Problem(object):
             self.__lines = self.__lines.intersection(restrict_to_lines)
 
         # cache contents of implicated files
-        # FIXME this method of construction is slow and error-prone
+        t_start = timer()
         self.__logger.debug("storing contents of source code files")
-        self.__sources = \
-            {fn: SourceFile.load(bz, bug, fn) for fn in self.__lines.files}
-        self.__logger.debug("finished storing contents of source code files")
+        self.__sources = {} # type: Dict[str, SourceFile]
+        _, fn_host_temp = tempfile.mkstemp(prefix='.darjeeling')
+        ctr_source_files = bz.containers.provision(bug)
+        try:
+            for fn in self.__lines.files:
+                fn_ctr = os.path.join(bug.source_dir, fn)
+                bz.containers.copy_from(ctr_source_files, fn_ctr, fn_host_temp)
+                with open(fn_host_temp, 'r') as f:
+                    src = SourceFile(fn, [l.rstrip('\n') for l in f])
+                self.__sources[fn] = src
+            duration = timer() - t_start
+        finally:
+            os.remove(fn_host_temp)
+            del bz.containers[ctr_source_files.uid]
+        self.__logger.debug("stored contents of source code files (took %.1f seconds)",
+                            duration)
 
         # restrict attention to statements
         # FIXME for now, we approximate this -- going forward, we can use
