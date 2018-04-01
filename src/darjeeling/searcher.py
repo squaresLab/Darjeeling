@@ -133,6 +133,8 @@ class Searcher(object):
         # causes a Shutdown exception to be thrown in the search loop below
         def shutdown_handler():
             raise Shutdown
+        original_handler_sigint = signal.getsignal(signal.SIGINT)
+        original_handler_sigterm = signal.getsignal(signal.SIGTERM)
         signal.signal(signal.SIGINT, shutdown_handler)
         signal.signal(signal.SIGTERM, shutdown_handler)
 
@@ -158,6 +160,9 @@ class Searcher(object):
         finally:
             for t in threads:
                 t.join()
+
+            signal.signal(signal.SIGINT, original_handler_sigint)
+            signal.signal(signal.SIGTERM, original_handler_sigterm)
 
         duration_iteration = timer() - self.__time_iteration_begun
         self.__time_running += datetime.timedelta(seconds=duration_iteration)
