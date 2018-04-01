@@ -189,7 +189,6 @@ class AllTransformationsAtLine(TransformationGenerator):
             return self.__next__()
 
 
-# TODO: exhibits suspicious memory usage
 class SampleByLocalization(TransformationGenerator):
     def __init__(self,
                  localization: Localization,
@@ -197,21 +196,22 @@ class SampleByLocalization(TransformationGenerator):
                  *,
                  randomize: bool = True
                  ) -> None:
-        # TODO compute a weighted map using suspiciousness values
-        self.__sources = [
-            AllTransformationsAtLine(line, snippets, randomize=randomize)
+        self.__localization = localization
+        self.__transformations_by_line = {
+            line: AllTransformationsAtLine(line, snippets, randomize=randomize)
             for line in localization
-        ]
+        }
 
     def __next__(self) -> Transformation:
-        # TODO use fault localization as distribution
         try:
-            source = random.choice(self.__sources)
-        except IndexError:
+            line = self.__localization.sample()
+            source = self.__transformations_by_line[line]
+        except ValueError:
             raise StopIteration
 
         try:
             return next(source)
         except StopIteration:
-            self.__sources.remove(source)
+            del self.__transformations_by_line[line]
+            self.__localization = self.__localization.without_line(line)
             return self.__next__()
