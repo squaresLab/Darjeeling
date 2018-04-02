@@ -33,7 +33,8 @@ class Problem(object):
                  in_files: List[str],
                  restrict_to_lines: Optional[FileLineSet] = None,
                  cache_coverage: bool = True,
-                 verbose: bool = False
+                 verbose: bool = False,
+                 logger: Optional[logging.Logger] = None
                  ) -> None:
         """
         Constructs a Darjeeling problem description.
@@ -241,6 +242,13 @@ class Problem(object):
         Returns an iterator over the passing tests for this problem.
         """
         return self.__tests_passing.__iter__()
+
+    @property
+    def logger(self) -> logging.Logger:
+        """
+        The logger that should be used to log output for this problem.
+        """
+        return self.__logger
 
     @property
     def localization(self) -> Localization:
