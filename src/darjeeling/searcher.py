@@ -72,12 +72,19 @@ class Searcher(object):
         been exhausted.
         """
         if self.__error_occurred:
+            print("error occurred")
             return True
         if self.__exhausted_candidates:
+            print("exhausted candidates")
             return True
         if self.__time_limit is None:
             return False
-        return self.time_running > self.time_limit
+        if self.time_running > self.time_limit:
+            print("hit time limit!")
+            print("time running: {:.2f} minutes".format(self.time_running.seconds / 60))
+            print("time limit: {:.2f} minutes".format(self.time_limit.seconds / 60))
+            return True
+        return False
 
     @property
     def num_test_evals(self) -> int:
@@ -108,8 +115,13 @@ class Searcher(object):
         """
         The amount of time that has been spent searching for patches.
         """
-        duration_iteration = \
-            datetime.timedelta(timer() - self.__time_iteration_begun)
+        time_now = timer()
+        duration_secs = time_now - self.__time_iteration_begun
+        duration_iteration = datetime.timedelta(seconds=duration_secs)
+        # print("Iteration started: {}".format(self.__time_iteration_begun))
+        # print("Current time: {}".format(time_now))
+        # print("Duration (secs): {:.2f} seconds".format(duration_secs))
+        # print("duration of iteration: {:.2f} minutes".format(duration_iteration.seconds / 60))
         return self.__time_running + duration_iteration
 
     def __iter__(self) -> Iterator[Candidate]:
@@ -131,12 +143,14 @@ class Searcher(object):
 
         # setup signal handlers to ensure that threads are cleanly killed
         # causes a Shutdown exception to be thrown in the search loop below
-        def shutdown_handler():
+        def shutdown_handler(signum, frame):
             raise Shutdown
         original_handler_sigint = signal.getsignal(signal.SIGINT)
         original_handler_sigterm = signal.getsignal(signal.SIGTERM)
         signal.signal(signal.SIGINT, shutdown_handler)
         signal.signal(signal.SIGTERM, shutdown_handler)
+
+        self.__time_iteration_begun = timer()
 
         # TODO there's a bit of a bug: any patches # type: List[threading.Thread] # type: List[threading.Thread] # type: List[threading.Thread] that were read from the
         #   generator by the worker and were still stored in its
@@ -155,7 +169,8 @@ class Searcher(object):
 
             for t in threads:
                 t.join()
-        except:
+        except Exception as e:
+            # print("EXCEPTION: {}".format(e))
             self.__error_occurred = True
         finally:
             for t in threads:
