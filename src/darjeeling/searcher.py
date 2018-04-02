@@ -1,5 +1,6 @@
 from typing import Iterable, Iterator, Optional
 from timeit import default_timer as timer
+import logging
 import datetime
 import threading
 import time
@@ -25,18 +26,22 @@ class Searcher(object):
                  candidates: Iterable[Candidate],
                  *,
                  threads: int = 1,
-                 time_limit: Optional[datetime.timedelta] = None
+                 time_limit: Optional[datetime.timedelta] = None,
+                 logger: Optional[logging.Logger] = None
                  ) -> None:
         """
         Constructs a new searcher for a given source of candidate patches.
 
         Parameters:
+            bugzoo: a connection to the BugZoo server that should be used to
+                evaluate candidate patches.
             problem: a description of the problem.
             candidates: a source of candidate patches.
             threads: the number of threads that should be made available to
                 the search process.
             time_limit: an optional limit on the amount of time given to the
                 searcher.
+            logger: the logger that should be used.
         """
         assert time_limit is None or time_limit > datetime.timedelta(), \
             "if specified, time limit should be greater than zero."
@@ -46,6 +51,9 @@ class Searcher(object):
         self.__candidates = candidates
         self.__time_limit = time_limit
         self.__num_threads = threads
+
+        self.__logger = \
+            problem.logger.getChild('search') is logger is None else logger
 
         # records the time at which the current iteration begun
         self.__time_iteration_begun = None
@@ -57,6 +65,13 @@ class Searcher(object):
         self.__time_running = datetime.timedelta()
         self.__error_occurred = False
         self.__next_patch = None # type: Optional[Candidate]
+
+    @property
+    def logger(self) -> logging.Logger:
+        """
+        Used to record logging information for the search.
+        """
+        return self.__logger
 
     @property
     def paused(self) -> bool:
@@ -72,17 +87,12 @@ class Searcher(object):
         been exhausted.
         """
         if self.__error_occurred:
-            print("error occurred")
             return True
         if self.__exhausted_candidates:
-            print("exhausted candidates")
             return True
         if self.__time_limit is None:
             return False
         if self.time_running > self.time_limit:
-            print("hit time limit!")
-            print("time running: {:.2f} minutes".format(self.time_running.seconds / 60))
-            print("time limit: {:.2f} minutes".format(self.time_limit.seconds / 60))
             return True
         return False
 
@@ -152,7 +162,7 @@ class Searcher(object):
 
         self.__time_iteration_begun = timer()
 
-        # TODO there's a bit of a bug: any patches # type: List[threading.Thread] # type: List[threading.Thread] # type: List[threading.Thread] that were read from the
+        # TODO there's a bit of a bug: any patches that were read from the
         #   generator by the worker and were still stored in its
         #   `candidate` variable will be discarded. fixable by adding a
         #   buffer to `_try_next`.
@@ -169,13 +179,14 @@ class Searcher(object):
 
             for t in threads:
                 t.join()
+        except Shutdown:
+            self.logger.info("Reached time limit without finding repair. Terminating search.")
+            self.__error_occurred = True
         except Exception as e:
-            # print("EXCEPTION: {}".format(e))
             self.__error_occurred = True
         finally:
             for t in threads:
                 t.join()
-
             signal.signal(signal.SIGINT, original_handler_sigint)
             signal.signal(signal.SIGTERM, original_handler_sigterm)
 
@@ -205,11 +216,14 @@ class Searcher(object):
         try:
             candidate = next(self.__candidates)
         except StopIteration:
-            print("exhausted all candidate patches!")
+            self.__logger.info("All candidate patches have been exhausted.")
             self.__exhausted_candidates = True
             return False
         finally:
             self.__lock_candidates.release()
+
+        # create a logger for this particular candidate patch evaluation
+        logger = self.logger.getChild(str(candidate))
 
         self.__counter_candidates += 1
         bz = self.__bugzoo
@@ -217,42 +231,37 @@ class Searcher(object):
         try:
             patch = candidate.diff(self.__problem)
             diff = candidate.diff(self.__problem)
-            print("Evaluating: {}\n{}\n".format(candidate, diff))
+            logger.info("Evaluating: %s\n", diff)
             bz.containers.patch(container, patch)
 
             # ensure that the patch compiles
             if not bz.containers.compile(container).successful:
-                print("Failed to compile: {}".format(candidate))
+                logger.info("Failed to compile")
                 return True
 
             # for now, execute all tests in no particular order
             # TODO perform test ordering
             for test in self.__problem.tests:
-                print("Executing test: {} ({})".format(test.name, candidate))
+                logger.info("Executing test: %s", test.name)
                 self.__counter_tests += 1
                 outcome = bz.containers.execute(container, test)
                 if not outcome.passed:
-                    print("Failed test: {} ({})".format(test.name, candidate))
+                    logger.info("* test failed: %s", test.name)
                     return True
-                print("Passed test: {} ({})".format(test.name, candidate))
+                logger.info("* test passed: %s", test.name)
 
             # FIXME possible race condition if two workers report repairs at
             #   the same time?
             # if we've found a repair, pause the search
             self.__next_patch = candidate
 
-            # TODO make this prettier
             # report the patch
-            time_repair = self.time_running.seconds / 60.0
-            msg = "FOUND REPAIR [{:.2f} minutes]: {}\n{}\n{}\n{}"
-            msg = msg.format(time_repair, candidate, ("=" * 80), diff, ("="*80))
-            print(msg)
+            logger.info("found a repair!")
 
             return True
 
         # TODO ensure a bool is returned when an exception occurs
         finally:
-            print("Evaluated: {}".format(candidate))
+            logger.info("evaluated")
             if container:
-                print("destroying container: {}".format(container.uid))
                 del bz.containers[container.uid]
