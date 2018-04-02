@@ -38,7 +38,7 @@ class Searcher(object):
             time_limit: an optional limit on the amount of time given to the
                 searcher.
         """
-        assert time_limit is None or time_limit > 0, \
+        assert time_limit is None or time_limit > datetime.timedelta(), \
             "if specified, time limit should be greater than zero."
 
         self.__bugzoo = bugzoo

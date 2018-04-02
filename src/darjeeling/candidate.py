@@ -9,6 +9,15 @@ from darjeeling.transformation import Transformation, \
 from darjeeling.problem import Problem
 
 
+# class RawPatchCandidate(object):
+#     def __init__(self, patch: Patch) -> None:
+#         self.__patch = patch
+# 
+#     def __str__(self) -> str:
+#         return str(self.__patch)
+# 
+#     def diff(self, problem: Problem) -> Patch:
+
 class Candidate(object):
     """
     Represents a candidate repair as a set of atomic program transformations.
