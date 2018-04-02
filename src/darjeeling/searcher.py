@@ -53,7 +53,8 @@ class Searcher(object):
         self.__num_threads = threads
 
         self.__logger = \
-            problem.logger.getChild('search') is logger is None else logger
+            problem.logger.getChild('search') if logger is None else logger
+        self.logger.info("Constructed searcher")
 
         # records the time at which the current iteration begun
         self.__time_iteration_begun = None
@@ -153,12 +154,14 @@ class Searcher(object):
 
         # setup signal handlers to ensure that threads are cleanly killed
         # causes a Shutdown exception to be thrown in the search loop below
+        self.logger.debug("Attaching signal handlers")
         def shutdown_handler(signum, frame):
             raise Shutdown
         original_handler_sigint = signal.getsignal(signal.SIGINT)
         original_handler_sigterm = signal.getsignal(signal.SIGTERM)
         signal.signal(signal.SIGINT, shutdown_handler)
         signal.signal(signal.SIGTERM, shutdown_handler)
+        self.logger.debug("Attached signal handlers")
 
         self.__time_iteration_begun = timer()
 
@@ -222,8 +225,10 @@ class Searcher(object):
         finally:
             self.__lock_candidates.release()
 
+        # TODO improve log format
         # create a logger for this particular candidate patch evaluation
-        logger = self.logger.getChild(str(candidate))
+        # logger = self.logger.getChild(str(candidate))
+        logger = self.logger
 
         self.__counter_candidates += 1
         bz = self.__bugzoo
@@ -231,24 +236,24 @@ class Searcher(object):
         try:
             patch = candidate.diff(self.__problem)
             diff = candidate.diff(self.__problem)
-            logger.info("Evaluating: %s\n", diff)
+            logger.info("Evaluating: %s\n%s\n", candidate, diff)
             bz.containers.patch(container, patch)
 
             # ensure that the patch compiles
             if not bz.containers.compile(container).successful:
-                logger.info("Failed to compile")
+                logger.info("Failed to compile: %s", candidate)
                 return True
 
             # for now, execute all tests in no particular order
             # TODO perform test ordering
             for test in self.__problem.tests:
-                logger.info("Executing test: %s", test.name)
+                logger.info("Executing test: %s (%s)", test.name, candidate)
                 self.__counter_tests += 1
                 outcome = bz.containers.execute(container, test)
                 if not outcome.passed:
-                    logger.info("* test failed: %s", test.name)
+                    logger.info("* test failed: %s (%s)", test.name, candidate)
                     return True
-                logger.info("* test passed: %s", test.name)
+                logger.info("* test passed: %s (%s)", test.name, candidate)
 
             # FIXME possible race condition if two workers report repairs at
             #   the same time?
@@ -256,12 +261,12 @@ class Searcher(object):
             self.__next_patch = candidate
 
             # report the patch
-            logger.info("found a repair!")
+            logger.info("FOUND A REPAIR: %s", candidate)
 
             return True
 
         # TODO ensure a bool is returned when an exception occurs
         finally:
-            logger.info("evaluated")
+            logger.info("Evaluated: %s", candidate)
             if container:
                 del bz.containers[container.uid]

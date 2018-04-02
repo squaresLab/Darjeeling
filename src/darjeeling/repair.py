@@ -1,5 +1,6 @@
 from typing import List, Optional, Tuple
 from datetime import timedelta
+import logging
 
 import bugzoo
 from bugzoo.core.fileline import FileLine
@@ -55,7 +56,8 @@ def repair(bugzoo: bugzoo.BugZoo,
            seed: Optional[int] = None,
            threads: Optional[int] = 1,
            terminate_early: Optional[bool] = True,
-           time_limit: Optional[timedelta] = None
+           time_limit: Optional[timedelta] = None,
+           logger: Optional[logging.Logger] = None
            ) -> Tuple[List[Candidate], RepairReport]:
     """
     Attempts to repair a given program.
@@ -78,7 +80,8 @@ def repair(bugzoo: bugzoo.BugZoo,
                         problem,
                         candidates,
                         threads=threads,
-                        time_limit=time_limit)
+                        time_limit=time_limit,
+                        logger=logger)
 
     if terminate_early:
         try:

@@ -55,11 +55,15 @@ class Problem(object):
         self.__bug = bug
         self.__verbose = verbose
 
-        self.__logger = \
-            logging.getLogger('darjeeling.problem').getChild(bug.name)
-        # TODO stream logging info for now
-        self.__logger.setLevel(logging.DEBUG)
-        self.__logger.addHandler(logging.StreamHandler())
+        # establish logging mechanism
+        # * stream logging information to stdout
+        if logger:
+            self.__logger = logger
+        else:
+            self.__logger = \
+                logging.getLogger('darjeeling.problem').getChild(bug.name)
+            self.__logger.setLevel(logging.DEBUG)
+            self.__logger.addHandler(logging.StreamHandler())
         self.__logger.debug("creating problem for bug: %s", bug.name)
 
         if suspiciousness_metric is None:
