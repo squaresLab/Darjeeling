@@ -128,8 +128,12 @@ class Searcher(object):
         """
         time_now = timer()
         duration_secs = time_now - self.__time_iteration_begun
-        duration_iteration = datetime.timedelta(seconds=duration_secs)
-        return self.__time_running + duration_iteration
+        duration_iteration = datetime.timedelta(seconds=duration_secs) # type: datetime.timedelta
+        duration_total = self.__time_running + duration_iteration
+        # DEBUG
+        duration_mins = duration_iteration.seconds / 60
+        self.logger.debug("time running: {:.2f} minutes".format(duration_mins))
+        return duration_total
 
     def __iter__(self) -> Iterator[Candidate]:
         return self
@@ -149,7 +153,6 @@ class Searcher(object):
         if self.__found_patches:
             return self.__found_patches.pop()
 
-        self.__time_iteration_begun = timer()
         threads = [] # type: List[threading.Thread]
 
         # setup signal handlers to ensure that threads are cleanly killed
