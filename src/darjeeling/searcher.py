@@ -65,7 +65,7 @@ class Searcher(object):
         self.__exhausted_candidates = False
         self.__time_running = datetime.timedelta()
         self.__error_occurred = False
-        self.__next_patch = None # type: Optional[Candidate]
+        self.__found_patches = [] # type: List[Candidate]
 
     @property
     def logger(self) -> logging.Logger:
@@ -79,7 +79,7 @@ class Searcher(object):
         """
         Indicates whether this searcher is paused.
         """
-        return (self.__next_patch is not None) or self.exhausted
+        return (self.__found_patches != []) or self.exhausted
 
     @property
     def exhausted(self) -> bool:
@@ -129,10 +129,6 @@ class Searcher(object):
         time_now = timer()
         duration_secs = time_now - self.__time_iteration_begun
         duration_iteration = datetime.timedelta(seconds=duration_secs)
-        # print("Iteration started: {}".format(self.__time_iteration_begun))
-        # print("Current time: {}".format(time_now))
-        # print("Duration (secs): {:.2f} seconds".format(duration_secs))
-        # print("duration of iteration: {:.2f} minutes".format(duration_iteration.seconds / 60))
         return self.__time_running + duration_iteration
 
     def __iter__(self) -> Iterator[Candidate]:
@@ -149,6 +145,10 @@ class Searcher(object):
             StopIteration: if the search space or available resources have
                 been exhausted.
         """
+        # if we have patches in the buffer, return those.
+        if self.__found_patches:
+            return self.__found_patches.pop()
+
         self.__time_iteration_begun = timer()
         threads = [] # type: List[threading.Thread]
 
@@ -197,10 +197,8 @@ class Searcher(object):
         self.__time_running += datetime.timedelta(seconds=duration_iteration)
 
         # if we have a patch, return it
-        if self.__next_patch:
-            patch = self.__next_patch
-            self.__next_patch = None
-            return patch
+        if self.__found_patches:
+            return self.__found_patches.pop()
 
         # if not, we're done
         raise StopIteration
@@ -256,10 +254,8 @@ class Searcher(object):
                     return True
                 logger.info("* test passed: %s (%s)", test.name, candidate)
 
-            # FIXME possible race condition if two workers report repairs at
-            #   the same time?
             # if we've found a repair, pause the search
-            self.__next_patch = candidate
+            self.__found_patches.append(candidate)
 
             # report the patch
             logger.info("FOUND A REPAIR: %s", candidate)
