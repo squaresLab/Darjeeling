@@ -20,7 +20,7 @@ setup(
     license='mit',
     python_requires='>=3.5',
     install_requires=[
-        'bugzoo==2.0.12',
+        'bugzoo==2.0.11',
         'requests',
         'flask'
     ],
