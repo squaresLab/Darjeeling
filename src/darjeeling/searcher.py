@@ -198,8 +198,9 @@ class Searcher(object):
 
         # if we have a patch, return it
         if self.__next_patch:
+            patch = self.__next_patch
             self.__next_patch = None
-            return self.__next_patch
+            return patch
 
         # if not, we're done
         raise StopIteration
