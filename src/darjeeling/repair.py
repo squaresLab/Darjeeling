@@ -95,5 +95,4 @@ def repair(bugzoo: bugzoo.BugZoo,
     report = RepairReport(searcher.num_candidate_evals,
                           searcher.num_test_evals,
                           searcher.time_running)
-    print(report)
     return (repairs, report)
