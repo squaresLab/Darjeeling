@@ -146,7 +146,7 @@ class Problem(object):
             filters.has_balanced_delimiters
         ]
         if line_coverage_filters:
-            line_content_filers += line_coverage_filters
+            line_content_filters += line_coverage_filters
         for fltr_content in line_content_filters:
             fltr_line = \
                 lambda fl: fltr_content(self.__sources[fl.filename][fl.num])
