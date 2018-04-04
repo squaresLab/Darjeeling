@@ -25,9 +25,9 @@ class RepairReport(object):
                  num_candidate_evals: int,
                  num_test_evals: int,
                  duration: timedelta):
-        self.__num_candidate_evals = None
-        self.__num_test_evals = None
-        self.__duration = None
+        self.__num_candidate_evals = num_candidate_evals
+        self.__num_test_evals = num_test_evals
+        self.__duration = duration
 
     @property
     def num_candidate_evals(self) -> int:
@@ -87,6 +87,7 @@ def repair(bugzoo: bugzoo.BugZoo,
         try:
             repairs = [next(searcher)]
         except StopIteration:
+            print("stopping iteration")
             repairs = []
     else:
         repairs = list(searcher)
@@ -94,4 +95,5 @@ def repair(bugzoo: bugzoo.BugZoo,
     report = RepairReport(searcher.num_candidate_evals,
                           searcher.num_test_evals,
                           searcher.time_running)
+    print(report)
     return (repairs, report)
