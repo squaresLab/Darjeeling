@@ -77,7 +77,11 @@ class SnippetDatabase(object):
 
         if origin is not None:
             if origin.filename not in self.__snippets_by_file:
-                self.__snippets_by_file[origin.filename] = set()
+                self.__snippets_by_file[origin.filename] = {
+                    Snippet('return;'),
+                    Snippet('return true;'),
+                    Snippet('return false;')
+                }
             self.__snippets_by_file[origin.filename].add(snippet)
 
 
