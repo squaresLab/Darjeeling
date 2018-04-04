@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Iterator
+from typing import List, Optional, Dict, Iterator, Callable
 from timeit import default_timer as timer
 import tempfile
 import logging
@@ -34,7 +34,8 @@ class Problem(object):
                  restrict_to_lines: Optional[FileLineSet] = None,
                  cache_coverage: bool = True,
                  verbose: bool = False,
-                 logger: Optional[logging.Logger] = None
+                 logger: Optional[logging.Logger] = None,
+                 line_coverage_filters: Optional[List[Callable[[str], bool]]] = None
                  ) -> None:
         """
         Constructs a Darjeeling problem description.
@@ -144,6 +145,8 @@ class Problem(object):
             filters.ends_with_semi_colon,
             filters.has_balanced_delimiters
         ]
+        if line_coverage_filters:
+            line_content_filers += line_coverage_filters
         for fltr_content in line_content_filters:
             fltr_line = \
                 lambda fl: fltr_content(self.__sources[fl.filename][fl.num])
