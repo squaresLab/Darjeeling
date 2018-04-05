@@ -249,9 +249,16 @@ class Searcher(object):
             # for now, execute all tests in no particular order
             # TODO perform test ordering
             for test in self.__problem.tests:
+                cmd = self.__problem.bug.harness.command(test)[0]
                 logger.info("Executing test: %s (%s)", test.name, candidate)
                 self.__counter_tests += 1
                 outcome = bz.containers.execute(container, test)
+                logger.debug("* test outcome: %s (%s) [retcode=%d]\n$ %s\n%s",
+                             test.name,
+                             candidate,
+                             outcome.response.code,
+                             cmd,
+                             outcome.response.output)
                 if not outcome.passed:
                     logger.info("* test failed: %s (%s)", test.name, candidate)
                     return True
