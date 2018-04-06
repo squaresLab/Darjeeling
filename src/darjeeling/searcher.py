@@ -242,7 +242,11 @@ class Searcher(object):
             bz.containers.patch(container, patch)
 
             # ensure that the patch compiles
-            if not bz.containers.compile(container).successful:
+            outcome_compilation = bz.containers.compile(container)
+            logger.debug("Compilation outcome for %s:\n%s",
+                         candidate,
+                         outcome_compilation.response.output)
+            if not outcome_compilation.successful:
                 logger.info("Failed to compile: %s", candidate)
                 return True
 
