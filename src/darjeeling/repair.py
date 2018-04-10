@@ -24,7 +24,7 @@ class RepairReport(object):
     def __init__(self,
                  num_candidate_evals: int,
                  num_test_evals: int,
-                 duration: timedelta):
+                 duration: timedelta) -> None:
         self.__num_candidate_evals = num_candidate_evals
         self.__num_test_evals = num_test_evals
         self.__duration = duration
