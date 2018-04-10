@@ -7,7 +7,7 @@ class Snippet(object):
     """
     Represents a donor code snippet.
     """
-    def __init__(self, content: str):
+    def __init__(self, content: str) -> None:
         self.__content = content
 
     @property
@@ -31,7 +31,7 @@ class SnippetDatabase(object):
     # TODO: implement load and save functionality (use cPickle)
 
     def __init__(self) -> None:
-        self.__snippets = set()
+        self.__snippets = set() # type: Set[Snippet]
         self.__snippets_by_file = {} # type: Dict[str, Set[Snippet]]
 
     def __iter__(self) -> Iterator[Snippet]:
@@ -53,8 +53,6 @@ class SnippetDatabase(object):
         """
         if fn in self.__snippets_by_file:
             yield from self.__snippets_by_file[fn]
-        else:
-            yield from ()
         return
 
     def add(self,
