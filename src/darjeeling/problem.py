@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Iterator, Callable
+from typing import List, Optional, Dict, Iterator, Callable, Set
 from timeit import default_timer as timer
 import tempfile
 import logging
