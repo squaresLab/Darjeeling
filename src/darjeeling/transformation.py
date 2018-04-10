@@ -13,7 +13,7 @@ class Transformation(object):
         raise NotImplementedError
 
 
-class DeleteTransformation(object):
+class DeleteTransformation(Transformation):
     def __init__(self, line: FileLine) -> None:
         self.__line = line
 
@@ -25,7 +25,7 @@ class DeleteTransformation(object):
         return "DELETE[{}]".format(self.__line)
 
 
-class ReplaceTransformation(object):
+class ReplaceTransformation(Transformation):
     """
     Replaces a numbered line in a given file with a provided snippet.
     """
@@ -45,7 +45,7 @@ class ReplaceTransformation(object):
         return "REPLACE[{}; {}]".format(self.__line, self.__snippet)
 
 
-class AppendTransformation(object):
+class AppendTransformation(Transformation):
     """
     Appends a given snippet to a specific line in a given file.
     """
