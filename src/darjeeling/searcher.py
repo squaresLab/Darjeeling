@@ -57,7 +57,7 @@ class Searcher(object):
         self.logger.info("Constructed searcher")
 
         # records the time at which the current iteration begun
-        self.__time_iteration_begun = None
+        self.__time_iteration_begun = None # type: Optional[float]
 
         self.__lock_candidates = threading.Lock() # type: threading.Lock
         self.__counter_candidates = 0
@@ -219,7 +219,7 @@ class Searcher(object):
 
         self.__lock_candidates.acquire()
         try:
-            candidate = next(self.__candidates)
+            candidate = next(self.__candidates) # type: ignore
         except StopIteration:
             self.__logger.info("All candidate patches have been exhausted.")
             self.__exhausted_candidates = True
