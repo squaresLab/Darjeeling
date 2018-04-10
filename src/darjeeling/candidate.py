@@ -1,4 +1,4 @@
-from typing import List, Iterator
+from typing import List, Iterator, Dict
 
 from bugzoo.core.patch import Patch
 
@@ -45,9 +45,9 @@ class Candidate(object):
         Computes a plaintext diff for this repair.
         """
         # group transformations by file
-        tf = {}
+        tf = {} # type: Dict[str, List[Transformation]]
         for t in self.transformations:
-            fn = t.line.filename
+            fn = t.line.filename # type: ignore
             if fn not in tf:
                 tf[fn] = []
             tf[fn].append(t)
@@ -55,7 +55,7 @@ class Candidate(object):
         # order each group of transformations in descending order of
         # line number
         for group in tf.values():
-            group.sort(key=lambda t: t.line.num, reverse=True)
+            group.sort(key=lambda t: t.line.num, reverse=True) # type: ignore
 
         # transform each group into a modified source code file
         transformed = {}

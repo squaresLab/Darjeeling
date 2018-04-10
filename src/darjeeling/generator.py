@@ -1,4 +1,4 @@
-from typing import Iterator, List, Iterable, Tuple
+from typing import Iterator, List, Iterable, Tuple, Optional
 import random
 
 from bugzoo.localization import Localization
@@ -12,7 +12,7 @@ from .transformation import Transformation, \
                             ReplaceTransformation
 
 
-class CandidateGenerator(object):
+class CandidateGenerator(Iterable):
     """
     Candidate generators are used to generate (normally in a lazy fashion) a
     stream of candidate patches. For now, candidate generators implement
@@ -25,7 +25,7 @@ class CandidateGenerator(object):
         raise NotImplementedError
 
 
-class TransformationGenerator(object):
+class TransformationGenerator(Iterable):
     def __iter__(self) -> Iterator[Transformation]:
         return self
 
@@ -51,15 +51,18 @@ class SingleEditPatches(CandidateGenerator):
         return Candidate([transformation])
 
 
-class LineSnippetGenerator(object):
+class LineSnippetGenerator(Iterable):
     def __init__(self,
-                 lines: Iterable[FileLine],
+                 lines: Iterator[FileLine],
                  snippets: SnippetDatabase
                  ) -> None:
         self.__lines = lines
         self.__snippets = snippets
         self.__current_line = None # type: Optional[FileLine]
-        self.__snippets_at_line = iter([]) # type: Iterable[Snippet]
+        self.__snippets_at_line = iter([]) # type: Iterator[Snippet]
+
+    def __iter__(self) -> Iterator[Tuple[FileLine, Snippet]]:
+        return self
 
     def __next__(self) -> Tuple[FileLine, Snippet]:
         # fetch the next snippet at the current line
@@ -113,7 +116,7 @@ class ReplacementGenerator(TransformationGenerator):
     transformations for a sequence of transformation targets.
     """
     def __init__(self,
-                 lines: Iterable[FileLine],
+                 lines: Iterator[FileLine],
                  snippets: SnippetDatabase
                  ) -> None:
         self.__generator_line_snippet = \
@@ -133,7 +136,7 @@ class ReplacementGenerator(TransformationGenerator):
 
 class AppendGenerator(TransformationGenerator):
     def __init__(self,
-                 lines: Iterable[FileLine],
+                 lines: Iterator[FileLine],
                  snippets: SnippetDatabase
                  ) -> None:
         self.__generator_line_snippet = \

@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Iterator, Callable
+from typing import List, Optional, Dict, Iterator, Callable, Set
 from timeit import default_timer as timer
 import tempfile
 import logging
@@ -94,8 +94,8 @@ class Problem(object):
         # determine the passing and failing tests by using coverage information
         self.__logger.debug("using test execution used to generate coverage to determine passing and failing tests")
 
-        self.__tests_failing = set()
-        self.__tests_passing = set()
+        self.__tests_failing = set() # type: Set[TestCase]
+        self.__tests_passing = set() # type: Set[TestCase]
         for test_name in self.__coverage:
             test = bug.harness[test_name]
             test_coverage = self.__coverage[test_name]
@@ -146,7 +146,7 @@ class Problem(object):
             filters.has_balanced_delimiters
         ]
         if line_coverage_filters:
-            line_content_filters += line_coverage_filters
+            line_content_filters += line_coverage_filters # type: ignore
         for fltr_content in line_content_filters:
             fltr_line = \
                 lambda fl: fltr_content(self.__sources[fl.filename][fl.num])
