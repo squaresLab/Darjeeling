@@ -65,9 +65,9 @@ class Candidate(object):
                 if isinstance(t, DeleteTransformation):
                     src = src.delete(t.char_range)
                 elif isinstance(t, AppendTransformation):
-                    src = src.insert(t.char_range, t.text)
+                    src = src.insert(t.char_range.stop.offset, str(t.snippet))
                 elif isinstance(t, ReplaceTransformation):
-                    src = src.replace(t.char_range, t.text)
+                    src = src.replace(t.char_range, str(t.snippet))
                 else:
                     raise Exception("unsupported transformation")
             transformed[fn] = src
