@@ -47,7 +47,7 @@ class Candidate(object):
         # group transformations by file
         tf = {} # type: Dict[str, List[Transformation]]
         for t in self.transformations:
-            fn = t.line.filename # type: ignore
+            fn = t.char_range.filename # type: ignore
             if fn not in tf:
                 tf[fn] = []
             tf[fn].append(t)
@@ -55,7 +55,7 @@ class Candidate(object):
         # order each group of transformations in descending order of
         # line number
         for group in tf.values():
-            group.sort(key=lambda t: t.line.num, reverse=True) # type: ignore
+            group.sort(key=lambda t: t.char_range.start.offset, reverse=True) # type: ignore
 
         # transform each group into a modified source code file
         transformed = {}
@@ -63,11 +63,11 @@ class Candidate(object):
             src = problem.source(fn)
             for t in transformations:
                 if isinstance(t, DeleteTransformation):
-                    src = src.with_line_removed(t.line.num)
+                    src = src.delete(t.char_range)
                 elif isinstance(t, AppendTransformation):
-                    src = src.with_line_inserted(t.line.num + 1, t.snippet.content)
+                    src = src.insert(t.char_range, t.text)
                 elif isinstance(t, ReplaceTransformation):
-                    src = src.with_line_replaced(t.line.num, t.snippet.content)
+                    src = src.replace(t.char_range, t.text)
                 else:
                     raise Exception("unsupported transformation")
             transformed[fn] = src
