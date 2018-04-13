@@ -62,7 +62,9 @@ class SourceFile(object):
 
     def insert(self, index: FileChar, text: str) -> 'SourceFile':
         # FIXME allow insertion rather than simply appending
-        contents = self.__contents[index:] + text + self.__contents[:index]
+        contents = "{}\n{}{}".format(self.__contents[:index],
+                                     text,
+                                     self.__contents[index:])
         return SourceFile(self.name, contents)
 
     def delete(self, char_range: FileCharRange) -> 'SourceFile':
@@ -82,9 +84,9 @@ class SourceFile(object):
         """
         c_start = char_range.start.offset
         c_stop = char_range.stop.offset
-        contents = self.__contents[:c_start] + \
-            replacement + \
-            self.__contents[c_stop+1:]
+        contents = "{}{}\n{}".format(self.__contents[:c_start],
+                                     replacement,
+                                     self.__contents[c_stop+1:])
         return SourceFile(self.name, contents)
 
     def diff(self, other: 'SourceFile') -> str:
