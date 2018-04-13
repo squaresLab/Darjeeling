@@ -2,12 +2,31 @@ from typing import List, Iterator
 import difflib
 
 from bugzoo.core.patch import FilePatch
+from bugzoo.core.fileline import FileLine
+from bugzoo.core.filechar import FileCharRange, FileChar
 
 
 class SourceFile(object):
-    def __init__(self, name: str, lines: List[str]) -> None:
+    def __init__(self, name: str, contents: str) -> None:
+        assert isinstance(contents, str)
+        assert isinstance(name, str)
+
         self.__name = name
-        self.__lines = lines[:]
+        self.__contents = contents
+
+        # FIXME this will miss the last line
+        line_end_at = -1
+        self.__lines = [] # type: List[FileCharRange]
+        while True:
+            try:
+                line_start_at = line_end_at + 1
+                line_end_at = contents.index("\n", line_start_at)
+            except ValueError:
+                break
+            char_range = \
+                FileCharRange(FileChar(name, line_start_at),
+                              FileChar(name, line_end_at))
+            self.__lines.append(char_range)
 
     @property
     def name(self) -> str:
@@ -16,68 +35,61 @@ class SourceFile(object):
         """
         return self.__name
 
-    @property
-    def lines(self) -> List[str]:
-        """
-        Returns a copy of the lines contained within this file.
-        """
-        return self.__lines[:]
+    def line_to_char_range(self, line: FileLine) -> FileCharRange:
+        return self.__lines[line.num - 1]
 
-    def __getitem__(self, num: int) -> str:
-        """
-        Retrieves the contents of a given line in this file, specified by its
-        one-indexed line number.
-        """
-        return self.__lines[num - 1]
+#    @property
+#    def lines(self) -> Iterator[FileCharRange]:
+#        """
+#        Returns a list of the character ranges of the lines contained
+#        within this file.
+#        """
+#        return self.__lines.copy()
 
-    def __iter__(self) -> Iterator[str]:
+    def __str__(self) -> str:
         """
-        Returns an iterator over the lines contained within this file.
+        Returns the contents of this file as a string.
         """
-        for line in self.__lines:
-            yield line
+        return self.__contents
 
-    def __len__(self) -> int:
+    def __getitem__(self, char_range: FileCharRange) -> str:
         """
-        Returns a count of the number of lines in this file.
+        Returns the source code contained within a given range.
         """
-        return len(self.__lines)
+        c_start = char_range.start.offset
+        c_end = char_range.stop.offset
+        return self.__contents[c_start:c_end + 1]
 
-    def with_line_removed(self, num: int) -> 'SourceFile':
-        """
-        Returns a variant of this file with a given line, specified by its
-        one-indexed line number, removed.
-        """
-        num -= 1
-        l2 = self.__lines[0:num] + self.__lines[num + 1:]
-        return SourceFile(self.name, l2)
+    def insert(self, index: FileChar, text: str) -> 'SourceFile':
+        # FIXME allow insertion rather than simply appending
+        contents = self.__contents[index:] + text + self.__contents[:index]
+        return SourceFile(self.name, contents)
 
-    def with_line_replaced(self, num: int, replacement: str) -> 'SourceFile':
+    def delete(self, char_range: FileCharRange) -> 'SourceFile':
         """
-        Returns a variant of this file with the contents of a given line,
-        specified by its one-indexed line number, replaced by a provided string.
+        Returns a variant of this file without the text contained in a given
+        source range.
         """
-        num -= 1
-        l2 = self.__lines[:]
-        l2[num] = replacement
-        return SourceFile(self.name, l2)
+        return self.replace(char_range, '')
 
-    def with_line_inserted(self, num: int, insertion: str) -> 'SourceFile':
+    def replace(self,
+                char_range: FileCharRange,
+                replacement: str
+                ) -> 'SourceFile':
         """
-        Returns a variant of this file with a given line inserted at a
-        specified location.
+        Returns a variant of this file where the text contained in a given
+        source range has been replaced with a given string.
         """
-        num -= 1
-        l2 = self.__lines[:]
-        l2.insert(num, insertion)
-        return SourceFile(self.name, l2)
+        c_start = char_range.start.offset
+        c_stop = char_range.stop.offset
+        contents = self.__contents[:c_start] + \
+            replacement + \
+            self.__contents[c_stop+1:]
+        return SourceFile(self.name, contents)
 
-    def diff(self,
-             other: 'SourceFile'
-             ) -> str:
-        a = ['{}\n'.format(l) for l in self.__lines]
-        b = ['{}\n'.format(l) for l in other.lines]
-        diff_lines = difflib.unified_diff(a, b,
+    def diff(self, other: 'SourceFile') -> str:
+        diff_lines = difflib.unified_diff(str(self).splitlines(True),
+                                          str(other).splitlines(True),
                                           fromfile=self.name,
                                           tofile=other.name)
         return ''.join(diff_lines)
