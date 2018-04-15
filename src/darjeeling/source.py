@@ -132,6 +132,13 @@ class SourceFileCollection(object):
         """
         self.__contents = contents
 
+    def __iter__(self) -> Iterator[str]:
+        """
+        Returns an iterator over the names of the files contained within this
+        collection.
+        """
+        yield from self.__contents.keys()
+
     def __getitem__(self, fn: str) -> SourceFile:
         """
         Retrieves a file from this collection.
