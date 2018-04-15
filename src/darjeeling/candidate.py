@@ -70,11 +70,12 @@ class Candidate(object):
                 else:
                     raise Exception("unsupported transformation")
 
+        # FIXME use SourceFileCollection.diff
         # compute a diff for each modified source code file
         diffs = []
         for fn in transformed:
             source_after = transformed[fn]
-            source_before = problem.source(fn)
+            source_before = problem.sources[fn]
             diffs.append(source_before.diff(source_after))
 
         # combine the diffs for each file into a single diff
