@@ -16,7 +16,7 @@ from bugzoo.testing import TestCase
 
 import darjeeling.filters as filters
 from .snippet import SnippetDatabase, Snippet
-from .source import SourceFile
+from .source import SourceFile, SourceFileCollection
 from .util import get_file_contents
 
 
@@ -120,21 +120,11 @@ class Problem(object):
         if restrict_to_lines is not None:
             self.__lines = self.__lines.intersection(restrict_to_lines)
 
-        # cache contents of implicated files
+        # cache contents of the implicated files
         t_start = timer()
         self.__logger.debug("storing contents of source code files")
-        self.__sources = {} # type: Dict[str, SourceFile]
-        _, fn_host_temp = tempfile.mkstemp(prefix='.darjeeling')
-        ctr_source_files = bz.containers.provision(bug)
-        try:
-            for fn in self.__lines.files:
-                fn_ctr = os.path.join(bug.source_dir, fn)
-                bz.containers.copy_from(ctr_source_files, fn_ctr, fn_host_temp)
-                self.__sources[fn] = SourceFile(fn, get_file_contents(fn_host_temp))
-            duration = timer() - t_start
-        finally:
-            os.remove(fn_host_temp)
-            del bz.containers[ctr_source_files.uid]
+        self.__sources = SourceFileCollection.from_bug(bz, bug, self.__lines.files)
+        duration = timer() - t_start
         self.__logger.debug("stored contents of source code files (took %.1f seconds)",
                             duration)
 
@@ -209,9 +199,9 @@ class Problem(object):
         self.__coverage.restricted_to_files(self.__lines.files)
         self.__spectra.restricted_to_files(self.__lines.files)
         extraneous_source_fns = \
-            set(self.__sources.keys()) - set(self.__lines.files)
+            set(self.__sources.files) - set(self.__lines.files)
         for fn in extraneous_source_fns:
-            del self.__sources[fn]
+            self.__sources = self.__sources.without_file(fn)
         self.__logger.debug("finished reducing memory footprint")
 
     @property
@@ -291,11 +281,12 @@ class Problem(object):
         """
         return self.__lines.__iter__()
 
-    def source(self, fn: str) -> SourceFile:
+    @property
+    def sources(self) -> SourceFileCollection:
         """
-        Returns the contents of a given source code file for this problem.
+        The source code files for the program under repair.
         """
-        return self.__sources[fn]
+        return self.__sources
 
     def check_sanity(self,
                      expected_to_pass: List[TestCase],
