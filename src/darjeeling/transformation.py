@@ -1,7 +1,8 @@
 from typing import List, Iterator, Dict
 
 from bugzoo.core.bug import Bug
-from bugzoo.core.coverage import FileLine
+from bugzoo.core.fileline import FileLine
+from bugzoo.core.filechar import FileCharRange
 
 from .snippet import Snippet
 from .source import SourceFile
@@ -13,53 +14,47 @@ class Transformation(object):
         raise NotImplementedError
 
 
-class DeleteTransformation(Transformation):
-    def __init__(self, line: FileLine) -> None:
-        self.__line = line
+class CharRangeTransformation(Transformation):
+    def __init__(self, char_range: FileCharRange) -> None:
+        self.__char_range = char_range
 
     @property
-    def line(self) -> FileLine:
-        return self.__line
+    def char_range(self) -> FileCharRange:
+        return self.__char_range
 
+
+class DeleteTransformation(CharRangeTransformation):
     def __str__(self) -> str:
-        return "DELETE[{}]".format(self.__line)
+        return "DELETE[{}]".format(self.char_range)
 
 
-class ReplaceTransformation(Transformation):
+class ReplaceTransformation(CharRangeTransformation):
     """
     Replaces a numbered line in a given file with a provided snippet.
     """
-    def __init__(self, line: FileLine, snippet: Snippet) -> None:
-        self.__line = line
+    def __init__(self, char_range: FileCharRange, snippet: Snippet) -> None:
+        super().__init__(char_range)
         self.__snippet = snippet
-
-    @property
-    def line(self) -> FileLine:
-        return self.__line
 
     @property
     def snippet(self) -> Snippet:
         return self.__snippet
 
     def __str__(self) -> str:
-        return "REPLACE[{}; {}]".format(self.__line, self.__snippet)
+        return "REPLACE[{}; {}]".format(self.char_range, self.__snippet)
 
 
-class AppendTransformation(Transformation):
+class AppendTransformation(CharRangeTransformation):
     """
     Appends a given snippet to a specific line in a given file.
     """
-    def __init__(self, line: FileLine, snippet: Snippet) -> None:
-        self.__line = line
+    def __init__(self, char_range: FileCharRange, snippet: Snippet) -> None:
+        super().__init__(char_range)
         self.__snippet = snippet
 
     @property
     def snippet(self) -> Snippet:
         return self.__snippet
 
-    @property
-    def line(self) -> FileLine:
-        return self.__line
-
     def __str__(self) -> str:
-        return "APPEND[{}; {}]".format(self.__line, self.__snippet)
+        return "APPEND[{}; {}]".format(self.char_range, self.__snippet)

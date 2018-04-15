@@ -3,7 +3,9 @@ import random
 
 from bugzoo.localization import Localization
 from bugzoo.core.fileline import FileLine
+from bugzoo.core.filechar import FileCharRange
 
+from .problem import Problem
 from .snippet import Snippet, SnippetDatabase
 from .candidate import Candidate
 from .transformation import Transformation, \
@@ -51,63 +53,59 @@ class SingleEditPatches(CandidateGenerator):
         return Candidate([transformation])
 
 
-class LineSnippetGenerator(Iterable):
+class TargetSnippetGenerator(Iterable):
     def __init__(self,
-                 lines: Iterator[FileLine],
+                 targets: Iterator[FileCharRange],
                  snippets: SnippetDatabase
                  ) -> None:
-        self.__lines = lines
+        self.__targets = targets
         self.__snippets = snippets
-        self.__current_line = None # type: Optional[FileLine]
-        self.__snippets_at_line = iter([]) # type: Iterator[Snippet]
+        self.__current_target = None # type: Optional[FileCharRange]
+        self.__snippets_at_target = iter([]) # type: Iterator[Snippet]
 
-    def __iter__(self) -> Iterator[Tuple[FileLine, Snippet]]:
+    def __iter__(self) -> Iterator[Tuple[FileCharRange, Snippet]]:
         return self
 
-    def __next__(self) -> Tuple[FileLine, Snippet]:
+    def __next__(self) -> Tuple[FileCharRange, Snippet]:
         # fetch the next snippet at the current line
         # if there are no snippets left at this line, move onto
         # the next line. if there are no lines left, stop iterating.
         try:
-            snippet = next(self.__snippets_at_line)
-            return (self.__current_line, snippet)
+            snippet = next(self.__snippets_at_target)
+            return (self.__current_target, snippet)
         except StopIteration:
             try:
                 # TODO use snippet generator here
                 # - return snippets at current file
                 # - add use/def restrictions
-                self.__current_line = next(self.__lines)
-                self.__snippets_at_line = \
-                    self.__snippets.in_file(self.__current_line.filename)
+                self.__current_target = next(self.__targets)
+                self.__snippets_at_target = \
+                    self.__snippets.in_file(self.__current_target.filename)
                 return self.__next__()
             except StopIteration:
                 raise StopIteration
 
 
 class DeletionGenerator(TransformationGenerator):
-    def __init__(self, lines: Iterable[FileLine]) -> None:
+    def __init__(self, targets: Iterable[FileCharRange]) -> None:
         """
         Constructs a deletion generator.
-
-        Parameters:
-            lines: a sequence of lines for which deletion transformations
-                should be generated.
         """
-        self.__lines = reversed(list(lines))
+        self.__targets = reversed(list(targets))
 
     def __next__(self) -> Transformation:
         """
         Returns the next deletion transformation from this generator.
         """
         try:
-            next_line = next(self.__lines)
+            next_target = next(self.__targets)
         except StopIteration:
             raise StopIteration
 
         # TODO add static analysis
         # should we delete this line?
         # * don't delete declarations
-        return DeleteTransformation(next_line)
+        return DeleteTransformation(next_target)
 
 
 class ReplacementGenerator(TransformationGenerator):
@@ -116,35 +114,35 @@ class ReplacementGenerator(TransformationGenerator):
     transformations for a sequence of transformation targets.
     """
     def __init__(self,
-                 lines: Iterator[FileLine],
+                 targets: Iterator[FileCharRange],
                  snippets: SnippetDatabase
                  ) -> None:
-        self.__generator_line_snippet = \
-            LineSnippetGenerator(lines, snippets)
+        self.__generator_target_snippet = \
+            TargetSnippetGenerator(targets, snippets)
 
     def __next__(self) -> Transformation:
         try:
-            line, snippet = next(self.__generator_line_snippet)
+            target, snippet = next(self.__generator_target_snippet)
         except StopIteration:
             raise StopIteration
 
         # TODO additional static analysis goes here
         # don't replace line with an equivalent
 
-        return ReplaceTransformation(line, snippet)
+        return ReplaceTransformation(target, snippet)
 
 
 class AppendGenerator(TransformationGenerator):
     def __init__(self,
-                 lines: Iterator[FileLine],
+                 targets: Iterator[FileCharRange],
                  snippets: SnippetDatabase
                  ) -> None:
-        self.__generator_line_snippet = \
-            LineSnippetGenerator(lines, snippets)
+        self.__generator_target_snippet = \
+            TargetSnippetGenerator(targets, snippets)
 
     def __next__(self) -> Transformation:
         try:
-            line, snippet = next(self.__generator_line_snippet)
+            target, snippet = next(self.__generator_target_snippet)
         except StopIteration:
             raise StopIteration
 
@@ -152,7 +150,7 @@ class AppendGenerator(TransformationGenerator):
         # * don't append after a return
         # * don't append after a break statement
 
-        return AppendTransformation(line, snippet)
+        return AppendTransformation(target, snippet)
 
 
 class AllTransformationsAtLine(TransformationGenerator):
@@ -161,16 +159,21 @@ class AllTransformationsAtLine(TransformationGenerator):
     a single line using a given snippet database.
     """
     def __init__(self,
+                 problem: Problem,
                  line: FileLine,
                  snippets: SnippetDatabase,
                  *,
                  randomize: bool = True
                  ) -> None:
+        # transform line to character range
+        # TODO tidy this hack
+        char_range = problem.source(line.filename).line_to_char_range(line)
+
         # TODO clean up iterator ugliness
         self.__sources = [
-            DeletionGenerator(iter([line])),
-            ReplacementGenerator(iter([line]), snippets),
-            AppendGenerator(iter([line]), snippets)
+            DeletionGenerator(iter([char_range])),
+            ReplacementGenerator(iter([char_range]), snippets),
+            AppendGenerator(iter([char_range]), snippets)
         ] # type: List[TransformationGenerator]
 
         # TODO implement randomize
@@ -192,8 +195,10 @@ class AllTransformationsAtLine(TransformationGenerator):
             return self.__next__()
 
 
+# TODO: map from transformation targets to line numbers
 class SampleByLocalization(TransformationGenerator):
     def __init__(self,
+                 problem: Problem,
                  localization: Localization,
                  snippets: SnippetDatabase,
                  *,
@@ -201,13 +206,14 @@ class SampleByLocalization(TransformationGenerator):
                  ) -> None:
         self.__localization = localization
         self.__transformations_by_line = {
-            line: AllTransformationsAtLine(line, snippets, randomize=randomize)
+            line: AllTransformationsAtLine(problem, line, snippets, randomize=randomize)
             for line in localization
         }
 
     def __next__(self) -> Transformation:
         try:
             line = self.__localization.sample()
+            print("Looking at line: {}".format(line))
             source = self.__transformations_by_line[line]
         except ValueError:
             raise StopIteration

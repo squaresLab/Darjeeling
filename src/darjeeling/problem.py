@@ -17,7 +17,7 @@ from bugzoo.testing import TestCase
 import darjeeling.filters as filters
 from .snippet import SnippetDatabase, Snippet
 from .source import SourceFile
-from .util import get_lines
+from .util import get_file_contents
 
 
 class Problem(object):
@@ -130,7 +130,7 @@ class Problem(object):
             for fn in self.__lines.files:
                 fn_ctr = os.path.join(bug.source_dir, fn)
                 bz.containers.copy_from(ctr_source_files, fn_ctr, fn_host_temp)
-                self.__sources[fn] = SourceFile(fn, get_lines(fn_host_temp))
+                self.__sources[fn] = SourceFile(fn, get_file_contents(fn_host_temp))
             duration = timer() - t_start
         finally:
             os.remove(fn_host_temp)
@@ -147,10 +147,11 @@ class Problem(object):
         ]
         if line_coverage_filters:
             line_content_filters += line_coverage_filters # type: ignore
-        for fltr_content in line_content_filters:
-            fltr_line = \
-                lambda fl: fltr_content(self.__sources[fl.filename][fl.num])
-            self.__lines = self.__lines.filter(fltr_line)
+        # FIXME reenable
+        # for fltr_content in line_content_filters:
+        #     fltr_line = \
+        #         lambda fl: fltr_content(self.__sources[fl.filename][fl.num])
+        #     self.__lines = self.__lines.filter(fltr_line)
 
         # compute fault localization
         self.__coverage = \
@@ -191,7 +192,8 @@ class Problem(object):
         ]
 
         for line in self.__coverage.lines:
-            content = self.__sources[line.filename][line.num].strip()
+            char_range = self.__sources[line.filename].line_to_char_range(line)
+            content = self.__sources[line.filename][char_range].strip()
             if all(fltr(content) for fltr in snippet_filters):
                 # self.__logger.debug("* found snippet at %s: %s", line, content)
                 snippet = Snippet(content)

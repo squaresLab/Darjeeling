@@ -71,7 +71,8 @@ def repair(bugzoo: bugzoo.BugZoo,
     # transformations = \
     #     AllTransformationsAtLine(line, problem.snippets)
     transformations = \
-        SampleByLocalization(problem.localization,
+        SampleByLocalization(problem,
+                             problem.localization,
                              problem.snippets,
                              randomize=False)
     candidates = SingleEditPatches(transformations)
