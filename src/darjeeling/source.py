@@ -4,7 +4,7 @@ import tempfile
 import os
 
 from bugzoo import BugZoo
-from bugzoo.bug import Bug
+from bugzoo.core.bug import Bug
 from bugzoo.core.patch import FilePatch
 from bugzoo.core.fileline import FileLine
 from bugzoo.core.filechar import FileCharRange, FileChar
