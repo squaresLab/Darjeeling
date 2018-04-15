@@ -95,3 +95,105 @@ class SourceFile(object):
                                           fromfile=self.name,
                                           tofile=other.name)
         return ''.join(diff_lines)
+
+
+class SourceFileCollection(object):
+    def __init__(self, contents: Dict[str, SourceFile]):
+        """
+        Constructs a new collection of source files.
+
+        Parameters:
+            contents: the contents of the collection, given as a dictionary of
+                source files indexed by filename.
+        """
+        self.__contents = contents
+
+    def __getitem__(self, fn: str) -> SourceFile:
+        """
+        Retrieves a file from this collection.
+
+        Parameters:
+            fn: the name of the file.
+
+        Returns:
+            the requested file.
+
+        Raises:
+            KeyError: if no file with the given name exists within this
+                collection.
+        """
+        return self.__contents[fn]
+
+    def delete(self, char_range: FileCharRange) -> 'SourceFileCollection':
+        """
+        Returns a variant of this collection where the contents of a specified
+        character range within one of its files has been removed.
+
+        Parameters:
+            char_range: the range of characters that should be removed.
+
+        Returns:
+            a variant of this collection with the desired modifications.
+
+        Raises:
+            KeyError: if the file described by the character range does not
+                belong to this collection.
+        """
+        contents_new = self.__contents.copy()
+        contents_new[char_range.filename] = \
+            self.__contents[char_range.filename].delete(char_range)
+        return SourceFileCollection(contents_new)
+
+    def replace(self,
+                char_range: FileCharRange,
+                text: str
+                ) -> 'SourceFileCollection':
+        """
+        Returns a variant of this collection where the contents of a specified
+        character range within one of its files have been replaced by a given
+        text.
+
+        Parameters:
+            char_range: the range of characters that should be replaced.
+            text: the text that should be used as a replacement.
+
+        Returns:
+            a variant of this collection with the desired modifications.
+
+        Raises:
+            KeyError: if the file described by the character range does not
+                belong to this collection.
+        """
+        contents_new = self.__contents.copy()
+        contents_new[char_range.filename] = \
+            self.__contents[char_range.filename].replace(char_range, text)
+        return SourceFileCollection(contents_new)
+
+    def insert(self,
+               index: FileChar,
+               text: str
+               ) -> 'SourceFileCollection':
+        """
+        Returns a variant of this collection where a given text has been
+        inserted immediately after a specified character in one of the files
+        belonging to this collection.
+
+        Parameters:
+            index: the position of the character after which the given text
+                should be inserted;
+            text: the text that should be inserted.
+
+        Returns:
+            a variant of this collection with the desired modifications.
+
+        Raises:
+            KeyError: if the file described by the character range does not
+                belong to this collection.
+        """
+        contents_new = self.__contents.copy()
+        contents_new[char_range.filename] = \
+            self.__contents[char_range.filename].insert(index, text)
+        return SourceFileCollection(contents_new)
+
+    def diff(self, other: 'SourceFileCollection') -> str:
+        raise NotImplementedError
