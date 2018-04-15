@@ -1,12 +1,15 @@
-from typing import List, Iterator
+from typing import List, Iterator, Dict
 import difflib
 import tempfile
+import os
 
 from bugzoo import BugZoo
 from bugzoo.bug import Bug
 from bugzoo.core.patch import FilePatch
 from bugzoo.core.fileline import FileLine
 from bugzoo.core.filechar import FileCharRange, FileChar
+
+from .util import get_file_contents
 
 
 class SourceFile(object):
@@ -113,13 +116,13 @@ class SourceFileCollection(object):
             for fn in filenames:
                 fn_ctr = os.path.join(bug.source_dir, fn)
                 bz.containers.copy_from(ctr_source_files, fn_ctr, fn_host_temp)
-                self.__sources[fn] = SourceFile(fn, get_file_contents(fn_host_temp))
+                sources[fn] = SourceFile(fn, get_file_contents(fn_host_temp))
         finally:
             os.remove(fn_host_temp)
             del bz.containers[ctr_source_files.uid]
         return SourceFileCollection(sources)
 
-    def __init__(self, contents: Dict[str, SourceFile]):
+    def __init__(self, contents: Dict[str, SourceFile]) -> None:
         """
         Constructs a new collection of source files.
 
@@ -212,8 +215,8 @@ class SourceFileCollection(object):
                 belong to this collection.
         """
         contents_new = self.__contents.copy()
-        contents_new[char_range.filename] = \
-            self.__contents[char_range.filename].insert(index, text)
+        contents_new[index.filename] = \
+            self.__contents[index.filename].insert(index, text)
         return SourceFileCollection(contents_new)
 
     def diff(self, other: 'SourceFileCollection') -> str:
