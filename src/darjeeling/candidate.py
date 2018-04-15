@@ -58,23 +58,22 @@ class Candidate(object):
             group.sort(key=lambda t: t.char_range.start.offset, reverse=True) # type: ignore
 
         # transform each group into a modified source code file
-        transformed = {}
+        transformed = problem.sources
         for (fn, transformations) in tf.items():
-            src = problem.source(fn)
             for t in transformations:
                 if isinstance(t, DeleteTransformation):
-                    src = src.delete(t.char_range)
+                    transformed = transformed.delete(t.char_range)
                 elif isinstance(t, AppendTransformation):
-                    src = src.insert(t.char_range.stop.offset, str(t.snippet))
+                    transformed = transformed.insert(t.char_range.stop.offset, str(t.snippet))
                 elif isinstance(t, ReplaceTransformation):
-                    src = src.replace(t.char_range, str(t.snippet))
+                    transformed = transformed.replace(t.char_range, str(t.snippet))
                 else:
                     raise Exception("unsupported transformation")
-            transformed[fn] = src
 
         # compute a diff for each modified source code file
         diffs = []
-        for (fn, source_after) in transformed.items():
+        for fn in transformed:
+            source_after = transformed[fn]
             source_before = problem.source(fn)
             diffs.append(source_before.diff(source_after))
 
