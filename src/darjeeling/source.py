@@ -1,6 +1,9 @@
 from typing import List, Iterator
 import difflib
+import tempfile
 
+from bugzoo import BugZoo
+from bugzoo.bug import Bug
 from bugzoo.core.patch import FilePatch
 from bugzoo.core.fileline import FileLine
 from bugzoo.core.filechar import FileCharRange, FileChar
@@ -98,6 +101,24 @@ class SourceFile(object):
 
 
 class SourceFileCollection(object):
+    @staticmethod
+    def from_bug(bz: BugZoo,
+                 bug: Bug,
+                 filenames: List[str]
+                 ) -> 'SourceFileCollection':
+        sources = {} # type: Dict[str, SourceFile]
+        _, fn_host_temp = tempfile.mkstemp(prefix='.darjeeling')
+        ctr_source_files = bz.containers.provision(bug)
+        try:
+            for fn in filenames:
+                fn_ctr = os.path.join(bug.source_dir, fn)
+                bz.containers.copy_from(ctr_source_files, fn_ctr, fn_host_temp)
+                self.__sources[fn] = SourceFile(fn, get_file_contents(fn_host_temp))
+        finally:
+            os.remove(fn_host_temp)
+            del bz.containers[ctr_source_files.uid]
+        return SourceFileCollection(sources)
+
     def __init__(self, contents: Dict[str, SourceFile]):
         """
         Constructs a new collection of source files.
@@ -197,3 +218,30 @@ class SourceFileCollection(object):
 
     def diff(self, other: 'SourceFileCollection') -> str:
         raise NotImplementedError
+
+    @property
+    def files(self) -> List[str]:
+        """
+        The names of the files that are represented in this collection.
+        """
+        return [fn for fn in self.__contents]
+
+    def without_file(self, fn: str) -> 'SourceFileCollection':
+        """
+        Produces a variant of this collection of source files that does not
+        contain a file with the given name. If the named file does not exist
+        within this collection, then this collection is returned.
+
+        Parameters:
+            fn: the name of the file that should not appear in the variant of
+                this collection of files.
+
+        Returns:
+            a variant of this file collection that does not contain a file with
+            the given name.
+        """
+        if fn not in self.__contents:
+            return self
+
+        contents_new = self.__contents.copy()
+        return SourceFileCollection(contents_new)
