@@ -167,7 +167,7 @@ class AllTransformationsAtLine(TransformationGenerator):
                  ) -> None:
         # transform line to character range
         # TODO tidy this hack
-        char_range = problem.source(line.filename).line_to_char_range(line)
+        char_range = problem.sources[line.filename].line_to_char_range(line)
 
         # TODO clean up iterator ugliness
         self.__sources = [
