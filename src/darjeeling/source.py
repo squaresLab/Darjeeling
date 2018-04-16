@@ -68,9 +68,10 @@ class SourceFile(object):
 
     def insert(self, index: FileChar, text: str) -> 'SourceFile':
         # FIXME allow insertion rather than simply appending
-        contents = "{}\n{}{}".format(self.__contents[:index],
+        offset = index.offset
+        contents = "{}\n{}{}".format(self.__contents[:offset],
                                      text,
-                                     self.__contents[index:])
+                                     self.__contents[offset:])
         return SourceFile(self.name, contents)
 
     def delete(self, char_range: FileCharRange) -> 'SourceFile':
