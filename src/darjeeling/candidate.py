@@ -64,7 +64,7 @@ class Candidate(object):
                 if isinstance(t, DeleteTransformation):
                     transformed = transformed.delete(t.char_range)
                 elif isinstance(t, AppendTransformation):
-                    transformed = transformed.insert(t.char_range.stop.offset, str(t.snippet))
+                    transformed = transformed.insert(t.char_range.stop, str(t.snippet))
                 elif isinstance(t, ReplaceTransformation):
                     transformed = transformed.replace(t.char_range, str(t.snippet))
                 else:
