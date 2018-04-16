@@ -1,9 +1,15 @@
-from typing import List, Iterator
+from typing import List, Iterator, Dict
 import difflib
+import tempfile
+import os
 
+from bugzoo import BugZoo
+from bugzoo.core.bug import Bug
 from bugzoo.core.patch import FilePatch
 from bugzoo.core.fileline import FileLine
 from bugzoo.core.filechar import FileCharRange, FileChar
+
+from .util import get_file_contents
 
 
 class SourceFile(object):
@@ -62,9 +68,10 @@ class SourceFile(object):
 
     def insert(self, index: FileChar, text: str) -> 'SourceFile':
         # FIXME allow insertion rather than simply appending
-        contents = "{}\n{}{}".format(self.__contents[:index],
+        offset = index.offset
+        contents = "{}\n{}{}".format(self.__contents[:offset],
                                      text,
-                                     self.__contents[index:])
+                                     self.__contents[offset:])
         return SourceFile(self.name, contents)
 
     def delete(self, char_range: FileCharRange) -> 'SourceFile':
@@ -95,3 +102,157 @@ class SourceFile(object):
                                           fromfile=self.name,
                                           tofile=other.name)
         return ''.join(diff_lines)
+
+
+class SourceFileCollection(object):
+    @staticmethod
+    def from_bug(bz: BugZoo,
+                 bug: Bug,
+                 filenames: List[str]
+                 ) -> 'SourceFileCollection':
+        sources = {} # type: Dict[str, SourceFile]
+        _, fn_host_temp = tempfile.mkstemp(prefix='.darjeeling')
+        ctr_source_files = bz.containers.provision(bug)
+        try:
+            for fn in filenames:
+                fn_ctr = os.path.join(bug.source_dir, fn)
+                bz.containers.copy_from(ctr_source_files, fn_ctr, fn_host_temp)
+                sources[fn] = SourceFile(fn, get_file_contents(fn_host_temp))
+        finally:
+            os.remove(fn_host_temp)
+            del bz.containers[ctr_source_files.uid]
+        return SourceFileCollection(sources)
+
+    def __init__(self, contents: Dict[str, SourceFile]) -> None:
+        """
+        Constructs a new collection of source files.
+
+        Parameters:
+            contents: the contents of the collection, given as a dictionary of
+                source files indexed by filename.
+        """
+        self.__contents = contents
+
+    def __iter__(self) -> Iterator[str]:
+        """
+        Returns an iterator over the names of the files contained within this
+        collection.
+        """
+        yield from self.__contents.keys()
+
+    def __getitem__(self, fn: str) -> SourceFile:
+        """
+        Retrieves a file from this collection.
+
+        Parameters:
+            fn: the name of the file.
+
+        Returns:
+            the requested file.
+
+        Raises:
+            KeyError: if no file with the given name exists within this
+                collection.
+        """
+        return self.__contents[fn]
+
+    def delete(self, char_range: FileCharRange) -> 'SourceFileCollection':
+        """
+        Returns a variant of this collection where the contents of a specified
+        character range within one of its files has been removed.
+
+        Parameters:
+            char_range: the range of characters that should be removed.
+
+        Returns:
+            a variant of this collection with the desired modifications.
+
+        Raises:
+            KeyError: if the file described by the character range does not
+                belong to this collection.
+        """
+        contents_new = self.__contents.copy()
+        contents_new[char_range.filename] = \
+            self.__contents[char_range.filename].delete(char_range)
+        return SourceFileCollection(contents_new)
+
+    def replace(self,
+                char_range: FileCharRange,
+                text: str
+                ) -> 'SourceFileCollection':
+        """
+        Returns a variant of this collection where the contents of a specified
+        character range within one of its files have been replaced by a given
+        text.
+
+        Parameters:
+            char_range: the range of characters that should be replaced.
+            text: the text that should be used as a replacement.
+
+        Returns:
+            a variant of this collection with the desired modifications.
+
+        Raises:
+            KeyError: if the file described by the character range does not
+                belong to this collection.
+        """
+        contents_new = self.__contents.copy()
+        contents_new[char_range.filename] = \
+            self.__contents[char_range.filename].replace(char_range, text)
+        return SourceFileCollection(contents_new)
+
+    def insert(self,
+               index: FileChar,
+               text: str
+               ) -> 'SourceFileCollection':
+        """
+        Returns a variant of this collection where a given text has been
+        inserted immediately after a specified character in one of the files
+        belonging to this collection.
+
+        Parameters:
+            index: the position of the character after which the given text
+                should be inserted;
+            text: the text that should be inserted.
+
+        Returns:
+            a variant of this collection with the desired modifications.
+
+        Raises:
+            KeyError: if the file described by the character range does not
+                belong to this collection.
+        """
+        contents_new = self.__contents.copy()
+        contents_new[index.filename] = \
+            self.__contents[index.filename].insert(index, text)
+        return SourceFileCollection(contents_new)
+
+    def diff(self, other: 'SourceFileCollection') -> str:
+        raise NotImplementedError
+
+    @property
+    def files(self) -> List[str]:
+        """
+        The names of the files that are represented in this collection.
+        """
+        return [fn for fn in self.__contents]
+
+    def without_file(self, fn: str) -> 'SourceFileCollection':
+        """
+        Produces a variant of this collection of source files that does not
+        contain a file with the given name. If the named file does not exist
+        within this collection, then this collection is returned.
+
+        Parameters:
+            fn: the name of the file that should not appear in the variant of
+                this collection of files.
+
+        Returns:
+            a variant of this file collection that does not contain a file with
+            the given name.
+        """
+        if fn not in self.__contents:
+            return self
+
+        contents_new = self.__contents.copy()
+        return SourceFileCollection(contents_new)

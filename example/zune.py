@@ -19,7 +19,7 @@ def main():
     print("\n[LINES]\n")
     for line in problem.lines:
         fn = line.filename
-        src = problem.source(fn)
+        src = problem.sources[fn]
         char_range = src.line_to_char_range(line)
         content = src[char_range]
         print("{} / {}: '{}'".format(line, char_range, content))
