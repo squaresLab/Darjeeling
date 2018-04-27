@@ -105,6 +105,13 @@ class OutcomeManager(object):
     def __getitem__(self, candidate: Candidate) -> CandidateOutcome:
         return self.__outcomes[candidate]
 
+    def __iter__(self) -> Iterator[Candidate]:
+        """
+        Returns an iterator over the candidate patches whose outcomes are
+        stored by this manager.
+        """
+        return self.__outcomes.keys().__iter__()
+
     def record_build(self,
                      candidate: Candidate,
                      build_outcome: BugZooBuildOutcome
