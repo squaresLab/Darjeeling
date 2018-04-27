@@ -12,7 +12,7 @@ with open(path, 'r') as f:
 setup(
     name='darjeeling',
     version=__version__,
-    description='Distributed, Language-independent, compositional search-based program repair',
+    description='Distributed, language-independent, compositional search-based program repair',
     long_description='TBA',
     author='Chris Timperley',
     author_email='ctimperley@cmu.edu',
@@ -20,7 +20,7 @@ setup(
     license='mit',
     python_requires='>=3.5',
     install_requires=[
-        'bugzoo>=2.0.15',
+        'bugzoo>=2.1.1',
         'requests',
         'flask'
     ],
