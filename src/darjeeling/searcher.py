@@ -10,9 +10,10 @@ import bugzoo
 
 from .candidate import Candidate
 from .problem import Problem
+from .outcome import OutcomeManager
 
 
-__ALL__ = ['Searcher']
+__all__ = ['Searcher']
 
 
 class Shutdown(Exception):
@@ -51,6 +52,7 @@ class Searcher(object):
         self.__candidates = candidates
         self.__time_limit = time_limit
         self.__num_threads = threads
+        self.__outcomes = OutcomeManager()
 
         self.__logger = \
             problem.logger.getChild('search') if logger is None else logger
@@ -66,6 +68,14 @@ class Searcher(object):
         self.__time_running = datetime.timedelta()
         self.__error_occurred = False
         self.__found_patches = [] # type: List[Candidate]
+
+    @property
+    def outcomes(self) -> OutcomeManager:
+        """
+        Provides a log of the outcomes of candidate patch build attempts and
+        test executions.
+        """
+        return self.__outcomes
 
     @property
     def logger(self) -> logging.Logger:
@@ -246,6 +256,7 @@ class Searcher(object):
             logger.debug("Compilation outcome for %s:\n%s",
                          candidate,
                          outcome_compilation.response.output)
+            self.outcomes.record_build(candidate, outcome_compilation)
             if not outcome_compilation.successful:
                 logger.info("Failed to compile: %s", candidate)
                 return True
@@ -263,6 +274,7 @@ class Searcher(object):
                              outcome.response.code,
                              cmd,
                              outcome.response.output)
+                self.outcomes.record_test(candidate, test.name, outcome)
                 if not outcome.passed:
                     logger.info("* test failed: %s (%s)", test.name, candidate)
                     return True
