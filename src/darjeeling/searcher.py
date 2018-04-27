@@ -274,7 +274,7 @@ class Searcher(object):
                              outcome.response.code,
                              cmd,
                              outcome.response.output)
-                self.outcomes.record_test(candidate, outcome)
+                self.outcomes.record_test(candidate, test.name, outcome)
                 if not outcome.passed:
                     logger.info("* test failed: %s (%s)", test.name, candidate)
                     return True
