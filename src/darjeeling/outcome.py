@@ -5,7 +5,13 @@ from bugzoo.compiler import CompilationOutcome as BugZooBuildOutcome
 
 from .candidate import Candidate
 
-__all__ = ['BuildOutcome', 'TestOutcome', 'CandidateOutcome', 'OutcomeManager']
+__all__ = [
+    'BuildOutcome',
+    'TestOutcome',
+    'TestOutcomeSet',
+    'CandidateOutcome',
+    'OutcomeManager'
+]
 
 
 class BuildOutcome(object):
