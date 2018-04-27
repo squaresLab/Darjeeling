@@ -256,6 +256,7 @@ class Searcher(object):
             logger.debug("Compilation outcome for %s:\n%s",
                          candidate,
                          outcome_compilation.response.output)
+            self.outcomes.record_build(candidate, outcome_compilation)
             if not outcome_compilation.successful:
                 logger.info("Failed to compile: %s", candidate)
                 return True
@@ -273,6 +274,7 @@ class Searcher(object):
                              outcome.response.code,
                              cmd,
                              outcome.response.output)
+                self.outcomes.record_test(candidate, outcome)
                 if not outcome.passed:
                     logger.info("* test failed: %s (%s)", test.name, candidate)
                     return True
