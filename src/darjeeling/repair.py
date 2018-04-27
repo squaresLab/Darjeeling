@@ -93,6 +93,17 @@ def repair(bugzoo: bugzoo.BugZoo,
     else:
         repairs = list(searcher)
 
+    #for candidate in searcher.outcomes:
+    #    outcome = searcher.outcomes[candidate]
+    #    if not outcome.build.successful:
+    #        print("FAILED TO COMPILE: {}".format(candidate))
+    #    else:
+    #        try:
+    #            failed = next(t for t in outcome.tests if not outcome.tests[t].successful)
+    #            print("FAILED TEST ({}): {}".format(failed, candidate))
+    #        except StopIteration:
+    #            print("SUCCESS: {}".format(candidate))
+
     report = RepairReport(searcher.num_candidate_evals,
                           searcher.num_test_evals,
                           searcher.time_running)
