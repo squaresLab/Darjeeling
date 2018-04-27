@@ -5,7 +5,7 @@ from bugzoo.compiler import CompilationOutcome as BugZooBuildOutcome
 
 from .candidate import Candidate
 
-__all__ = ['BuildOutcome', 'TestOutcome', 'CandidateOutcome']
+__all__ = ['BuildOutcome', 'TestOutcome', 'CandidateOutcome', 'OutcomeManager']
 
 
 class BuildOutcome(object):
@@ -91,7 +91,7 @@ class CandidateOutcome(object):
         return CandidateOutcome(self.__build, test_outcomes)
 
 
-class CandidateOutcomeManager(object):
+class OutcomeManager(object):
     # FIXME hash candidate outcomes
     def __init__(self) -> None:
         self.__outcomes = {} # type: Dict[Candidate, CandidateOutcome]
