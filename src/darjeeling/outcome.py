@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional, Iterator
 
 from bugzoo.testing.base import TestOutcome as BugZooTestOutcome
 from bugzoo.compiler import CompilationOutcome as BugZooBuildOutcome
@@ -71,7 +71,7 @@ class CandidateOutcome(object):
     """
     def __init__(self, build: BuildOutcome, tests: TestOutcomeSet) -> None:
         self.__build = build
-        self.__tests = test
+        self.__tests = tests
 
     @property
     def build(self) -> BuildOutcome:
