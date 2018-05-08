@@ -137,11 +137,10 @@ class Problem(object):
         ]
         if line_coverage_filters:
             line_content_filters += line_coverage_filters # type: ignore
-        # FIXME reenable
-        # for fltr_content in line_content_filters:
-        #     fltr_line = \
-        #         lambda fl: fltr_content(self.__sources[fl.filename][fl.num])
-        #     self.__lines = self.__lines.filter(fltr_line)
+        for f in line_content_filters:
+            fltr_line = \
+                lambda fl: f(self.__sources.line(fl.filename, fl.num))
+            self.__lines = self.__lines.filter(fltr_line)
 
         # compute fault localization
         self.__coverage = \
@@ -182,8 +181,7 @@ class Problem(object):
         ]
 
         for line in self.__coverage.lines:
-            char_range = self.__sources[line.filename].line_to_char_range(line)
-            content = self.__sources[line.filename][char_range].strip()
+            content = self.__sources.line(line.filename, line.num).strip()
             if all(fltr(content) for fltr in snippet_filters):
                 # self.__logger.debug("* found snippet at %s: %s", line, content)
                 snippet = Snippet(content)

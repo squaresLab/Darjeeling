@@ -172,8 +172,8 @@ class AllTransformationsAtLine(TransformationGenerator):
         # TODO clean up iterator ugliness
         self.__sources = [
             DeletionGenerator(iter([char_range])),
-            ReplacementGenerator(iter([char_range]), snippets),
-            AppendGenerator(iter([char_range]), snippets)
+            # ReplacementGenerator(iter([char_range]), snippets),
+            # AppendGenerator(iter([char_range]), snippets)
         ] # type: List[TransformationGenerator]
 
         # TODO implement randomize

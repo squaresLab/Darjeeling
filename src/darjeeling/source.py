@@ -230,6 +230,17 @@ class SourceFileCollection(object):
     def diff(self, other: 'SourceFileCollection') -> str:
         raise NotImplementedError
 
+    def line(self, fn: str, num: int) -> str:
+        """
+        Retrieves the contents of a given line in a source code file.
+        """
+        assert isinstance(num, int)
+
+        line = FileLine(fn, num)
+        f_contents = self.__contents[fn]
+        char_range = f_contents.line_to_char_range(line)
+        return f_contents[char_range]
+
     @property
     def files(self) -> List[str]:
         """
