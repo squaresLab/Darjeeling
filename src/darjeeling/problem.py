@@ -18,6 +18,7 @@ import darjeeling.filters as filters
 from .snippet import SnippetDatabase, Snippet
 from .source import SourceFile, SourceFileCollection
 from .util import get_file_contents
+from .exceptions import NoFailingTests, NoImplicatedLines
 
 
 class Problem(object):
@@ -51,6 +52,11 @@ class Problem(object):
                 name appears in the given list. If no list is provided, no
                 filtering of transformations based on the function to which
                 they belong will occur.
+
+        Raises:
+            NoFailingTests: if the program under repair has no failing tests.
+            NoImplicatedLines: if no lines are implicated by the coverage
+                information and the provided suspiciousness metric.
         """
         assert len(in_files) > 0
         self.__bug = bug
@@ -93,7 +99,6 @@ class Problem(object):
 
         # determine the passing and failing tests by using coverage information
         self.__logger.debug("using test execution used to generate coverage to determine passing and failing tests")
-
         self.__tests_failing = set() # type: Set[TestCase]
         self.__tests_passing = set() # type: Set[TestCase]
         for test_name in self.__coverage:
@@ -104,10 +109,11 @@ class Problem(object):
             else:
                 self.__tests_failing.add(test)
 
-        # TODO throw an error if there are no failing tests
         self.__logger.info("determined passing and failing tests")
         self.__logger.info("* passing tests: %s", ', '.join([t.name for t in self.__tests_passing]))
         self.__logger.info("* failing tests: %s", ', '.join([t.name for t in self.__tests_failing]))
+        if not self.__tests_failing:
+            raise NoFailingTests
 
         # determine the implicated lines
         # 0. we already restricted to lines that occur in specified files
@@ -159,14 +165,14 @@ class Problem(object):
         self.__logger.info("removed %d non-suspicious lines from consideration",
                            num_lines_removed)
 
-        # TODO raise an exception if there are no implicated lines
-
         # report implicated lines and files
         self.__logger.info("implicated lines [%d]:\n%s",
                            len(self.__lines), self.__lines)
         self.__logger.info("implicated files [%d]:\n* %s",
                            len(self.__lines.files),
                            '\n* '.join(self.__lines.files))
+        if len(self.__lines) == 0:
+            raise NoImplicatedLines
 
         # construct the snippet database from the parts of the program that
         # were executed by the test suite (both passing and failing tests)
