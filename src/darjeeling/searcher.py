@@ -59,15 +59,15 @@ class Searcher(object):
         self.logger.info("Constructed searcher")
 
         # records the time at which the current iteration begun
-        self.__time_iteration_begun = None # type: Optional[float]
+        self.__time_iteration_begun = None  # type: ignore
 
-        self.__lock_candidates = threading.Lock() # type: threading.Lock
+        self.__lock_candidates = threading.Lock()  # type: threading.Lock
         self.__counter_candidates = 0
         self.__counter_tests = 0
         self.__exhausted_candidates = False
         self.__time_running = datetime.timedelta()
         self.__error_occurred = False
-        self.__found_patches = [] # type: List[Candidate]
+        self.__found_patches = []  # type: List[Candidate]
 
     @property
     def outcomes(self) -> OutcomeManager:
@@ -103,7 +103,7 @@ class Searcher(object):
             return True
         if self.__time_limit is None:
             return False
-        if self.time_running > self.time_limit:
+        if self.time_running > self.__time_limit:
             return True
         return False
 
@@ -137,8 +137,8 @@ class Searcher(object):
         The amount of time that has been spent searching for patches.
         """
         time_now = timer()
-        duration_secs = time_now - self.__time_iteration_begun
-        duration_iteration = datetime.timedelta(seconds=duration_secs) # type: datetime.timedelta
+        duration_secs = time_now - self.__time_iteration_begun  # type: ignore
+        duration_iteration = datetime.timedelta(seconds=duration_secs)  # type: datetime.timedelta
         duration_total = self.__time_running + duration_iteration
         # DEBUG
         duration_mins = duration_iteration.seconds / 60
@@ -176,7 +176,7 @@ class Searcher(object):
         signal.signal(signal.SIGTERM, shutdown_handler)
         self.logger.debug("Attached signal handlers")
 
-        self.__time_iteration_begun = timer()
+        self.__time_iteration_begun = timer()  # type: ignore
 
         # TODO there's a bit of a bug: any patches that were read from the
         #   generator by the worker and were still stored in its
@@ -206,7 +206,7 @@ class Searcher(object):
             signal.signal(signal.SIGINT, original_handler_sigint)
             signal.signal(signal.SIGTERM, original_handler_sigterm)
 
-        duration_iteration = timer() - self.__time_iteration_begun
+        duration_iteration = timer() - self.__time_iteration_begun  # type: ignore
         self.__time_running += datetime.timedelta(seconds=duration_iteration)
 
         # if we have a patch, return it
