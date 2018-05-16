@@ -86,7 +86,7 @@ class Problem(object):
             self.__logger.debug("computing coverage information")
             try:
                 container = bz.containers.provision(bug)
-                self.__coverage = bz.coverage.coverage(container, bug.tests)
+                self.__coverage = bz.container.coverage(container)
             finally:
                 del bz.containers[container.uid]
             self.__logger.debug("computed coverage information")
