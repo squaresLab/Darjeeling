@@ -91,16 +91,15 @@ class Problem(object):
             finally:
                 del bz.containers[container.uid]
             self.__logger.debug("computed coverage information")
-        self.__logger.debug("[COVERAGE]\n%s\n[/COVERAGE]",
-                            indent(self.__coverage, 2))
+        self._dump_coverage()
 
         # restrict coverage information to specified files
         self.__logger.debug("restricting coverage information to files:\n* %s",
                             '\n* '.join(in_files))
         self.__coverage = self.__coverage.restricted_to_files(in_files)
         self.__logger.debug("restricted coverage information.")
-        self.__logger.debug("[COVERAGE]\n%s\n[/COVERAGE]",
-                            indent(self.__coverage, 2))
+        self._dump_coverage()
+
 
         # determine the passing and failing tests by using coverage information
         self.__logger.debug("using test execution used to generate coverage to determine passing and failing tests")
@@ -165,8 +164,7 @@ class Problem(object):
         self.__coverage = \
             self.__coverage.restricted_to_files(self.__lines.files)
         self.__logger.debug("restricted coverage to implicated files")
-        self.__logger.debug("[COVERAGE]\n%s\n[/COVERAGE]",
-                            indent(self.__coverage, 2))
+        self._dump_coverage()
         self.__spectra = Spectra.from_coverage(self.__coverage)
         self.__logger.debug("generated coverage spectra: %s", self.__spectra)
         self.__localization = \
@@ -226,6 +224,10 @@ class Problem(object):
         for fn in extraneous_source_fns:
             self.__sources = self.__sources.without_file(fn)
         self.__logger.debug("finished reducing memory footprint")
+
+    def _dump_coverage(self) -> None:
+        self.__logger.debug("[COVERAGE]\n%s\n[/COVERAGE]",
+                            indent(str(self.__coverage), 2))
 
     @property
     def snippets(self) -> SnippetDatabase:
