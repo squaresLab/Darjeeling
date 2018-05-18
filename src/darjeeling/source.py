@@ -1,6 +1,7 @@
 from typing import List, Iterator, Dict
 import difflib
 import tempfile
+import logging
 import os
 
 from bugzoo import BugZoo
@@ -10,6 +11,8 @@ from bugzoo.core.fileline import FileLine
 from bugzoo.core.filechar import FileCharRange, FileChar
 
 from .util import get_file_contents
+
+logger = logging.getLogger(__name__)  # type: logging.Logger
 
 
 class SourceFile(object):
@@ -110,18 +113,20 @@ class SourceFileCollection(object):
                  bug: Bug,
                  filenames: List[str]
                  ) -> 'SourceFileCollection':
+        logger.debug("loading source files for snapshot: %s", bug.name)
         sources = {} # type: Dict[str, SourceFile]
-        _, fn_host_temp = tempfile.mkstemp(prefix='.darjeeling')
-        ctr_source_files = bz.containers.provision(bug)
+        ctr = bz.containers.provision(bug)
         try:
             for fn in filenames:
                 fn_ctr = os.path.join(bug.source_dir, fn)
-                bz.containers.copy_from(ctr_source_files, fn_ctr, fn_host_temp)
-                sources[fn] = SourceFile(fn, get_file_contents(fn_host_temp))
+                logger.debug("loading source code file: %s", fn_ctr)
+                contents = bz.files.read(ctr, fn_ctr)
+                sources[fn] = SourceFile(fn, contents)
         finally:
-            os.remove(fn_host_temp)
-            del bz.containers[ctr_source_files.uid]
-        return SourceFileCollection(sources)
+            del bz.containers[ctr.uid]
+        collection = SourceFileCollection(sources)
+        logger.debug("loaded source files for snapshot: %s", bug.name)
+        return collection
 
     def __init__(self, contents: Dict[str, SourceFile]) -> None:
         """
