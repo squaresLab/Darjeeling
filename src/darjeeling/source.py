@@ -119,7 +119,8 @@ class SourceFileCollection(object):
         try:
             for fn in filenames:
                 fn_ctr = os.path.join(bug.source_dir, fn)
-                logger.debug("loading source code file: %s", fn_ctr)
+                logger.debug("loading source code file [%s] at [%s]",\
+                             fn, fn_ctr)
                 contents = bz.files.read(ctr, fn_ctr)
                 sources[fn] = SourceFile(fn, contents)
         finally:
