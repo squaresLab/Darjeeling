@@ -137,6 +137,8 @@ class Problem(object):
         # restrict attention to statements
         # FIXME for now, we approximate this -- going forward, we can use
         #   Rooibos to determine transformation targets
+        num_lines_before_filtering = len(self.__lines)
+        self.__logger.debug("filtering lines according to content filters")
         line_content_filters = [
             filters.ends_with_semi_colon,
             filters.has_balanced_delimiters
@@ -147,13 +149,22 @@ class Problem(object):
             fltr_line = \
                 lambda fl: f(self.__sources.line(fl.filename, fl.num))
             self.__lines = self.__lines.filter(fltr_line)
+        num_lines_after_filtering = len(self.__lines)
+        num_lines_removed_by_filtering = \
+            num_lines_after_filtering - num_lines_before_filtering
+        self.__logger.debug("filtered lines according to content files: removed %d lines",  # noqa: pycodestyle
+                            num_lines_removed_by_filtering)
 
         # compute fault localization
+        self.__logger.info("computing fault localization")
         self.__coverage = \
             self.__coverage.restricted_to_files(self.__lines.files)
         self.__spectra = Spectra.from_coverage(self.__coverage)
+        self.__logger.debug("generated coverage spectra: %s", self.__spectra)
         self.__localization = \
             Localization.from_spectra(self.__spectra, suspiciousness_metric)
+        self.__logger.debug("transformed spectra to fault localization: %s",
+                            self.__localization)
         self.__localization = \
             self.__localization.restricted_to_lines(self.__lines)
         self.__logger.info("removing non-suspicious lines from consideration")
