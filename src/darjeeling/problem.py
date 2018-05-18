@@ -13,6 +13,7 @@ from bugzoo.core.coverage import TestSuiteCoverage
 from bugzoo.core.spectra import Spectra
 from bugzoo.localization import SuspiciousnessMetric, Localization
 from bugzoo.testing import TestCase
+from bugzoo.util import indent
 
 import darjeeling.filters as filters
 from .snippet import SnippetDatabase, Snippet
@@ -90,12 +91,16 @@ class Problem(object):
             finally:
                 del bz.containers[container.uid]
             self.__logger.debug("computed coverage information")
+        self.__logger.debug("[COVERAGE]\n%s\n[/COVERAGE]",
+                            indent(self.__coverage, 2))
 
         # restrict coverage information to specified files
         self.__logger.debug("restricting coverage information to files:\n* %s",
                             '\n* '.join(in_files))
         self.__coverage = self.__coverage.restricted_to_files(in_files)
         self.__logger.debug("restricted coverage information.")
+        self.__logger.debug("[COVERAGE]\n%s\n[/COVERAGE]",
+                            indent(self.__coverage, 2))
 
         # determine the passing and failing tests by using coverage information
         self.__logger.debug("using test execution used to generate coverage to determine passing and failing tests")
@@ -159,6 +164,9 @@ class Problem(object):
         self.__logger.info("computing fault localization")
         self.__coverage = \
             self.__coverage.restricted_to_files(self.__lines.files)
+        self.__logger.debug("restricted coverage to implicated files")
+        self.__logger.debug("[COVERAGE]\n%s\n[/COVERAGE]",
+                            indent(self.__coverage, 2))
         self.__spectra = Spectra.from_coverage(self.__coverage)
         self.__logger.debug("generated coverage spectra: %s", self.__spectra)
         self.__localization = \
