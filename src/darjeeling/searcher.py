@@ -268,7 +268,7 @@ class Searcher(object):
                 cmd = self.__problem.bug.harness.command(test)[0]
                 logger_c.info("executing test: %s (%s)", test.name, candidate)
                 self.__counter_tests += 1
-                outcome = bz.containers.execute(container, test)
+                outcome = bz.containers.test(container, test)
                 logger_c.debug("* test outcome: %s (%s) [retcode=%d]\n$ %s\n%s",
                                test.name,
                                candidate,
