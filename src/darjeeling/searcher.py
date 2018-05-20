@@ -239,55 +239,55 @@ class Searcher(object):
         logger.debug("provisioning container")
         container = bz.containers.provision(self.__problem.bug)
         logger.debug("provisioned container")
-        logger = logger.getChild(container.uid)
+        logger_c = logger.getChild(container.uid)
         try:
             patch = candidate.diff(self.__problem)
             diff = candidate.diff(self.__problem)
-            logger.info("evaluating: %s\n%s\n", candidate, diff)
-            logger.debug("applying patch")
+            logger_c.info("evaluating: %s\n%s\n", candidate, diff)
+            logger_c.debug("applying patch")
             bz.containers.patch(container, patch)
-            logger.debug("applied patch")
+            logger_c.debug("applied patch")
 
             # ensure that the patch compiles
-            logger.debug("compiling source code")
+            logger_c.debug("compiling source code")
             outcome_compilation = bz.containers.compile(container)
-            logger.debug("compilation outcome for %s:\n%s",
-                         candidate,
-                         outcome_compilation.response.output)
-            logger.debug("recording build outcome")
+            logger_c.debug("compilation outcome for %s:\n%s",
+                           candidate,
+                           outcome_compilation.response.output)
+            logger_c.debug("recording build outcome")
             self.outcomes.record_build(candidate, outcome_compilation)
-            logger.debug("record build outcome")
+            logger_c.debug("record build outcome")
             if not outcome_compilation.successful:
                 logger.info("failed to compile: %s", candidate)
                 return True
 
             # for now, execute all tests in no particular order
             # TODO perform test ordering
-            logger.debug("executing tests")
+            logger_c.debug("executing tests")
             for test in self.__problem.tests:
                 cmd = self.__problem.bug.harness.command(test)[0]
-                logger.info("executing test: %s (%s)", test.name, candidate)
+                logger_c.info("executing test: %s (%s)", test.name, candidate)
                 self.__counter_tests += 1
                 outcome = bz.containers.execute(container, test)
-                logger.debug("* test outcome: %s (%s) [retcode=%d]\n$ %s\n%s",
-                             test.name,
-                             candidate,
-                             outcome.response.code,
-                             cmd,
-                             outcome.response.output)
+                logger_c.debug("* test outcome: %s (%s) [retcode=%d]\n$ %s\n%s",
+                               test.name,
+                               candidate,
+                               outcome.response.code,
+                               cmd,
+                               outcome.response.output)
                 self.outcomes.record_test(candidate, test.name, outcome)
                 if not outcome.passed:
-                    logger.info("* test failed: %s (%s)", test.name, candidate)
+                    logger_c.info("* test failed: %s (%s)", test.name, candidate)
                     return True
-                logger.info("* test passed: %s (%s)", test.name, candidate)
+                logger_c.info("* test passed: %s (%s)", test.name, candidate)
 
             # if we've found a repair, pause the search
             self.__found_patches.append(candidate)
-            logger.info("FOUND A REPAIR: %s", candidate)
+            logger_c.info("FOUND A REPAIR: %s", candidate)
             return True
 
         # TODO ensure a bool is returned when an exception occurs
         finally:
-            logger.info("evaluated: %s", candidate)
+            logger_c.info("evaluated: %s", candidate)
             if container:
                 del bz.containers[container.uid]
