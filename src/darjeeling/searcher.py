@@ -1,4 +1,5 @@
 from typing import Iterable, Iterator, Optional, List
+from mypy_extensions import NoReturn
 from timeit import default_timer as timer
 import logging
 import datetime
@@ -145,6 +146,10 @@ class Searcher(object):
         self.logger.debug("time running: {:.2f} minutes".format(duration_mins))
         return duration_total
 
+    def stop(self) -> None:
+        # FIXME just use an event to communicate when to stop
+        self.__error_occurred = True
+
     def __iter__(self) -> Iterator[Candidate]:
         return self
 
@@ -167,14 +172,15 @@ class Searcher(object):
 
         # setup signal handlers to ensure that threads are cleanly killed
         # causes a Shutdown exception to be thrown in the search loop below
-        self.logger.debug("Attaching signal handlers")
-        def shutdown_handler(signum, frame):
-            raise Shutdown
-        original_handler_sigint = signal.getsignal(signal.SIGINT)
-        original_handler_sigterm = signal.getsignal(signal.SIGTERM)
-        signal.signal(signal.SIGINT, shutdown_handler)
-        signal.signal(signal.SIGTERM, shutdown_handler)
-        self.logger.debug("Attached signal handlers")
+        if threading.current_thread() is threading.main_thread():
+            self.logger.debug("Attaching signal handlers")
+            original_handler_sigint = signal.getsignal(signal.SIGINT)
+            original_handler_sigterm = signal.getsignal(signal.SIGTERM)
+            signal.signal(signal.SIGINT, lambda signum, frame: self.stop())
+            signal.signal(signal.SIGTERM, lambda signum, frame: self.stop())
+            self.logger.debug("Attached signal handlers")
+        else:
+            self.logger.debug("Not attaching signal handlers -- not inside main thread.")  # noqa: pycodestyle
 
         self.__time_iteration_begun = timer()  # type: ignore
 
@@ -203,17 +209,17 @@ class Searcher(object):
         finally:
             for t in threads:
                 t.join()
-            signal.signal(signal.SIGINT, original_handler_sigint)
-            signal.signal(signal.SIGTERM, original_handler_sigterm)
+            if threading.current_thread() is threading.main_thread():
+                self.logger.debug("restoring original signal handlers")
+                signal.signal(signal.SIGINT, original_handler_sigint)
+                signal.signal(signal.SIGTERM, original_handler_sigterm)
+                self.logger.debug("restored original signal handlers")
 
         duration_iteration = timer() - self.__time_iteration_begun  # type: ignore
         self.__time_running += datetime.timedelta(seconds=duration_iteration)
 
-        # if we have a patch, return it
         if self.__found_patches:
             return self.__found_patches.pop()
-
-        # if not, we're done
         raise StopIteration
 
     def _try_next(self) -> bool:
@@ -282,10 +288,7 @@ class Searcher(object):
 
             # if we've found a repair, pause the search
             self.__found_patches.append(candidate)
-
-            # report the patch
             logger.info("FOUND A REPAIR: %s", candidate)
-
             return True
 
         # TODO ensure a bool is returned when an exception occurs
