@@ -16,8 +16,10 @@ from .generator import DeletionGenerator, \
                        AllTransformationsAtLine, \
                        SampleByLocalization
 
+logger = logging.getLogger(__name__)
 
-__ALL__ = ['RepairReport', 'repair']
+
+__all__ = ['RepairReport', 'repair']
 
 
 class RepairReport(object):
