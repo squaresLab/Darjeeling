@@ -16,8 +16,10 @@ from .generator import DeletionGenerator, \
                        AllTransformationsAtLine, \
                        SampleByLocalization
 
+logger = logging.getLogger(__name__)
 
-__ALL__ = ['RepairReport', 'repair']
+
+__all__ = ['RepairReport', 'repair']
 
 
 class RepairReport(object):
@@ -81,8 +83,7 @@ def repair(bugzoo: bugzoo.BugZoo,
                         problem,
                         candidates,
                         threads=threads,
-                        time_limit=time_limit,
-                        logger=logger)
+                        time_limit=time_limit)
 
     if terminate_early:
         try:

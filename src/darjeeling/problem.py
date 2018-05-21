@@ -13,6 +13,7 @@ from bugzoo.core.coverage import TestSuiteCoverage
 from bugzoo.core.spectra import Spectra
 from bugzoo.localization import SuspiciousnessMetric, Localization
 from bugzoo.testing import TestCase
+from bugzoo.util import indent
 
 import darjeeling.filters as filters
 from .snippet import SnippetDatabase, Snippet
@@ -90,12 +91,15 @@ class Problem(object):
             finally:
                 del bz.containers[container.uid]
             self.__logger.debug("computed coverage information")
+        self._dump_coverage()
 
         # restrict coverage information to specified files
         self.__logger.debug("restricting coverage information to files:\n* %s",
                             '\n* '.join(in_files))
         self.__coverage = self.__coverage.restricted_to_files(in_files)
         self.__logger.debug("restricted coverage information.")
+        self._dump_coverage()
+
 
         # determine the passing and failing tests by using coverage information
         self.__logger.debug("using test execution used to generate coverage to determine passing and failing tests")
@@ -137,6 +141,8 @@ class Problem(object):
         # restrict attention to statements
         # FIXME for now, we approximate this -- going forward, we can use
         #   Rooibos to determine transformation targets
+        num_lines_before_filtering = len(self.__lines)
+        self.__logger.debug("filtering lines according to content filters")
         line_content_filters = [
             filters.ends_with_semi_colon,
             filters.has_balanced_delimiters
@@ -147,13 +153,24 @@ class Problem(object):
             fltr_line = \
                 lambda fl: f(self.__sources.line(fl.filename, fl.num))
             self.__lines = self.__lines.filter(fltr_line)
+        num_lines_after_filtering = len(self.__lines)
+        num_lines_removed_by_filtering = \
+            num_lines_after_filtering - num_lines_before_filtering
+        self.__logger.debug("filtered lines according to content files: removed %d lines",  # noqa: pycodestyle
+                            num_lines_removed_by_filtering)
 
         # compute fault localization
+        self.__logger.info("computing fault localization")
         self.__coverage = \
             self.__coverage.restricted_to_files(self.__lines.files)
+        self.__logger.debug("restricted coverage to implicated files")
+        self._dump_coverage()
         self.__spectra = Spectra.from_coverage(self.__coverage)
+        self.__logger.debug("generated coverage spectra: %s", self.__spectra)
         self.__localization = \
             Localization.from_spectra(self.__spectra, suspiciousness_metric)
+        self.__logger.debug("transformed spectra to fault localization: %s",
+                            self.__localization)
         self.__localization = \
             self.__localization.restricted_to_lines(self.__lines)
         self.__logger.info("removing non-suspicious lines from consideration")
@@ -207,6 +224,10 @@ class Problem(object):
         for fn in extraneous_source_fns:
             self.__sources = self.__sources.without_file(fn)
         self.__logger.debug("finished reducing memory footprint")
+
+    def _dump_coverage(self) -> None:
+        self.__logger.debug("[COVERAGE]\n%s\n[/COVERAGE]",
+                            indent(str(self.__coverage), 2))
 
     @property
     def snippets(self) -> SnippetDatabase:

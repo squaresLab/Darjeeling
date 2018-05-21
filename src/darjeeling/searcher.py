@@ -1,4 +1,5 @@
 from typing import Iterable, Iterator, Optional, List
+from mypy_extensions import NoReturn
 from timeit import default_timer as timer
 import logging
 import datetime
@@ -12,6 +13,7 @@ from .candidate import Candidate
 from .problem import Problem
 from .outcome import OutcomeManager
 
+logger = logging.getLogger(__name__)  # type: logging.Logger
 
 __all__ = ['Searcher']
 
@@ -27,8 +29,7 @@ class Searcher(object):
                  candidates: Iterable[Candidate],
                  *,
                  threads: int = 1,
-                 time_limit: Optional[datetime.timedelta] = None,
-                 logger: Optional[logging.Logger] = None
+                 time_limit: Optional[datetime.timedelta] = None
                  ) -> None:
         """
         Constructs a new searcher for a given source of candidate patches.
@@ -42,8 +43,8 @@ class Searcher(object):
                 the search process.
             time_limit: an optional limit on the amount of time given to the
                 searcher.
-            logger: the logger that should be used.
         """
+        logger.debug("constructed searcher")
         assert time_limit is None or time_limit > datetime.timedelta(), \
             "if specified, time limit should be greater than zero."
 
@@ -54,9 +55,6 @@ class Searcher(object):
         self.__num_threads = threads
         self.__outcomes = OutcomeManager()
 
-        self.__logger = \
-            problem.logger.getChild('search') if logger is None else logger
-        self.logger.info("Constructed searcher")
 
         # records the time at which the current iteration begun
         self.__time_iteration_begun = None  # type: ignore
@@ -68,6 +66,7 @@ class Searcher(object):
         self.__time_running = datetime.timedelta()
         self.__error_occurred = False
         self.__found_patches = []  # type: List[Candidate]
+        logger.debug("constructed searcher")
 
     @property
     def outcomes(self) -> OutcomeManager:
@@ -76,13 +75,6 @@ class Searcher(object):
         test executions.
         """
         return self.__outcomes
-
-    @property
-    def logger(self) -> logging.Logger:
-        """
-        Used to record logging information for the search.
-        """
-        return self.__logger
 
     @property
     def paused(self) -> bool:
@@ -142,8 +134,12 @@ class Searcher(object):
         duration_total = self.__time_running + duration_iteration
         # DEBUG
         duration_mins = duration_iteration.seconds / 60
-        self.logger.debug("time running: {:.2f} minutes".format(duration_mins))
+        logger.debug("time running: {:.2f} minutes".format(duration_mins))
         return duration_total
+
+    def stop(self) -> None:
+        # FIXME just use an event to communicate when to stop
+        self.__error_occurred = True
 
     def __iter__(self) -> Iterator[Candidate]:
         return self
@@ -167,14 +163,15 @@ class Searcher(object):
 
         # setup signal handlers to ensure that threads are cleanly killed
         # causes a Shutdown exception to be thrown in the search loop below
-        self.logger.debug("Attaching signal handlers")
-        def shutdown_handler(signum, frame):
-            raise Shutdown
-        original_handler_sigint = signal.getsignal(signal.SIGINT)
-        original_handler_sigterm = signal.getsignal(signal.SIGTERM)
-        signal.signal(signal.SIGINT, shutdown_handler)
-        signal.signal(signal.SIGTERM, shutdown_handler)
-        self.logger.debug("Attached signal handlers")
+        if threading.current_thread() is threading.main_thread():
+            logger.debug("attaching signal handlers")
+            original_handler_sigint = signal.getsignal(signal.SIGINT)
+            original_handler_sigterm = signal.getsignal(signal.SIGTERM)
+            signal.signal(signal.SIGINT, lambda signum, frame: self.stop())
+            signal.signal(signal.SIGTERM, lambda signum, frame: self.stop())
+            logger.debug("attached signal handlers")
+        else:
+            logger.debug("not attaching signal handlers -- not inside main thread.")  # noqa: pycodestyle
 
         self.__time_iteration_begun = timer()  # type: ignore
 
@@ -196,24 +193,24 @@ class Searcher(object):
             for t in threads:
                 t.join()
         except Shutdown:
-            self.logger.info("Reached time limit without finding repair. Terminating search.")
+            logger.info("Reached time limit without finding repair. Terminating search.")
             self.__error_occurred = True
         except Exception as e:
             self.__error_occurred = True
         finally:
             for t in threads:
                 t.join()
-            signal.signal(signal.SIGINT, original_handler_sigint)
-            signal.signal(signal.SIGTERM, original_handler_sigterm)
+            if threading.current_thread() is threading.main_thread():
+                logger.debug("restoring original signal handlers")
+                signal.signal(signal.SIGINT, original_handler_sigint)
+                signal.signal(signal.SIGTERM, original_handler_sigterm)
+                logger.debug("restored original signal handlers")
 
         duration_iteration = timer() - self.__time_iteration_begun  # type: ignore
         self.__time_running += datetime.timedelta(seconds=duration_iteration)
 
-        # if we have a patch, return it
         if self.__found_patches:
             return self.__found_patches.pop()
-
-        # if not, we're done
         raise StopIteration
 
     def _try_next(self) -> bool:
@@ -231,65 +228,66 @@ class Searcher(object):
         try:
             candidate = next(self.__candidates) # type: ignore
         except StopIteration:
-            self.__logger.info("All candidate patches have been exhausted.")
+            logger.info("All candidate patches have been exhausted.")
             self.__exhausted_candidates = True
             return False
         finally:
             self.__lock_candidates.release()
 
-        # TODO improve log format
-        # create a logger for this particular candidate patch evaluation
-        # logger = self.logger.getChild(str(candidate))
-        logger = self.logger
-
         self.__counter_candidates += 1
         bz = self.__bugzoo
+        logger.debug("provisioning container")
         container = bz.containers.provision(self.__problem.bug)
+        logger.debug("provisioned container")
+        logger_c = logger.getChild(container.uid)
         try:
             patch = candidate.diff(self.__problem)
             diff = candidate.diff(self.__problem)
-            logger.info("Evaluating: %s\n%s\n", candidate, diff)
+            logger_c.info("evaluating: %s\n%s\n", candidate, diff)
+            logger_c.debug("applying patch")
             bz.containers.patch(container, patch)
+            logger_c.debug("applied patch")
 
             # ensure that the patch compiles
+            logger_c.debug("compiling source code")
             outcome_compilation = bz.containers.compile(container)
-            logger.debug("Compilation outcome for %s:\n%s",
-                         candidate,
-                         outcome_compilation.response.output)
+            logger_c.debug("compilation outcome for %s:\n%s",
+                           candidate,
+                           outcome_compilation.response.output)
+            logger_c.debug("recording build outcome")
             self.outcomes.record_build(candidate, outcome_compilation)
+            logger_c.debug("record build outcome")
             if not outcome_compilation.successful:
-                logger.info("Failed to compile: %s", candidate)
+                logger.info("failed to compile: %s", candidate)
                 return True
 
             # for now, execute all tests in no particular order
             # TODO perform test ordering
+            logger_c.debug("executing tests")
             for test in self.__problem.tests:
                 cmd = self.__problem.bug.harness.command(test)[0]
-                logger.info("Executing test: %s (%s)", test.name, candidate)
+                logger_c.info("executing test: %s (%s)", test.name, candidate)
                 self.__counter_tests += 1
-                outcome = bz.containers.execute(container, test)
-                logger.debug("* test outcome: %s (%s) [retcode=%d]\n$ %s\n%s",
-                             test.name,
-                             candidate,
-                             outcome.response.code,
-                             cmd,
-                             outcome.response.output)
+                outcome = bz.containers.test(container, test)
+                logger_c.debug("* test outcome: %s (%s) [retcode=%d]\n$ %s\n%s",
+                               test.name,
+                               candidate,
+                               outcome.response.code,
+                               cmd,
+                               outcome.response.output)
                 self.outcomes.record_test(candidate, test.name, outcome)
                 if not outcome.passed:
-                    logger.info("* test failed: %s (%s)", test.name, candidate)
+                    logger_c.info("* test failed: %s (%s)", test.name, candidate)
                     return True
-                logger.info("* test passed: %s (%s)", test.name, candidate)
+                logger_c.info("* test passed: %s (%s)", test.name, candidate)
 
             # if we've found a repair, pause the search
             self.__found_patches.append(candidate)
-
-            # report the patch
-            logger.info("FOUND A REPAIR: %s", candidate)
-
+            logger_c.info("FOUND A REPAIR: %s", candidate)
             return True
 
         # TODO ensure a bool is returned when an exception occurs
         finally:
-            logger.info("Evaluated: %s", candidate)
+            logger_c.info("evaluated: %s", candidate)
             if container:
                 del bz.containers[container.uid]
