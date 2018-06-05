@@ -3,8 +3,14 @@ class DarjeelingError(Exception):
 
 
 class NoFailingTests(DarjeelingError):
-    pass
+    """
+    The program under repair has no failing tests and therefore does not
+    constitute a valid test-based repair problem.
+    """
 
 
 class NoImplicatedLines(DarjeelingError):
-    pass
+    """
+    The program under repair has no lines that have been marked as suspicious
+    by its fault localisation and coverage information.
+    """
