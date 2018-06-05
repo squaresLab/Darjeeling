@@ -1,44 +1,22 @@
-from typing import List, Iterator, Dict
+from typing import List, Iterator, Dict, FrozenSet
 
+import attr
 from bugzoo.core.patch import Patch
 
-from darjeeling.transformation import Transformation, \
-                                      DeleteTransformation, \
-                                      ReplaceTransformation, \
-                                      AppendTransformation
-from darjeeling.problem import Problem
+from .problem import Problem
+from .transformation import Transformation, \
+                            DeleteTransformation, \
+                            ReplaceTransformation, \
+                            AppendTransformation
 
 
-# class RawPatchCandidate(object):
-#     def __init__(self, patch: Patch) -> None:
-#         self.__patch = patch
-# 
-#     def __str__(self) -> str:
-#         return str(self.__patch)
-# 
-#     def diff(self, problem: Problem) -> Patch:
-
+@attr.s(frozen=True)
 class Candidate(object):
     """
     Represents a candidate repair as a set of atomic program transformations.
     """
-    def __init__(self,
-                 transformations: List[Transformation]
-                 ) -> None:
-        self.__transformations = frozenset(transformations)
-
-    def __str__(self) -> str:
-        transformations_s = \
-            ', '.join([str(t) for t in self.transformations])
-        return "<{}>".format(transformations_s)
-
-    @property
-    def transformations(self) -> Iterator[Transformation]:
-        """
-        The transformations that comprise this repair.
-        """
-        for t in self.__transformations:
-            yield t
+    transformations = attr.ib(type=FrozenSet[Transformation],
+                              converter=frozenset)
 
     def diff(self, problem: Problem) -> Patch:
         """
@@ -57,6 +35,7 @@ class Candidate(object):
         for group in tf.values():
             group.sort(key=lambda t: t.char_range.start.offset, reverse=True) # type: ignore
 
+        # FIXME this is stupid
         # transform each group into a modified source code file
         transformed = problem.sources
         for (fn, transformations) in tf.items():
