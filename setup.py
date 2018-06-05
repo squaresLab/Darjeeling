@@ -21,6 +21,7 @@ setup(
     python_requires='>=3.5',
     install_requires=[
         'bugzoo>=2.1.7',
+        'rooibos>=0.3.0',
         'requests',
         'flask'
     ],
