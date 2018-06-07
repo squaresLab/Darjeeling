@@ -37,6 +37,15 @@ class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta)
     location = attr.ib(type=FileLocationRange)
     arguments = attr.ib(type=Dict[str, str])
 
+    # FIXME need to use abstract properties
+    @property
+    def rewrite(self) -> str:
+        raise NotImplementedError
+
+    @property
+    def match(self) -> str:
+        raise NotImplementedError
+
     def to_replacement(self, problem: Problem) -> Replacement:
         text = problem.rooibos.substitute(self.rewrite, self.arguments)
         return Replacement(self.location, text)

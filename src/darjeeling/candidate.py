@@ -5,6 +5,7 @@ from typing import List, Iterator, Dict, FrozenSet
 import attr
 from bugzoo.core.patch import Patch
 
+from .core import Replacement
 from .problem import Problem
 from .transformation import Transformation
 
@@ -15,7 +16,7 @@ class Candidate(object):
     Represents a candidate repair as a set of atomic program transformations.
     """
     transformations = attr.ib(type=FrozenSet[Transformation],
-                              converter=frozenset)
+                              converter=frozenset)  # type: ignore  # bug in mypy (should be fixed in v0.610)  # noqa: pycodestyle
 
     def to_diff(self, problem: Problem) -> Patch:
         """
@@ -23,7 +24,7 @@ class Candidate(object):
         """
         replacements = \
             map(lambda t: t.to_replacement(problem), self.transformations)
-        replacements_by_file = {}
+        replacements_by_file = {}  # type: Dict[str, List[Replacement]]
         for rep in replacements:
             fn = rep.location.filename
             if fn not in replacements_by_file:

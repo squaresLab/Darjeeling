@@ -8,6 +8,7 @@ import boggart
 import rooibos
 import bugzoo
 import bugzoo.localization.suspiciousness as metrics
+from rooibos import Client as RooibosClient
 from bugzoo.core.fileline import FileLine, FileLineSet
 from bugzoo.core.bug import Bug
 from bugzoo.core.patch import Patch
@@ -33,7 +34,7 @@ class Problem(object):
                  bz: bugzoo.BugZoo,
                  bug: Bug,
                  *,
-                 client_rooibos: Optional[rooibos.Client] = None,
+                 client_rooibos: Optional[RooibosClient] = None,
                  suspiciousness_metric: Optional[SuspiciousnessMetric] = None,
                  in_files: List[str],
                  restrict_to_lines: Optional[FileLineSet] = None,
@@ -246,7 +247,9 @@ class Problem(object):
         return self.__snippets
 
     @property
-    def rooibos(self) -> rooibos.Client:
+    def rooibos(self) -> RooibosClient:
+        assert self.__client_rooibos is not None
+        assert isinstance(self.__client_rooibos, rooibos.Client)
         return self.__client_rooibos
 
     @property
