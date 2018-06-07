@@ -75,7 +75,7 @@ class ProgramSourceManager(object):
         """
         Removes information for a given file from this manager.
         """
-        del self.__files[fn]
+        self.__files.remove(fn)
         self.__mgr._forget_file(self.__snapshot, fn)
 
     def replacements_to_diff(self,
