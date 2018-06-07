@@ -4,8 +4,11 @@ import tempfile
 import logging
 import os
 
+import boggart
+import rooibos
 import bugzoo
 import bugzoo.localization.suspiciousness as metrics
+from rooibos import Client as RooibosClient
 from bugzoo.core.fileline import FileLine, FileLineSet
 from bugzoo.core.bug import Bug
 from bugzoo.core.patch import Patch
@@ -17,7 +20,7 @@ from bugzoo.util import indent
 
 import darjeeling.filters as filters
 from .snippet import SnippetDatabase, Snippet
-from .source import SourceFile, SourceFileCollection
+from .source import ProgramSourceManager
 from .util import get_file_contents
 from .exceptions import NoFailingTests, NoImplicatedLines
 
@@ -31,6 +34,7 @@ class Problem(object):
                  bz: bugzoo.BugZoo,
                  bug: Bug,
                  *,
+                 client_rooibos: Optional[RooibosClient] = None,
                  suspiciousness_metric: Optional[SuspiciousnessMetric] = None,
                  in_files: List[str],
                  restrict_to_lines: Optional[FileLineSet] = None,
@@ -62,7 +66,10 @@ class Problem(object):
         assert len(in_files) > 0
         self.__bug = bug
         self.__verbose = verbose
+        self.__client_rooibos = client_rooibos
+        self.__client_bugzoo = bz
 
+        # FIXME trash this garbage
         # establish logging mechanism
         # * stream logging information to stdout
         if logger:
@@ -94,12 +101,12 @@ class Problem(object):
         self._dump_coverage()
 
         # restrict coverage information to specified files
+        # FIXME this step should be optional
         self.__logger.debug("restricting coverage information to files:\n* %s",
                             '\n* '.join(in_files))
         self.__coverage = self.__coverage.restricted_to_files(in_files)
         self.__logger.debug("restricted coverage information.")
         self._dump_coverage()
-
 
         # determine the passing and failing tests by using coverage information
         self.__logger.debug("using test execution used to generate coverage to determine passing and failing tests")
@@ -130,10 +137,14 @@ class Problem(object):
         if restrict_to_lines is not None:
             self.__lines = self.__lines.intersection(restrict_to_lines)
 
+        # TODO migrate
         # cache contents of the implicated files
         t_start = timer()
         self.__logger.debug("storing contents of source code files")
-        self.__sources = SourceFileCollection.from_bug(bz, bug, self.__lines.files)
+        self.__sources = ProgramSourceManager(bz,
+                                              client_rooibos,
+                                              bug,
+                                              files=self.__lines.files)
         duration = timer() - t_start
         self.__logger.debug("stored contents of source code files (took %.1f seconds)",
                             duration)
@@ -150,8 +161,7 @@ class Problem(object):
         if line_coverage_filters:
             line_content_filters += line_coverage_filters # type: ignore
         for f in line_content_filters:
-            fltr_line = \
-                lambda fl: f(self.__sources.line(fl.filename, fl.num))
+            fltr_line = lambda fl: f(self.__sources.read_line(fl))
             self.__lines = self.__lines.filter(fltr_line)
         num_lines_after_filtering = len(self.__lines)
         num_lines_removed_by_filtering = \
@@ -204,7 +214,7 @@ class Problem(object):
         ]
 
         for line in self.__coverage.lines:
-            content = self.__sources.line(line.filename, line.num).strip()
+            content = self.__sources.read_line(line).strip()
             if all(fltr(content) for fltr in snippet_filters):
                 # self.__logger.debug("* found snippet at %s: %s", line, content)
                 snippet = Snippet(content)
@@ -222,7 +232,7 @@ class Problem(object):
         extraneous_source_fns = \
             set(self.__sources.files) - set(self.__lines.files)
         for fn in extraneous_source_fns:
-            self.__sources = self.__sources.without_file(fn)
+            del self.__sources[fn]
         self.__logger.debug("finished reducing memory footprint")
 
     def _dump_coverage(self) -> None:
@@ -235,6 +245,12 @@ class Problem(object):
         The snippet database that should be used to generate new code.
         """
         return self.__snippets
+
+    @property
+    def rooibos(self) -> RooibosClient:
+        assert self.__client_rooibos is not None
+        assert isinstance(self.__client_rooibos, rooibos.Client)
+        return self.__client_rooibos
 
     @property
     def bug(self) -> Bug:
@@ -266,13 +282,6 @@ class Problem(object):
         Returns an iterator over the passing tests for this problem.
         """
         return self.__tests_passing.__iter__()
-
-    @property
-    def logger(self) -> logging.Logger:
-        """
-        The logger that should be used to log output for this problem.
-        """
-        return self.__logger
 
     @property
     def localization(self) -> Localization:
@@ -307,7 +316,7 @@ class Problem(object):
         return self.__lines.__iter__()
 
     @property
-    def sources(self) -> SourceFileCollection:
+    def sources(self) -> ProgramSourceManager:
         """
         The source code files for the program under repair.
         """
@@ -322,7 +331,7 @@ class Problem(object):
         Parameters:
             expected_to_pass: a list of test cases for the program that are
                 expected to pass.
-            expected_to_fail: a list o test cases for the program that are
+            expected_to_fail: a list of test cases for the program that are
                 expected to fail.
 
         Returns:
