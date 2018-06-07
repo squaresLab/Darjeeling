@@ -246,7 +246,7 @@ class Problem(object):
         return self.__snippets
 
     @property
-    def rooibos(self) -> RooibosClient:
+    def rooibos(self) -> rooibos.Client:
         return self.__client_rooibos
 
     @property
