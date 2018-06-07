@@ -17,12 +17,12 @@ class Transformation(object):
     """
     Represents a transformation to a source code file.
     """
-    def to_replacement(self) -> Replacement:
+    def to_replacement(self, problem: Problem) -> Replacement:
         raise NotImplementedError
 
 
 class RooibosTransformationMeta(type):
-    def __new__(metacls: type, name: str, bases, dikt) -> None:
+    def __new__(metacls: type, name: str, bases, dikt):
         if name != 'RooibosTransformation':
             if not 'match' in dikt:
                 raise SyntaxError('missing "match" property in {}'.format(name))
