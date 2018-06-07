@@ -231,7 +231,7 @@ class Problem(object):
         extraneous_source_fns = \
             set(self.__sources.files) - set(self.__lines.files)
         for fn in extraneous_source_fns:
-            self.__sources = self.__sources.without_file(fn)
+            del self.__sources[fn]
         self.__logger.debug("finished reducing memory footprint")
 
     def _dump_coverage(self) -> None:
