@@ -236,14 +236,14 @@ class Searcher(object):
 
         self.__counter_candidates += 1
         bz = self.__bugzoo
+        mgr_src = self.__problem.sources
         logger.debug("provisioning container")
         container = bz.containers.provision(self.__problem.bug)
         logger.debug("provisioned container")
         logger_c = logger.getChild(container.uid)
         try:
-            patch = candidate.diff(self.__problem)
-            diff = candidate.diff(self.__problem)
-            logger_c.info("evaluating: %s\n%s\n", candidate, diff)
+            patch = candidate.to_diff(self.__problem)
+            logger_c.info("evaluating: %s\n%s\n", candidate, patch)
             logger_c.debug("applying patch")
             bz.containers.patch(container, patch)
             logger_c.debug("applied patch")
