@@ -1,60 +1,97 @@
+"""
+This module is responsible for describing concrete transformations to source
+code files.
+"""
 from typing import List, Iterator, Dict
 
+import attr
+import rooibos
 from bugzoo.core.bug import Bug
-from bugzoo.core.fileline import FileLine
-from bugzoo.core.filechar import FileCharRange
 
+from .problem import Problem
 from .snippet import Snippet
-from .source import SourceFile
+from .core import Replacement, FileLine, FileLocationRange
 
 
 class Transformation(object):
-    @property
-    def diff(self) -> str:
+    """
+    Represents a transformation to a source code file.
+    """
+    def to_replacement(self) -> Replacement:
         raise NotImplementedError
 
 
-class CharRangeTransformation(Transformation):
-    def __init__(self, char_range: FileCharRange) -> None:
-        self.__char_range = char_range
+class RooibosTransformationMeta(type):
+    def __new__(metacls: type, name: str, bases, dikt) -> None:
+        if name != 'RooibosTransformation':
+            if not 'match' in dikt:
+                raise SyntaxError('missing "match" property in {}'.format(name))
+            if not 'rewrite' in dikt:
+                raise SyntaxError('missing "rewrite" property in {}'.format(name))
+        # TODO add ability to specify constraints
+        return type.__new__(metacls, name, bases, dikt)
 
-    @property
-    def char_range(self) -> FileCharRange:
-        return self.__char_range
+
+@attr.s(frozen=True)
+class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta):  # noqa: pycodestyle
+    location = attr.ib(type=FileLocationRange)
+    arguments = attr.ib(type=Dict[str, str])
+
+    def to_replacement(self, problem: Problem) -> Replacement:
+        text = problem.rooibos.substitute(self.rewrite, self.arguments)
+        return Replacement(self.location, text)
 
 
-class DeleteTransformation(CharRangeTransformation):
+class AndToOr(RooibosTransformation):
+    match = "&&"
+    rewrite = "||"
+
+
+class OrToAnd(RooibosTransformation):
+    match = "||"
+    rewrite = "&&"
+
+
+@attr.s(frozen=True)
+class LocationRangeTransformation(Transformation):
+    location = attr.ib(type=FileLocationRange,
+                       validator=attr.validators.instance_of(FileLocationRange))  # noqa: pycodestyle
+
+
+@attr.s(frozen=True)
+class DeleteTransformation(LocationRangeTransformation):
     def __str__(self) -> str:
-        return "DELETE[{}]".format(self.char_range)
+        return "DELETE[{}]".format(self.location)
+
+    def to_replacement(self, problem: Problem) -> Replacement:
+        return Replacement(self.location, "")
 
 
-class ReplaceTransformation(CharRangeTransformation):
+@attr.s(frozen=True)
+class ReplaceTransformation(LocationRangeTransformation):
     """
     Replaces a numbered line in a given file with a provided snippet.
     """
-    def __init__(self, char_range: FileCharRange, snippet: Snippet) -> None:
-        super().__init__(char_range)
-        self.__snippet = snippet
-
-    @property
-    def snippet(self) -> Snippet:
-        return self.__snippet
+    snippet = attr.ib(type=Snippet)
 
     def __str__(self) -> str:
-        return "REPLACE[{}; {}]".format(self.char_range, self.__snippet)
+        return "REPLACE[{}; {}]".format(self.location, self.snippet)
+
+    def to_replacement(self, problem: Problem) -> Replacement:
+        return Replacement(self.location, self.snippet.content)
 
 
-class AppendTransformation(CharRangeTransformation):
+@attr.s(frozen=True)
+class AppendTransformation(LocationRangeTransformation):
     """
     Appends a given snippet to a specific line in a given file.
     """
-    def __init__(self, char_range: FileCharRange, snippet: Snippet) -> None:
-        super().__init__(char_range)
-        self.__snippet = snippet
-
-    @property
-    def snippet(self) -> Snippet:
-        return self.__snippet
+    snippet = attr.ib(type=Snippet)
 
     def __str__(self) -> str:
-        return "APPEND[{}; {}]".format(self.char_range, self.__snippet)
+        return "APPEND[{}; {}]".format(self.location, self.snippet)
+
+    def to_replacement(self, problem: Problem) -> Replacement:
+        old = problem.sources.read_chars(self.location)
+        new = old + self.snippet.content
+        return Replacement(self.location, new)
