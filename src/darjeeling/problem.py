@@ -246,6 +246,10 @@ class Problem(object):
         return self.__snippets
 
     @property
+    def rooibos(self) -> RooibosClient:
+        return self.__client_rooibos
+
+    @property
     def bug(self) -> Bug:
         """
         A description of the bug, provided by BugZoo.
