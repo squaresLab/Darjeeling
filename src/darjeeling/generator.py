@@ -1,10 +1,14 @@
+"""
+This module provides a number of composable methods for generating code
+transformations and candidate patches.
+"""
 from typing import Iterator, List, Iterable, Tuple, Optional
 import random
 
+from rooibos import Client as RooibosClient
 from bugzoo.localization import Localization
-from bugzoo.core.fileline import FileLine
-from bugzoo.core.filechar import FileCharRange
 
+from .core import FileLocationRange, FileLine
 from .problem import Problem
 from .snippet import Snippet, SnippetDatabase
 from .candidate import Candidate
@@ -12,6 +16,10 @@ from .transformation import Transformation, \
                             AppendTransformation, \
                             DeleteTransformation, \
                             ReplaceTransformation
+
+class Context(object):
+    pass
+    # provide access to files
 
 
 class CandidateGenerator(Iterable):
@@ -28,6 +36,11 @@ class CandidateGenerator(Iterable):
 
 
 class TransformationGenerator(Iterable):
+    """
+    Transformation generators are used to provide a stream of source code
+    transformations. As with candidate generators, transformations are usually
+    generated in a lazy fashion.
+    """
     def __iter__(self) -> Iterator[Transformation]:
         return self
 
@@ -55,18 +68,18 @@ class SingleEditPatches(CandidateGenerator):
 
 class TargetSnippetGenerator(Iterable):
     def __init__(self,
-                 targets: Iterator[FileCharRange],
+                 targets: Iterator[FileLocationRange],
                  snippets: SnippetDatabase
                  ) -> None:
         self.__targets = targets
         self.__snippets = snippets
-        self.__current_target = None # type: Optional[FileCharRange]
+        self.__current_target = None # type: Optional[FileLocationRange]
         self.__snippets_at_target = iter([]) # type: Iterator[Snippet]
 
-    def __iter__(self) -> Iterator[Tuple[FileCharRange, Snippet]]:
+    def __iter__(self) -> Iterator[Tuple[FileLocationRange, Snippet]]:
         return self
 
-    def __next__(self) -> Tuple[FileCharRange, Snippet]:
+    def __next__(self) -> Tuple[FileLocationRange, Snippet]:
         # fetch the next snippet at the current line
         # if there are no snippets left at this line, move onto
         # the next line. if there are no lines left, stop iterating.
@@ -87,7 +100,7 @@ class TargetSnippetGenerator(Iterable):
 
 
 class DeletionGenerator(TransformationGenerator):
-    def __init__(self, targets: Iterable[FileCharRange]) -> None:
+    def __init__(self, targets: Iterable[FileLocationRange]) -> None:
         """
         Constructs a deletion generator.
         """
@@ -114,7 +127,7 @@ class ReplacementGenerator(TransformationGenerator):
     transformations for a sequence of transformation targets.
     """
     def __init__(self,
-                 targets: Iterator[FileCharRange],
+                 targets: Iterator[FileLocationRange],
                  snippets: SnippetDatabase
                  ) -> None:
         self.__generator_target_snippet = \
@@ -134,7 +147,7 @@ class ReplacementGenerator(TransformationGenerator):
 
 class AppendGenerator(TransformationGenerator):
     def __init__(self,
-                 targets: Iterator[FileCharRange],
+                 targets: Iterator[FileLocationRange],
                  snippets: SnippetDatabase
                  ) -> None:
         self.__generator_target_snippet = \
@@ -167,7 +180,7 @@ class AllTransformationsAtLine(TransformationGenerator):
                  ) -> None:
         # transform line to character range
         # TODO tidy this hack
-        char_range = problem.sources[line.filename].line_to_char_range(line)
+        char_range = problem.sources.line_to_location_range(line)
 
         # TODO clean up iterator ugliness
         self.__sources = [
