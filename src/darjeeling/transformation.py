@@ -36,7 +36,7 @@ class RooibosTransformationMeta(type):
 class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta):  # noqa: pycodestyle
     location = attr.ib(type=FileLocationRange)
     arguments = attr.ib(type=FrozenSet[Tuple[str, str]],  # TODO replace with FrozenDict
-                        converter=frozenset)  # FIXME needs to be immutable
+                        converter=frozenset)  # type: ignore
 
     # FIXME need to use abstract properties
     @property

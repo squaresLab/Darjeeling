@@ -72,11 +72,6 @@ def repair(bugzoo: bugzoo.BugZoo,
         of all the candidate patches discovered during the search, and
         `report` contains a summary of the search process.
     """
-    transformations = \
-        SampleByLocalization(problem,
-                             problem.localization,
-                             problem.snippets,
-                             randomize=False)
     transformations = all_transformations_in_file(problem,
                                                   GreaterThanToLessOrEqualTo,
                                                   "zune.c")

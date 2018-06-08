@@ -60,7 +60,7 @@ def all_transformations_in_file(
     tpl_rewrite = transformation_cls.rewrite
     matches = client_rooibos.matches(file_contents, tpl_match)
     for m in matches:
-        args = {}  # FIXME
+        args = {}  # type: Dict[str, str]  # FIXME
         location = FileLocationRange(filename,
                                      Location(m.location.start.line,
                                               m.location.start.col),
