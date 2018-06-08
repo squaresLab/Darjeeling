@@ -2,7 +2,7 @@
 This module provides a number of composable methods for generating code
 transformations and candidate patches.
 """
-from typing import Iterator, List, Iterable, Tuple, Optional, Type
+from typing import Iterator, List, Iterable, Tuple, Optional, Type, Dict
 import random
 
 from rooibos import Client as RooibosClient
