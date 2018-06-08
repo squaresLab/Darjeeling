@@ -66,7 +66,16 @@ class Searcher(object):
         self.__time_running = datetime.timedelta()
         self.__error_occurred = False
         self.__found_patches = []  # type: List[Candidate]
+        self.__history = []  # type: List[Candidate]
         logger.debug("constructed searcher")
+
+    @property
+    def history(self) -> List[Candidate]:
+        """
+        Returns an ordered list of all of the candidate patches that have been
+        explored by this search process.
+        """
+        return self.__history.copy()
 
     @property
     def outcomes(self) -> OutcomeManager:
@@ -227,6 +236,7 @@ class Searcher(object):
         self.__lock_candidates.acquire()
         try:
             candidate = next(self.__candidates) # type: ignore
+            self.__history.append(candidate)
         except StopIteration:
             logger.info("All candidate patches have been exhausted.")
             self.__exhausted_candidates = True
