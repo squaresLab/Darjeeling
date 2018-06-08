@@ -2,17 +2,18 @@
 This module provides a number of composable methods for generating code
 transformations and candidate patches.
 """
-from typing import Iterator, List, Iterable, Tuple, Optional
+from typing import Iterator, List, Iterable, Tuple, Optional, Type
 import random
 
 from rooibos import Client as RooibosClient
 from bugzoo.localization import Localization
 
-from .core import FileLocationRange, FileLine
+from .core import FileLocationRange, FileLine, Location
 from .problem import Problem
 from .snippet import Snippet, SnippetDatabase
 from .candidate import Candidate
 from .transformation import Transformation, \
+                            RooibosTransformation, \
                             AppendTransformation, \
                             DeleteTransformation, \
                             ReplaceTransformation
@@ -46,6 +47,26 @@ class TransformationGenerator(Iterable):
 
     def __next__(self) -> Transformation:
         raise NotImplementedError
+
+
+def all_transformations_in_file(
+        problem: Problem,
+        transformation_cls: Type[RooibosTransformation],
+        filename: str
+    ) -> Iterator[Transformation]:
+    client_rooibos = problem.rooibos
+    file_contents = problem.sources.read_file(filename)
+    tpl_match = transformation_cls.match
+    tpl_rewrite = transformation_cls.rewrite
+    matches = client_rooibos.matches(file_contents, tpl_match)
+    for m in matches:
+        args = {}  # FIXME
+        location = FileLocationRange(filename,
+                                     Location(m.location.start.line,
+                                              m.location.start.col),
+                                     Location(m.location.stop.line,
+                                              m.location.stop.col))
+        yield transformation_cls(location, args)
 
 
 class SingleEditPatches(CandidateGenerator):

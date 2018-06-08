@@ -2,7 +2,7 @@
 This module is responsible for describing concrete transformations to source
 code files.
 """
-from typing import List, Iterator, Dict
+from typing import List, Iterator, Dict, FrozenSet, Tuple
 
 import attr
 import rooibos
@@ -35,7 +35,8 @@ class RooibosTransformationMeta(type):
 @attr.s(frozen=True)
 class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta):  # noqa: pycodestyle
     location = attr.ib(type=FileLocationRange)
-    arguments = attr.ib(type=Dict[str, str])
+    arguments = attr.ib(type=FrozenSet[Tuple[str, str]],  # TODO replace with FrozenDict
+                        converter=frozenset)  # FIXME needs to be immutable
 
     # FIXME need to use abstract properties
     @property
@@ -47,7 +48,8 @@ class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta)
         raise NotImplementedError
 
     def to_replacement(self, problem: Problem) -> Replacement:
-        text = problem.rooibos.substitute(self.rewrite, self.arguments)
+        args = dict(self.arguments)
+        text = problem.rooibos.substitute(self.rewrite, args)
         return Replacement(self.location, text)
 
 
@@ -59,6 +61,16 @@ class AndToOr(RooibosTransformation):
 class OrToAnd(RooibosTransformation):
     match = "||"
     rewrite = "&&"
+
+
+class GreaterThanToLessOrEqualTo(RooibosTransformation):
+    match = ">"
+    rewrite = "<="
+
+
+class LEToGT(RooibosTransformation):
+    match = "<="
+    rewrite = ">"
 
 
 @attr.s(frozen=True)

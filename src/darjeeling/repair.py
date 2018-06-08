@@ -14,7 +14,10 @@ from .generator import DeletionGenerator, \
                        AppendGenerator, \
                        SingleEditPatches, \
                        AllTransformationsAtLine, \
-                       SampleByLocalization
+                       SampleByLocalization, \
+                       all_transformations_in_file
+from .transformation import AndToOr, \
+                            GreaterThanToLessOrEqualTo
 
 logger = logging.getLogger(__name__)
 
@@ -69,14 +72,14 @@ def repair(bugzoo: bugzoo.BugZoo,
         of all the candidate patches discovered during the search, and
         `report` contains a summary of the search process.
     """
-    # line = FileLine("ArduCopter/Log.cpp", 577)
-    # transformations = \
-    #     AllTransformationsAtLine(line, problem.snippets)
     transformations = \
         SampleByLocalization(problem,
                              problem.localization,
                              problem.snippets,
                              randomize=False)
+    transformations = all_transformations_in_file(problem,
+                                                  GreaterThanToLessOrEqualTo,
+                                                  "zune.c")
     candidates = SingleEditPatches(transformations)
 
     searcher = Searcher(bugzoo,
@@ -93,6 +96,10 @@ def repair(bugzoo: bugzoo.BugZoo,
             repairs = []
     else:
         repairs = list(searcher)
+
+    # let's check the history
+    for (i, candidate) in enumerate(searcher.history):
+        print("{}: {}".format(i, candidate))
 
     #for candidate in searcher.outcomes:
     #    outcome = searcher.outcomes[candidate]
