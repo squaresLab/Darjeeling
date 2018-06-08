@@ -22,6 +22,7 @@ setup(
     install_requires=[
         'bugzoo>=2.1.7',
         'rooibos>=0.3.0',
+        'boggart>=0.1.4',
         'attrs>=17.2.0',
         'requests',
         'flask'
