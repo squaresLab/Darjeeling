@@ -42,7 +42,6 @@ class Problem(object):
                  in_files: List[str],
                  restrict_to_lines: Optional[FileLineSet] = None,
                  cache_coverage: bool = True,
-                 verbose: bool = False,
                  logger: Optional[logging.Logger] = None,
                  line_coverage_filters: Optional[List[Callable[[str], bool]]] = None
                  ) -> None:
@@ -68,7 +67,6 @@ class Problem(object):
         """
         assert len(in_files) > 0
         self.__bug = bug
-        self.__verbose = verbose
         self.__client_rooibos = client_rooibos
         self.__client_bugzoo = bz
 
