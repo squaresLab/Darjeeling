@@ -25,6 +25,9 @@ from .util import get_file_contents
 from .exceptions import NoFailingTests, NoImplicatedLines
 
 
+logger = logging.getLogger(__name__)  # type: logging.Logger
+
+
 class Problem(object):
     """
     Used to provide a description of a problem (i.e., a bug), and to hold
@@ -69,47 +72,35 @@ class Problem(object):
         self.__client_rooibos = client_rooibos
         self.__client_bugzoo = bz
 
-        # FIXME trash this garbage
-        # establish logging mechanism
-        # * stream logging information to stdout
-        if logger:
-            self.__logger = logger
-        else:
-            self.__logger = \
-                logging.getLogger('darjeeling.problem').getChild(bug.name)
-            self.__logger.setLevel(logging.DEBUG)
-            self.__logger.addHandler(logging.StreamHandler())
-        self.__logger.debug("creating problem for bug: %s", bug.name)
-
         if suspiciousness_metric is None:
-            self.__logger.debug("no suspiciousness metric provided: using Tarantula as a default.")
+            logger.debug("no suspiciousness metric provided: using Tarantula as a default.")
             suspiciousness_metric = metrics.tarantula
 
         # fetch coverage information
         if cache_coverage:
-            self.__logger.debug("fetching coverage information from BugZoo")
+            logger.debug("fetching coverage information from BugZoo")
             self.__coverage = bz.bugs.coverage(bug)
-            self.__logger.debug("fetched coverage information from BugZoo")
+            logger.debug("fetched coverage information from BugZoo")
         else:
-            self.__logger.debug("computing coverage information")
+            logger.debug("computing coverage information")
             try:
                 container = bz.containers.provision(bug)
                 self.__coverage = bz.containers.coverage(container)
             finally:
                 del bz.containers[container.uid]
-            self.__logger.debug("computed coverage information")
+            logger.debug("computed coverage information")
         self._dump_coverage()
 
         # restrict coverage information to specified files
         # FIXME this step should be optional
-        self.__logger.debug("restricting coverage information to files:\n* %s",
+        logger.debug("restricting coverage information to files:\n* %s",
                             '\n* '.join(in_files))
         self.__coverage = self.__coverage.restricted_to_files(in_files)
-        self.__logger.debug("restricted coverage information.")
+        logger.debug("restricted coverage information.")
         self._dump_coverage()
 
         # determine the passing and failing tests by using coverage information
-        self.__logger.debug("using test execution used to generate coverage to determine passing and failing tests")
+        logger.debug("using test execution used to generate coverage to determine passing and failing tests")
         self.__tests_failing = set() # type: Set[TestCase]
         self.__tests_passing = set() # type: Set[TestCase]
         for test_name in self.__coverage:
@@ -120,9 +111,9 @@ class Problem(object):
             else:
                 self.__tests_failing.add(test)
 
-        self.__logger.info("determined passing and failing tests")
-        self.__logger.info("* passing tests: %s", ', '.join([t.name for t in self.__tests_passing]))
-        self.__logger.info("* failing tests: %s", ', '.join([t.name for t in self.__tests_failing]))
+        logger.info("determined passing and failing tests")
+        logger.info("* passing tests: %s", ', '.join([t.name for t in self.__tests_passing]))
+        logger.info("* failing tests: %s", ', '.join([t.name for t in self.__tests_failing]))
         if not self.__tests_failing:
             raise NoFailingTests
 
@@ -131,7 +122,7 @@ class Problem(object):
         # 1. restrict to lines covered by failing tests
         # 3. restrict to lines with suspiciousness greater than zero
         # 4. restrict to lines that are optionally provided
-        self.__logger.info("Determining implicated lines")
+        logger.info("Determining implicated lines")
         self.__lines = self.__coverage.failing.lines
 
         if restrict_to_lines is not None:
@@ -140,20 +131,20 @@ class Problem(object):
         # TODO migrate
         # cache contents of the implicated files
         t_start = timer()
-        self.__logger.debug("storing contents of source code files")
+        logger.debug("storing contents of source code files")
         self.__sources = ProgramSourceManager(bz,
                                               client_rooibos,
                                               bug,
                                               files=self.__lines.files)
         duration = timer() - t_start
-        self.__logger.debug("stored contents of source code files (took %.1f seconds)",
+        logger.debug("stored contents of source code files (took %.1f seconds)",
                             duration)
 
         # restrict attention to statements
         # FIXME for now, we approximate this -- going forward, we can use
         #   Rooibos to determine transformation targets
         num_lines_before_filtering = len(self.__lines)
-        self.__logger.debug("filtering lines according to content filters")
+        logger.debug("filtering lines according to content filters")
         line_content_filters = [
             filters.ends_with_semi_colon,
             filters.has_balanced_delimiters
@@ -166,36 +157,36 @@ class Problem(object):
         num_lines_after_filtering = len(self.__lines)
         num_lines_removed_by_filtering = \
             num_lines_after_filtering - num_lines_before_filtering
-        self.__logger.debug("filtered lines according to content files: removed %d lines",  # noqa: pycodestyle
+        logger.debug("filtered lines according to content files: removed %d lines",  # noqa: pycodestyle
                             num_lines_removed_by_filtering)
 
         # compute fault localization
-        self.__logger.info("computing fault localization")
+        logger.info("computing fault localization")
         self.__coverage = \
             self.__coverage.restricted_to_files(self.__lines.files)
-        self.__logger.debug("restricted coverage to implicated files")
+        logger.debug("restricted coverage to implicated files")
         self._dump_coverage()
         self.__spectra = Spectra.from_coverage(self.__coverage)
-        self.__logger.debug("generated coverage spectra: %s", self.__spectra)
+        logger.debug("generated coverage spectra: %s", self.__spectra)
         self.__localization = \
             Localization.from_spectra(self.__spectra, suspiciousness_metric)
-        self.__logger.debug("transformed spectra to fault localization: %s",
+        logger.debug("transformed spectra to fault localization: %s",
                             self.__localization)
         self.__localization = \
             self.__localization.restricted_to_lines(self.__lines)
-        self.__logger.info("removing non-suspicious lines from consideration")
+        logger.info("removing non-suspicious lines from consideration")
         num_lines_before = len(self.__lines)
         self.__lines = \
             self.__lines.filter(lambda l: self.__localization.score(l) > 0)
         num_lines_after = len(self.__lines)
         num_lines_removed = num_lines_before - num_lines_after
-        self.__logger.info("removed %d non-suspicious lines from consideration",
+        logger.info("removed %d non-suspicious lines from consideration",
                            num_lines_removed)
 
         # report implicated lines and files
-        self.__logger.info("implicated lines [%d]:\n%s",
+        logger.info("implicated lines [%d]:\n%s",
                            len(self.__lines), self.__lines)
-        self.__logger.info("implicated files [%d]:\n* %s",
+        logger.info("implicated files [%d]:\n* %s",
                            len(self.__lines.files),
                            '\n* '.join(self.__lines.files))
         if len(self.__lines) == 0:
@@ -204,7 +195,7 @@ class Problem(object):
         # construct the snippet database from the parts of the program that
         # were executed by the test suite (both passing and failing tests)
         # TODO add a snippet extractor component
-        self.__logger.info("constructing snippet database")
+        logger.info("constructing snippet database")
         self.__snippets = SnippetDatabase()
 
         # TODO allow additional snippet filters to be provided as params
@@ -216,27 +207,27 @@ class Problem(object):
         for line in self.__coverage.lines:
             content = self.__sources.read_line(line).strip()
             if all(fltr(content) for fltr in snippet_filters):
-                # self.__logger.debug("* found snippet at %s: %s", line, content)
+                # logger.debug("* found snippet at %s: %s", line, content)
                 snippet = Snippet(content)
                 self.__snippets.add(snippet, origin=line)
 
-        self.__logger.info("construct snippet database: %d snippets",
+        logger.info("construct snippet database: %d snippets",
                            len(self.__snippets))
         for fn in self.__lines.files:
-            self.__logger.info("* %d unique snippets in %s",
+            logger.info("* %d unique snippets in %s",
                                len(list(self.__snippets.in_file(fn))), fn)
 
-        self.__logger.debug("reducing memory footprint by discarding extraneous data")
+        logger.debug("reducing memory footprint by discarding extraneous data")
         self.__coverage.restricted_to_files(self.__lines.files)
         self.__spectra.restricted_to_files(self.__lines.files)
         extraneous_source_fns = \
             set(self.__sources.files) - set(self.__lines.files)
         for fn in extraneous_source_fns:
             del self.__sources[fn]
-        self.__logger.debug("finished reducing memory footprint")
+        logger.debug("finished reducing memory footprint")
 
     def _dump_coverage(self) -> None:
-        self.__logger.debug("[COVERAGE]\n%s\n[/COVERAGE]",
+        logger.debug("[COVERAGE]\n%s\n[/COVERAGE]",
                             indent(str(self.__coverage), 2))
 
     @property
@@ -344,5 +335,5 @@ class Problem(object):
                 the problem, differ from those that were expected.
         """
         # determine passing and failing tests
-        self.__logger.debug("sanity checking...")
+        logger.debug("sanity checking...")
         raise NotImplementedError
