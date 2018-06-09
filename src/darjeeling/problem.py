@@ -36,13 +36,11 @@ class Problem(object):
     def __init__(self,
                  bz: bugzoo.BugZoo,
                  bug: Bug,
+                 coverage: TestSuiteCoverage,
                  *,
                  client_rooibos: Optional[RooibosClient] = None,
                  suspiciousness_metric: Optional[SuspiciousnessMetric] = None,
-                 in_files: List[str],
                  restrict_to_lines: Optional[FileLineSet] = None,
-                 cache_coverage: bool = True,
-                 logger: Optional[logging.Logger] = None,
                  line_coverage_filters: Optional[List[Callable[[str], bool]]] = None
                  ) -> None:
         """
@@ -50,15 +48,8 @@ class Problem(object):
 
         Params:
             bug: A description of the faulty program.
-            in_files: An optional list that can be used to restrict the set of
-                transformations to those that occur in any files belonging to
-                that list. If no list is provided, all source code files will
-                be included.
-            in_functions: An optional list that can be used to restrict the set
-                of transformations to those that occur in any function whose
-                name appears in the given list. If no list is provided, no
-                filtering of transformations based on the function to which
-                they belong will occur.
+            coverage: Used to provide coverage information for the program
+                under test.
 
         Raises:
             NoFailingTests: if the program under repair has no failing tests.
@@ -69,38 +60,13 @@ class Problem(object):
         self.__bug = bug
         self.__client_rooibos = client_rooibos
         self.__client_bugzoo = bz
-
-        if suspiciousness_metric is None:
-            logger.debug("no suspiciousness metric provided: using Tarantula as a default.")
-            suspiciousness_metric = metrics.tarantula
-
-        # fetch coverage information
-        if cache_coverage:
-            logger.debug("fetching coverage information from BugZoo")
-            self.__coverage = bz.bugs.coverage(bug)
-            logger.debug("fetched coverage information from BugZoo")
-        else:
-            logger.debug("computing coverage information")
-            try:
-                container = bz.containers.provision(bug)
-                self.__coverage = bz.containers.coverage(container)
-            finally:
-                del bz.containers[container.uid]
-            logger.debug("computed coverage information")
+        self.__coverage = coverage
         self._dump_coverage()
 
-        # restrict coverage information to specified files
-        # FIXME this step should be optional
-        logger.debug("restricting coverage information to files:\n* %s",
-                            '\n* '.join(in_files))
-        self.__coverage = self.__coverage.restricted_to_files(in_files)
-        logger.debug("restricted coverage information.")
-        self._dump_coverage()
-
-        # determine the passing and failing tests by using coverage information
+        # determine the passing and failing tests
         logger.debug("using test execution used to generate coverage to determine passing and failing tests")
-        self.__tests_failing = set() # type: Set[TestCase]
-        self.__tests_passing = set() # type: Set[TestCase]
+        self.__tests_failing = set()  # type: Set[TestCase]
+        self.__tests_passing = set()  # type: Set[TestCase]
         for test_name in self.__coverage:
             test = bug.harness[test_name]
             test_coverage = self.__coverage[test_name]
@@ -150,45 +116,13 @@ class Problem(object):
         if line_coverage_filters:
             line_content_filters += line_coverage_filters # type: ignore
         for f in line_content_filters:
-            fltr_line = lambda fl: f(self.__sources.read_line(fl))
+            )
             self.__lines = self.__lines.filter(fltr_line)
         num_lines_after_filtering = len(self.__lines)
         num_lines_removed_by_filtering = \
             num_lines_after_filtering - num_lines_before_filtering
         logger.debug("filtered lines according to content files: removed %d lines",  # noqa: pycodestyle
                             num_lines_removed_by_filtering)
-
-        # compute fault localization
-        logger.info("computing fault localization")
-        self.__coverage = \
-            self.__coverage.restricted_to_files(self.__lines.files)
-        logger.debug("restricted coverage to implicated files")
-        self._dump_coverage()
-        self.__spectra = Spectra.from_coverage(self.__coverage)
-        logger.debug("generated coverage spectra: %s", self.__spectra)
-        self.__localization = \
-            Localization.from_spectra(self.__spectra, suspiciousness_metric)
-        logger.debug("transformed spectra to fault localization: %s",
-                            self.__localization)
-        self.__localization = \
-            self.__localization.restricted_to_lines(self.__lines)
-        logger.info("removing non-suspicious lines from consideration")
-        num_lines_before = len(self.__lines)
-        self.__lines = \
-            self.__lines.filter(lambda l: self.__localization.score(l) > 0)
-        num_lines_after = len(self.__lines)
-        num_lines_removed = num_lines_before - num_lines_after
-        logger.info("removed %d non-suspicious lines from consideration",
-                           num_lines_removed)
-
-        # report implicated lines and files
-        logger.info("implicated lines [%d]:\n%s",
-                           len(self.__lines), self.__lines)
-        logger.info("implicated files [%d]:\n* %s",
-                           len(self.__lines.files),
-                           '\n* '.join(self.__lines.files))
-        if len(self.__lines) == 0:
-            raise NoImplicatedLines
 
         # construct the snippet database from the parts of the program that
         # were executed by the test suite (both passing and failing tests)
@@ -227,6 +161,53 @@ class Problem(object):
     def _dump_coverage(self) -> None:
         logger.debug("[COVERAGE]\n%s\n[/COVERAGE]",
                             indent(str(self.__coverage), 2))
+
+
+    def restrict_to_files(self, filenames: List[str]) -> None:
+        """
+        Restricts the scope of the repair to the intersection of the files
+        that are currently within the scope of the repair and a set of
+        provided files.
+        """
+        logger.info("restricting repair to files: %s", filenames)
+        self.__coverage = self.__coverage.restricted_to_files(filenames)
+        # FIXME what else do we need to recompute?
+        logger.info("successfully restricted repair to given files.")
+        self._dump_coverage()
+
+
+        # TODO remove any extraneous files from the source manager
+        self.validate()
+
+    def restrict_with_filter(self,
+                             fltr: Callable[[str], bool]
+                             ) -> None:
+        """
+        Uses a given filter to remove certain lines from the scope of the
+        repair.
+        """
+        f = lambda fl: fltr(self.__sources.read_line(fl)
+        filtered = [l for l in self.lines if f(l)]  # type: List[FileLine]
+        self.restrict_to_lines(filtered)
+
+    def validate(self) -> None:
+        """
+        Ensures that this repair problem is valid. To be considered valid, a
+        repair problem must have at least one failing test case and one
+        implicated line.
+        """
+        logger.info("implicated lines [%d]:\n%s",
+                           len(self.__lines), self.__lines)
+        logger.info("implicated files [%d]:\n* %s",
+                           len(self.__lines.files),
+                           '\n* '.join(self.__lines.files))
+        if len(self.__lines) == 0:
+            raise NoImplicatedLines
+
+        raise NotImplementedError
+
+    def restrict_to_lines(self, lines: Iterator[FileLine]) -> None:
+        raise NotImplementedError
 
     @property
     def snippets(self) -> SnippetDatabase:
@@ -271,14 +252,6 @@ class Problem(object):
         Returns an iterator over the passing tests for this problem.
         """
         return self.__tests_passing.__iter__()
-
-    @property
-    def localization(self) -> Localization:
-        """
-        The fault localization for this problem is used to encode the relative
-        suspiciousness of source code lines.
-        """
-        return self.__localization
 
     @property
     def coverage(self) -> TestSuiteCoverage:
