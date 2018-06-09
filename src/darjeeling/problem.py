@@ -310,28 +310,3 @@ class Problem(object):
         The source code files for the program under repair.
         """
         return self.__sources
-
-    def check_sanity(self,
-                     expected_to_pass: List[TestCase],
-                     expected_to_fail: List[TestCase]
-                     ) -> bool:
-        """
-
-        Parameters:
-            expected_to_pass: a list of test cases for the program that are
-                expected to pass.
-            expected_to_fail: a list of test cases for the program that are
-                expected to fail.
-
-        Returns:
-            True if the outcomes of the test executions match those that are
-            expected by the parameters to this method.
-
-        Raises:
-            errors.UnexpectedTestOutcomes: if the outcomes of the program
-                under test, observed while computing coverage information for
-                the problem, differ from those that were expected.
-        """
-        # determine passing and failing tests
-        logger.debug("sanity checking...")
-        raise NotImplementedError
