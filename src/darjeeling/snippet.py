@@ -8,6 +8,7 @@ from .problem import Problem
 logger = logging.getLogger(__name__)  # type: logging.Logger
 
 
+# FIXME use attrs
 class Snippet(object):
     """
     Represents a donor code snippet.
@@ -37,7 +38,7 @@ class SnippetDatabase(object):
     @staticmethod
     def from_problem(problem: Problem,
                      filters: Optional[List[Callable[[str], bool]]] = None
-                     ) -> SnippetDatabase:
+                     ) -> 'SnippetDatabase':
         if filters is None:
             filters = []
 
