@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Iterator, Callable, Set
+from typing import List, Optional, Dict, Iterator, Callable, Set, Iterable
 from timeit import default_timer as timer
 import tempfile
 import logging
@@ -53,7 +53,6 @@ class Problem(object):
             NoImplicatedLines: if no lines are implicated by the coverage
                 information and the provided suspiciousness metric.
         """
-        assert len(in_files) > 0
         self.__bug = bug
         self.__client_rooibos = client_rooibos
         self.__client_bugzoo = bz
@@ -87,7 +86,7 @@ class Problem(object):
         self.__sources = ProgramSourceManager(bz,
                                               client_rooibos,
                                               bug,
-                                              files=self.lines.files)
+                                              files=self.implicated_files)
         logger.debug("stored contents of source code files (took %.1f seconds)",
                      timer() - t_start)
 
@@ -100,7 +99,7 @@ class Problem(object):
         source_files = set(self.__sources.files)  # type: Set[str]
         covered_files = set(self.__coverage.lines.files)  # type: Set[str]
         extraneous_files = covered_files - source_files
-        for fn in extraneous_source_fns:
+        for fn in extraneous_files:
             del self.__sources[fn]
         logger.debug("finished reducing memory footprint")
 
@@ -117,7 +116,7 @@ class Problem(object):
         self.__remove_redundant_sources()
         self.validate()
 
-    def restrict_to_lines(self, lines: Iterator[FileLine]) -> None:
+    def restrict_to_lines(self, lines: Iterable[FileLine]) -> None:
         """
         Restricts the scope of the repair to the intersection of the current
         set of implicated lines and a provided set of lines.
@@ -145,7 +144,7 @@ class Problem(object):
         implicated line.
         """
         lines = list(self.lines)
-        files = list(self.__lines.files)
+        files = list(self.implicated_files)
         logger.info("implicated lines [%d]:\n%s", len(lines), lines)
         logger.info("implicated files [%d]:\n* %s", len(files),
                     '\n* '.join(files))
@@ -202,6 +201,10 @@ class Problem(object):
         description of this problem.
         """
         return self.__coverage.failing.lines.__iter__()
+
+    @property
+    def implicated_files(self) -> Iterator[str]:
+        return self.__coverage.lines.files
 
     @property
     def sources(self) -> ProgramSourceManager:

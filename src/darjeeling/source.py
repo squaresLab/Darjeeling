@@ -1,6 +1,6 @@
 __all__ = ['ProgramSourceManager']
 
-from typing import List, Union, Dict, Optional, Iterator
+from typing import List, Union, Dict, Optional, Iterator, Iterable
 
 import boggart
 from rooibos import Client as RooibosClient
@@ -17,7 +17,7 @@ class ProgramSourceManager(object):
                  client_bugzoo: BugZooClient,
                  client_rooibos: Optional[RooibosClient],
                  snapshot: Snapshot,
-                 files: List[str]
+                 files: Iterable[str]
                  ) -> None:
         # FIXME hacko
         self.__snapshot = snapshot
@@ -25,7 +25,7 @@ class ProgramSourceManager(object):
         self.__mgr = SFM(client_bugzoo,
                          client_rooibos,
                          boggart.config.Operators())  # type: ignore  # noqa: pycodestyle
-        self.__files = files.copy()
+        self.__files = list(files)
         for fn in files:
             self.__mgr.read_file(snapshot, fn)
 
