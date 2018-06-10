@@ -18,8 +18,6 @@ from bugzoo.localization import SuspiciousnessMetric, Localization
 from bugzoo.testing import TestCase
 from bugzoo.util import indent
 
-import darjeeling.filters as filters
-from .snippet import SnippetDatabase, Snippet
 from .source import ProgramSourceManager
 from .util import get_file_contents
 from .exceptions import NoFailingTests, NoImplicatedLines
