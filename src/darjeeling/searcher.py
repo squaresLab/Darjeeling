@@ -247,32 +247,19 @@ class Searcher(object):
         self.__counter_candidates += 1
         bz = self.__bugzoo
         mgr_src = self.__problem.sources
-        logger.debug("provisioning container")
-        container = bz.containers.provision(self.__problem.bug)
-        logger.debug("provisioned container")
-        logger_c = logger.getChild(container.uid)
-        try:
-            patch = candidate.to_diff(self.__problem)
-            logger_c.info("evaluating: %s\n%s\n", candidate, patch)
-            logger_c.debug("applying patch")
-            bz.containers.patch(container, patch)
-            logger_c.debug("applied patch")
 
-            # ensure that the patch compiles
-            logger_c.debug("compiling source code")
-            outcome_compilation = bz.containers.compile(container)
-            logger_c.debug("compilation outcome for %s:\n%s",
-                           candidate,
-                           outcome_compilation.response.output)
-            logger_c.debug("recording build outcome")
-            self.outcomes.record_build(candidate, outcome_compilation)
-            logger_c.debug("record build outcome")
-            if not outcome_compilation.successful:
-                logger.info("failed to compile: %s", candidate)
-                return True
+        patch = self.__problem.candidate_to_diff(candidate)
+        logger_c.info("evaluating candidate: %s\n%s\n", candidate, patch)
+        logger.debug("building candidate: %s", candidate)
+        container = None
+        try:
+            container = self.__problem.build_candidate(candidate)
+            logger.debug("built candidate: %s", candidate)
+            self.outcomes.record_build(candidate, True)
 
             # for now, execute all tests in no particular order
             # TODO perform test ordering
+            logger_c = logger.getChild(container.uid)
             logger_c.debug("executing tests")
             for test in self.__problem.tests:
                 cmd = self.__problem.bug.harness.command(test)[0]
@@ -296,8 +283,11 @@ class Searcher(object):
             logger_c.info("FOUND A REPAIR: %s", candidate)
             return True
 
-        # TODO ensure a bool is returned when an exception occurs
+        except BuildFailure:
+            logger.debug("failed to build candidate: %s", candidate)
+            self.outcomes.record_build(candidate, False)
+            return False
         finally:
-            logger_c.info("evaluated: %s", candidate)
-            if container:
+            logger.info("evaluated candidate: %s", candidate)
+            if container is not None:
                 del bz.containers[container.uid]
