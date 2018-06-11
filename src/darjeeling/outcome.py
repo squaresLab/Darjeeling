@@ -1,4 +1,5 @@
 from typing import Dict, Optional, Iterator
+import attr
 
 from bugzoo.testing.base import TestOutcome as BugZooTestOutcome
 from bugzoo.compiler import CompilationOutcome as BugZooBuildOutcome
@@ -6,7 +7,6 @@ from bugzoo.compiler import CompilationOutcome as BugZooBuildOutcome
 from .candidate import Candidate
 
 __all__ = [
-    'BuildOutcome',
     'TestOutcome',
     'TestOutcomeSet',
     'CandidateOutcome',
@@ -14,38 +14,13 @@ __all__ = [
 ]
 
 
-class BuildOutcome(object):
-    """
-    Records the outcome of an attempted build.
-    """
-    def __init__(self, successful: bool, time_taken: float) -> None:
-        self.__time_taken = time_taken
-        self.__successful = successful
-
-    @property
-    def time_taken(self) -> float:
-        return self.__time_taken
-
-    @property
-    def successful(self) -> bool:
-        return self.__successful
-
-
+@attr.s(frozen=True)
 class TestOutcome(object):
     """
     Records the outcome of a test execution.
     """
-    def __init__(self, successful: bool, time_taken: float) -> None:
-        self.__successful = successful
-        self.__time_taken = time_taken
-
-    @property
-    def successful(self) -> bool:
-        return self.__successful
-
-    @property
-    def time_taken(self) -> float:
-        return self.__time_taken
+    successful = attr.ib(type=bool)
+    time_taken = attr.ib(type=float)
 
 
 class TestOutcomeSet(object):
@@ -71,21 +46,13 @@ class TestOutcomeSet(object):
         return TestOutcomeSet(outcomes)
 
 
+@attr.s(frozen=True)
 class CandidateOutcome(object):
     """
     Records the outcome of a candidate patch evaluation.
     """
-    def __init__(self, build: BuildOutcome, tests: TestOutcomeSet) -> None:
-        self.__build = build
-        self.__tests = tests
-
-    @property
-    def build(self) -> BuildOutcome:
-        return self.__build
-
-    @property
-    def tests(self) -> TestOutcomeSet:
-        return self.__tests
+    built = attr.ib(type=bool)
+    tests = attr.ib(type=TestOutcomeSet)
 
     def with_test_outcome(self,
                           test: str,
@@ -93,8 +60,8 @@ class CandidateOutcome(object):
                           time_taken: float
                           ) -> 'CandidateOutcome':
         outcome = TestOutcome(successful, time_taken)
-        test_outcomes = self.__tests.with_outcome(test, outcome)
-        return CandidateOutcome(self.__build, test_outcomes)
+        test_outcomes = self.tests.with_outcome(test, outcome)
+        return CandidateOutcome(self.built, test_outcomes)
 
 
 class OutcomeManager(object):
@@ -114,12 +81,10 @@ class OutcomeManager(object):
 
     def record_build(self,
                      candidate: Candidate,
-                     build_outcome: BugZooBuildOutcome
+                     successsful: bool
                      ) -> None:
-        b = BuildOutcome(build_outcome.successful,
-                         build_outcome.response.duration)
-        c = CandidateOutcome(b, TestOutcomeSet())
-        self.__outcomes[candidate] = c
+        c = CandidateOutcome(successful, TestOutcomeSet())
+        self.__outcomes[candidate] = successfu;
 
     def record_test(self,
                     candidate: Candidate,
