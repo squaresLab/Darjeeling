@@ -7,7 +7,9 @@ import random
 
 from rooibos import Client as RooibosClient
 from bugzoo.localization import Localization
+from rooibos import Match
 
+from .exceptions import NoImplicatedLines
 from .core import FileLocationRange, FileLine, Location
 from .problem import Problem
 from .snippet import Snippet, SnippetDatabase
@@ -47,6 +49,71 @@ class TransformationGenerator(Iterable):
 
     def __next__(self) -> Transformation:
         raise NotImplementedError
+
+
+class RooibosGenerator(TransformationGenerator):
+    def __init__(self,
+                 problem: Problem,
+                 localization: Localization,
+                 schemas: List[Type[RooibosTransformation]]
+                 ) -> None:
+        client_rooibos = problem.rooibos
+        self.__problem = problem
+        self.__localization = localization
+        self.__transformations = \
+            {l: {s: [] for s in schemas} for l in localization}  # type: Dict[FileLine, Dict[Type[RooibosTransformation], List[Transformation]]]  # noqa: pycodestyle
+        for fn in localization.files:
+            file_contents = problem.sources.read_file(fn)
+            for schema in schemas:
+                tpl_match = schema.match
+                matches = client_rooibos.matches(file_contents, tpl_match)
+                for m in matches:
+                    line = FileLine(fn, m.location.start.line)
+                    if line not in localization:
+                        continue
+                    self.__transformations[line][schema] += \
+                        self._match_to_transformations(fn, schema, m)
+
+    def _match_to_transformations(self,
+                                  filename: str,
+                                  schema: Type[RooibosTransformation],
+                                  match: Match
+                                  ) -> List[Transformation]:
+        # FIXME for now, we only return a single transformation
+        args = {}  # type: Dict[str, str]
+        location = FileLocationRange(filename,
+                                     Location(match.location.start.line,
+                                              match.location.start.col),
+                                     Location(match.location.stop.line,
+                                              match.location.stop.col))
+        return [schema(location, args)]
+
+    def __next__(self) -> Transformation:
+        line = self.__localization.sample()
+        operator_to_transformations = self.__transformations[line]
+
+        # choose an operator at random
+        # if there are no operator choices, discard this line
+        # if no lines remain, we're finished
+        try:
+            op = random.choice(list(operator_to_transformations.keys()))
+            transformations = operator_to_transformations[op]
+        except ValueError:
+            del self.__transformations[line]
+            try:
+                self.__localization = self.__localization.without(line)
+            except NoImplicatedLines:
+                raise StopIteration
+            return self.__next__()
+
+        # choose a transformation at random
+        # if there are no more transformation choices, discard this operator
+        # choice
+        try:
+            return transformations.pop()
+        except IndexError:
+            del operator_to_transformations[op]
+            return self.__next__()
 
 
 def all_transformations_in_file(
