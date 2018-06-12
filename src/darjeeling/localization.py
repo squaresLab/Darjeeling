@@ -1,6 +1,6 @@
 __all__ = ['Metric', 'Localization']
 
-from typing import Dict, Callable, List, Iterator
+from typing import Dict, Callable, List, Iterator, FrozenSet
 import random
 import bisect
 
@@ -41,6 +41,8 @@ class Localization(object):
                 continue
             self.__lines.append(line)
             self.__scores.append(score)
+        self.__files = \
+            frozenset(line.filename for line in self.__lines)  # type: FrozenSet[str]  # noqa: pycodestyle
 
         if not self.__lines:
             raise NoImplicatedLines
@@ -69,3 +71,10 @@ class Localization(object):
         mu = random.random()
         i = bisect.bisect(self.__scores, mu)
         return self.__lines[i]
+
+    @property
+    def files(self) -> List[str]:
+        """
+        Returns a list of files that contain suspicious lines.
+        """
+        return list(self.__files)
