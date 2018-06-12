@@ -34,7 +34,7 @@ class Localization(object):
         self.__line_to_score = scores.copy()
         self.__lines = []  # type: List[FileLine]
         self.__scores = []  # type: List[float]
-        for line, score in scores:
+        for line, score in scores.items():
             if score < 0.0:
                 raise ValueError("suspiciousness values must be non-negative.")
             if score == 0.0:
@@ -71,6 +71,12 @@ class Localization(object):
         mu = random.random()
         i = bisect.bisect(self.__scores, mu)
         return self.__lines[i]
+
+    def __len__(self) -> int:
+        """
+        Returns a count of the number of suspicious lines.
+        """
+        return len(self.__lines)
 
     @property
     def files(self) -> List[str]:
