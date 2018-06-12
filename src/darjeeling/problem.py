@@ -10,6 +10,7 @@ import bugzoo
 import bugzoo.localization.suspiciousness as metrics
 from rooibos import Client as RooibosClient
 from bugzoo.core.fileline import FileLine, FileLineSet
+from bugzoo.core.container import Container
 from bugzoo.core.bug import Bug
 from bugzoo.core.patch import Patch
 from bugzoo.core.coverage import TestSuiteCoverage
@@ -20,7 +21,7 @@ from bugzoo.util import indent
 
 from .source import ProgramSourceManager
 from .util import get_file_contents
-from .exceptions import NoFailingTests, NoImplicatedLines
+from .exceptions import NoFailingTests, NoImplicatedLines, BuildFailure
 
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
@@ -100,6 +101,39 @@ class Problem(object):
         for fn in extraneous_files:
             del self.__sources[fn]
         logger.debug("finished reducing memory footprint")
+
+    def build_patch(self, patch: Patch) -> Container:
+        """
+        Provisions a container for a given patch and prepares it by building
+        the source code.
+
+        Returns:
+            a ready-to-use container that contains a built version of the
+            patched source code.
+
+        Raises:
+            BuildFailure: if the program failed to build.
+        """
+        # convert patch to short hash
+
+        # FIXME port!
+        mgr_ctr = self.__client_bugzoo
+        container = None
+        try:
+            container = mgr_ctr.containers.provision(self)
+            mgr_ctr.containers.patch(container, patch)
+            outcome = mgr_ctr.build(container)
+            # logger.debug("build outcome for %s:\n%s",
+            #              candidate,
+            #              outcome.response.output)
+            # ensure the container is destroyed
+            if not outcome.successful:
+                raise CompilationFailure
+        except Exception:
+            if container is not None:
+                del mgr_ctr[container.uid]
+            raise
+        return container
 
     def restrict_to_files(self, filenames: List[str]) -> None:
         """
