@@ -1,6 +1,6 @@
 __all__ = ['Metric', 'Localization']
 
-from typing import Dict, Callable, List, Iterator, FrozenSet
+from typing import Dict, Callable, List, Iterator, FrozenSet, Sequence
 import random
 import bisect
 
@@ -65,6 +65,11 @@ class Localization(object):
     def without(self, line: FileLine) -> 'Localization':
         scores = self.__line_to_score.copy()
         del scores[line]
+        return Localization(scores)
+
+    def restricted_to_lines(self, lines: Sequence[FileLine]) -> None:
+        scores = {l: s for (l, s) in self.__line_to_score.items()
+                  if l in lines}
         return Localization(scores)
 
     def sample(self) -> FileLine:
