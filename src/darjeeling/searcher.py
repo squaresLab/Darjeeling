@@ -12,6 +12,7 @@ import bugzoo
 from .candidate import Candidate
 from .problem import Problem
 from .outcome import OutcomeManager
+from .exceptions import BuildFailure
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 
@@ -248,13 +249,13 @@ class Searcher(object):
         bz = self.__bugzoo
         mgr_src = self.__problem.sources
 
-        patch = self.__problem.candidate_to_diff(candidate)
-        logger_c.info("evaluating candidate: %s\n%s\n", candidate, patch)
+        patch = candidate.to_diff(self.__problem)
+        logger.info("evaluating candidate: %s\n%s\n", candidate, patch)
         logger.debug("building candidate: %s", candidate)
         container = None
         time_build_start = timer()
         try:
-            container = self.__problem.build_candidate(candidate)
+            container = self.__problem.build_patch(patch)
             logger.debug("built candidate: %s", candidate)
             self.outcomes.record_build(candidate, True, timer() - time_build_start)
 

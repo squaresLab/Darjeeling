@@ -128,7 +128,7 @@ class Problem(object):
             #              outcome.response.output)
             # ensure the container is destroyed
             if not outcome.successful:
-                raise CompilationFailure
+                raise BuildFailure
         except Exception:
             if container is not None:
                 del mgr_ctr[container.uid]

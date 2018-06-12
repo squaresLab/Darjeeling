@@ -71,7 +71,7 @@ class CandidateOutcome(object):
                           ) -> 'CandidateOutcome':
         outcome = TestOutcome(successful, time_taken)
         test_outcomes = self.tests.with_outcome(test, outcome)
-        return CandidateOutcome(self.built, test_outcomes)
+        return CandidateOutcome(self.build, test_outcomes)
 
 
 class OutcomeManager(object):
