@@ -26,6 +26,7 @@ class ProgramSourceManager(object):
                          client_rooibos,
                          boggart.config.Operators())  # type: ignore  # noqa: pycodestyle
         self.__files = list(files)
+        self.__mgr._fetch_files(snapshot, self.__files)
         for fn in files:
             self.__mgr.read_file(snapshot, fn)
 
