@@ -14,8 +14,7 @@ from bugzoo.core.container import Container
 from bugzoo.core.bug import Bug
 from bugzoo.core.patch import Patch
 from bugzoo.core.coverage import TestSuiteCoverage
-from bugzoo.core.spectra import Spectra
-from bugzoo.localization import SuspiciousnessMetric, Localization
+from bugzoo.compiler import CompilationOutcome as BuildOutcome
 from bugzoo.testing import TestCase
 from bugzoo.util import indent
 
@@ -102,10 +101,19 @@ class Problem(object):
             del self.__sources[fn]
         logger.debug("finished reducing memory footprint")
 
-    def build_patch(self, patch: Patch) -> Container:
+    def build_patch(self,
+                    patch: Patch,
+                    builder: Optional[Callable[[Container], BuildOutcome]] = None
+                    ) -> Container:
         """
         Provisions a container for a given patch and prepares it by building
         the source code.
+
+        Parameters:
+            patch: the patch for which a container should be built.
+            builder: used to optionally provide a custom function for building
+                the code inside the container. If no custom builder is
+                provided, then the default one will be used instead.
 
         Returns:
             a ready-to-use container that contains a built version of the
@@ -114,15 +122,15 @@ class Problem(object):
         Raises:
             BuildFailure: if the program failed to build.
         """
-        # convert patch to short hash
+        if builder is None:
+            builder = mgr_ctr.build
 
-        # FIXME port!
         mgr_ctr = self.__client_bugzoo.containers
         container = None
         try:
             container = mgr_ctr.provision(self.__bug)
             mgr_ctr.patch(container, patch)
-            outcome = mgr_ctr.build(container)
+            outcome = builder(container)
             # logger.debug("build outcome for %s:\n%s",
             #              candidate,
             #              outcome.response.output)
