@@ -117,11 +117,11 @@ class Problem(object):
         # convert patch to short hash
 
         # FIXME port!
-        mgr_ctr = self.__client_bugzoo
+        mgr_ctr = self.__client_bugzoo.containers
         container = None
         try:
-            container = mgr_ctr.containers.provision(self)
-            mgr_ctr.containers.patch(container, patch)
+            container = mgr_ctr.provision(self.__bug)
+            mgr_ctr.patch(container, patch)
             outcome = mgr_ctr.build(container)
             # logger.debug("build outcome for %s:\n%s",
             #              candidate,
