@@ -288,7 +288,7 @@ class Searcher(object):
         except BuildFailure:
             logger.debug("failed to build candidate: %s", candidate)
             self.outcomes.record_build(candidate, False, timer() - time_build_start)
-            return False
+            return True
         finally:
             logger.info("evaluated candidate: %s", candidate)
             if container is not None:
