@@ -9,6 +9,7 @@ from .candidate import Candidate
 __all__ = [
     'TestOutcome',
     'TestOutcomeSet',
+    'BuildOutcome',
     'CandidateOutcome',
     'OutcomeManager'
 ]
@@ -18,6 +19,15 @@ __all__ = [
 class TestOutcome(object):
     """
     Records the outcome of a test execution.
+    """
+    successful = attr.ib(type=bool)
+    time_taken = attr.ib(type=float)
+
+
+@attr.s(frozen=True)
+class BuildOutcome(object):
+    """
+    Records the outcome of a build attempt.
     """
     successful = attr.ib(type=bool)
     time_taken = attr.ib(type=float)
@@ -51,7 +61,7 @@ class CandidateOutcome(object):
     """
     Records the outcome of a candidate patch evaluation.
     """
-    built = attr.ib(type=bool)
+    build = attr.ib(type=BuildOutcome)
     tests = attr.ib(type=TestOutcomeSet)
 
     def with_test_outcome(self,
@@ -81,10 +91,12 @@ class OutcomeManager(object):
 
     def record_build(self,
                      candidate: Candidate,
-                     successsful: bool
+                     successful: bool,
+                     time_taken: float
                      ) -> None:
-        c = CandidateOutcome(successful, TestOutcomeSet())
-        self.__outcomes[candidate] = successfu;
+        outcome_build = BuildOutcome(successful, time_taken)
+        c = CandidateOutcome(outcome_build, TestOutcomeSet())
+        self.__outcomes[candidate] = c
 
     def record_test(self,
                     candidate: Candidate,
@@ -94,7 +106,8 @@ class OutcomeManager(object):
         # TODO  race condition if there can be simultaneous test evaluations
         #       for a given patch; for now, that's not possible.
         candidate_outcome = self.__outcomes[candidate]
-        candidate_outcome = candidate_outcome.with_test_outcome(test_id,
-                                                                test_outcome.passed,
-                                                                test_outcome.duration)
+        candidate_outcome = \
+            candidate_outcome.with_test_outcome(test_id,
+                                                test_outcome.passed,
+                                                test_outcome.duration)
         self.__outcomes[candidate] = candidate_outcome

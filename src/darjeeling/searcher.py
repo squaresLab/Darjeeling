@@ -252,10 +252,11 @@ class Searcher(object):
         logger_c.info("evaluating candidate: %s\n%s\n", candidate, patch)
         logger.debug("building candidate: %s", candidate)
         container = None
+        time_build_start = timer()
         try:
             container = self.__problem.build_candidate(candidate)
             logger.debug("built candidate: %s", candidate)
-            self.outcomes.record_build(candidate, True)
+            self.outcomes.record_build(candidate, True, timer() - time_build_start)
 
             # for now, execute all tests in no particular order
             # TODO perform test ordering
@@ -285,7 +286,7 @@ class Searcher(object):
 
         except BuildFailure:
             logger.debug("failed to build candidate: %s", candidate)
-            self.outcomes.record_build(candidate, False)
+            self.outcomes.record_build(candidate, False, timer() - time_build_start)
             return False
         finally:
             logger.info("evaluated candidate: %s", candidate)
