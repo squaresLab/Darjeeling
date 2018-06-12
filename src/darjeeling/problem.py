@@ -122,15 +122,15 @@ class Problem(object):
         Raises:
             BuildFailure: if the program failed to build.
         """
-        if builder is None:
-            builder = mgr_ctr.build
-
         mgr_ctr = self.__client_bugzoo.containers
         container = None
         try:
             container = mgr_ctr.provision(self.__bug)
             mgr_ctr.patch(container, patch)
-            outcome = builder(container)
+            if builder is None:
+                outcome = mgr_ctr.build(container)
+            else:
+                outcome = builder(container)
             # logger.debug("build outcome for %s:\n%s",
             #              candidate,
             #              outcome.response.output)
