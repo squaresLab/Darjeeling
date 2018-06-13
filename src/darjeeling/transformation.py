@@ -63,14 +63,14 @@ class OrToAnd(RooibosTransformation):
     rewrite = "&&"
 
 
-class GreaterThanToLessOrEqualTo(RooibosTransformation):
-    match = ">"
-    rewrite = "<="
-
-
 class LEToGT(RooibosTransformation):
     match = "<="
     rewrite = ">"
+
+
+class GTToLE(RooibosTransformation):
+    match = ">"
+    rewrite = "<="
 
 
 @attr.s(frozen=True)
