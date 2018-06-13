@@ -73,6 +73,46 @@ class GTToLE(RooibosTransformation):
     rewrite = "<="
 
 
+class LTToGE(RooibosTransformation):
+    match = "<"
+    rewrite = ">="
+
+
+class GEToLT(RooibosTransformation):
+    match = ">="
+    rewrite = "<"
+
+
+class EQToNEQ(RooibosTransformation):
+    match = "=="
+    rewrite = "!="
+
+
+class NEQToEQ(RooibosTransformation):
+    match = "!="
+    rewrite = "=="
+
+
+class PlusToMinus(RooibosTransformation):
+    match = "+"
+    rewrite = "-"
+
+
+class MinusToPlus(RooibosTransformation):
+    match = "-"
+    rewrite = "+"
+
+
+class DivToMul(RooibosTransformation):
+    match = "/"
+    rewrite = "*"
+
+
+class MulToDiv(RooibosTransformation):
+    match = "*"
+    rewrite = "/"
+
+
 @attr.s(frozen=True)
 class LocationRangeTransformation(Transformation):
     location = attr.ib(type=FileLocationRange,
