@@ -65,6 +65,10 @@ class RooibosGenerator(TransformationGenerator):
         client_rooibos = problem.rooibos
         self.__problem = problem
         size = 0
+        tally_by_file = \
+            {fn: 0 for fn in localization.files}  # type: Dict[str, int]
+        tally_by_schema = \
+            {s: 0 for s in schemas}  # type: Dict[Type[RooibosTransformation], int]  # noqa: pycodestyle
         self.__localization = localization
         self.__transformations = \
             {l: {s: [] for s in schemas} for l in localization}  # type: Dict[FileLine, Dict[Type[RooibosTransformation], List[Transformation]]]  # noqa: pycodestyle
@@ -83,6 +87,8 @@ class RooibosGenerator(TransformationGenerator):
                     transformations = \
                         list(self._match_to_transformations(fn, schema, m))
                     size += len(transformations)
+                    tally_by_schema[schema] += len(transformations)
+                    tally_by_file[fn] += len(transformations)
                     self.__transformations[line][schema] += transformations
 
         # trim redundant parts of transformation map
@@ -98,7 +104,13 @@ class RooibosGenerator(TransformationGenerator):
         self.__localization = self.__localization.restricted_to_lines(lines)
         logger.debug("finished computing transformations: %d transformations across %d lines",  # noqa: pycodestyle
                      size, len(self.__transformations))
-        logger.debug("transformations: %s", self.__transformations)
+        logger.info("transformations: %s", self.__transformations)
+        logger.info('tranformations by schema:\n%s',
+                    '\n'.join(['  * {}: {}'.format(s.__name__, count)
+                               for (s, count) in tally_by_schema.items()]))
+        logger.info('tranformations by file:\n%s',
+            '\n'.join(['  * {}: {}'.format(fn, count)
+                       for (fn, count) in tally_by_file.items()]))
 
     def _match_to_transformations(self,
                                   filename: str,
