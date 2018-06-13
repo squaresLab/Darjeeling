@@ -66,6 +66,7 @@ class Searcher(object):
         self.__exhausted_candidates = False
         self.__time_running = datetime.timedelta()
         self.__error_occurred = False
+        self.__searching = False
         self.__found_patches = []  # type: List[Candidate]
         self.__history = []  # type: List[Candidate]
         logger.debug("constructed searcher")
@@ -138,14 +139,15 @@ class Searcher(object):
         """
         The amount of time that has been spent searching for patches.
         """
-        time_now = timer()
-        duration_secs = time_now - self.__time_iteration_begun  # type: ignore
-        duration_iteration = datetime.timedelta(seconds=duration_secs)  # type: datetime.timedelta
-        duration_total = self.__time_running + duration_iteration
-        # DEBUG
-        duration_mins = duration_iteration.seconds / 60
-        logger.debug("time running: {:.2f} minutes".format(duration_mins))
-        return duration_total
+        duration_delta = self.__time_running
+        if self.__searching:
+            time_now = timer()
+            iteration_secs = time_now - self.__time_iteration_begun  # type: ignore
+            iteration_delta = datetime.timedelta(seconds=iteration_secs)  # type: datetime.timedelta
+            duration_delta = duration_delta + iteration_delta
+        logger.debug("time running: {:.2f} minutes",
+                     duration_delta.seconds / 60)
+        return duration_delta
 
     def stop(self) -> None:
         # FIXME just use an event to communicate when to stop
@@ -195,6 +197,7 @@ class Searcher(object):
                     if not searcher._try_next():
                         break
 
+            self.__searching = True
             for _ in range(self.__num_threads):
                 t = threading.Thread(target=worker, args=(self,))
                 threads.append(t)
@@ -210,6 +213,7 @@ class Searcher(object):
         finally:
             for t in threads:
                 t.join()
+            self.__searching = False
             if threading.current_thread() is threading.main_thread():
                 logger.debug("restoring original signal handlers")
                 signal.signal(signal.SIGINT, original_handler_sigint)
