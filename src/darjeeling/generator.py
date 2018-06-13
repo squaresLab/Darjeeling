@@ -4,6 +4,8 @@ transformations and candidate patches.
 """
 from typing import Iterator, List, Iterable, Tuple, Optional, Type, Dict
 import random
+import logging
+import yaml
 
 from rooibos import Client as RooibosClient
 from bugzoo.localization import Localization
@@ -19,6 +21,9 @@ from .transformation import Transformation, \
                             AppendTransformation, \
                             DeleteTransformation, \
                             ReplaceTransformation
+
+logger = logging.getLogger(__name__)
+
 
 class Context(object):
     pass
@@ -59,20 +64,41 @@ class RooibosGenerator(TransformationGenerator):
                  ) -> None:
         client_rooibos = problem.rooibos
         self.__problem = problem
+        size = 0
         self.__localization = localization
         self.__transformations = \
             {l: {s: [] for s in schemas} for l in localization}  # type: Dict[FileLine, Dict[Type[RooibosTransformation], List[Transformation]]]  # noqa: pycodestyle
+
+        logger.debug("computing transformations")
         for fn in localization.files:
             file_contents = problem.sources.read_file(fn)
             for schema in schemas:
+                logger.debug("finding matches of %s in %s", schema.__name__, fn)
                 tpl_match = schema.match
                 matches = client_rooibos.matches(file_contents, tpl_match)
                 for m in matches:
                     line = FileLine(fn, m.location.start.line)
                     if line not in localization:
                         continue
-                    self.__transformations[line][schema] += \
-                        self._match_to_transformations(fn, schema, m)
+                    transformations = \
+                        list(self._match_to_transformations(fn, schema, m))
+                    size += len(transformations)
+                    self.__transformations[line][schema] += transformations
+
+        # trim redundant parts of transformation map
+        for line in localization:
+            for schema in schemas:
+                if not self.__transformations[line][schema]:
+                    del self.__transformations[line][schema]
+            if not self.__transformations[line]:
+                del self.__transformations[line]
+
+        # refine the fault localization to only cover represented lines
+        lines = list(self.__transformations.keys())
+        self.__localization = self.__localization.restricted_to_lines(lines)
+        logger.debug("finished computing transformations: %d transformations across %d lines",  # noqa: pycodestyle
+                     size, len(self.__transformations))
+        logger.debug("transformations: %s", self.__transformations)
 
     def _match_to_transformations(self,
                                   filename: str,
@@ -90,6 +116,7 @@ class RooibosGenerator(TransformationGenerator):
 
     def __next__(self) -> Transformation:
         line = self.__localization.sample()
+        logger.debug("looking for transformation at %s", line)
         operator_to_transformations = self.__transformations[line]
 
         # choose an operator at random
@@ -98,11 +125,13 @@ class RooibosGenerator(TransformationGenerator):
         try:
             op = random.choice(list(operator_to_transformations.keys()))
             transformations = operator_to_transformations[op]
-        except ValueError:
+        except IndexError:
+            logger.debug("no transformations left at %s", line)
             del self.__transformations[line]
             try:
                 self.__localization = self.__localization.without(line)
             except NoImplicatedLines:
+                logger.debug("no transformations left in search space")
                 raise StopIteration
             return self.__next__()
 
@@ -112,6 +141,7 @@ class RooibosGenerator(TransformationGenerator):
         try:
             return transformations.pop()
         except IndexError:
+            logger.debug("exhausted all %s transformations at %s", op, line)
             del operator_to_transformations[op]
             return self.__next__()
 
