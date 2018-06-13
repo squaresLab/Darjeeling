@@ -1,8 +1,14 @@
-from typing import List, Iterator, Set, Iterable, Optional, Dict
+from typing import List, Iterator, Set, Iterable, Optional, Dict, Callable
+import logging
 
 from bugzoo.core.coverage import FileLine
 
+from .problem import Problem
 
+logger = logging.getLogger(__name__)  # type: logging.Logger
+
+
+# FIXME use attrs
 class Snippet(object):
     """
     Represents a donor code snippet.
@@ -29,6 +35,25 @@ class Snippet(object):
 
 class SnippetDatabase(object):
     # TODO: implement load and save functionality (use cPickle)
+    @staticmethod
+    def from_problem(problem: Problem,
+                     filters: Optional[List[Callable[[str], bool]]] = None
+                     ) -> 'SnippetDatabase':
+        if filters is None:
+            filters = []
+
+        logger.info("building snippet database for problem")
+        sources = problem.sources
+        db = SnippetDatabase()
+
+        for line in problem.lines:
+            content = sources.read_line(line).strip()
+            if all(f(content) for f in filters):
+                snippet = Snippet(content)
+                db.add(snippet, origin=line)
+
+        logger.info("built snippet database: %d snippets", len(db))
+        return db
 
     def __init__(self) -> None:
         self.__snippets = set() # type: Set[Snippet]

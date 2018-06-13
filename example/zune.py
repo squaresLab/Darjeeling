@@ -7,6 +7,7 @@ import bugzoo
 import bugzoo.localization
 import darjeeling
 import darjeeling.repair
+from darjeeling.snippet import SnippetDatabase
 
 
 def main():
@@ -18,12 +19,15 @@ def main():
     # files = ['atris_comb.c']
 
     with rooibos.ephemeral_server() as client_rooibos:
-        problem = darjeeling.problem.Problem(bz, bug,
-                                             in_files=files,
+        coverage = bz.bugs.coverage(bug)
+        problem = darjeeling.problem.Problem(bz,
+                                             bug,
+                                             coverage,
                                              client_rooibos=client_rooibos)
-
+        snippets = SnippetDatabase.from_problem(problem)
+        # FIXME add filtering
         print("\n[SNIPPETS]")
-        for (i, snippet) in enumerate(problem.snippets):
+        for (i, snippet) in enumerate(snippets):
             print("{}: {}".format(i, snippet))
         print("[\SNIPPETS]\n")
 

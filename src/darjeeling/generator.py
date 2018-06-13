@@ -4,10 +4,14 @@ transformations and candidate patches.
 """
 from typing import Iterator, List, Iterable, Tuple, Optional, Type, Dict
 import random
+import logging
+import yaml
 
 from rooibos import Client as RooibosClient
 from bugzoo.localization import Localization
+from rooibos import Match
 
+from .exceptions import NoImplicatedLines
 from .core import FileLocationRange, FileLine, Location
 from .problem import Problem
 from .snippet import Snippet, SnippetDatabase
@@ -17,6 +21,9 @@ from .transformation import Transformation, \
                             AppendTransformation, \
                             DeleteTransformation, \
                             ReplaceTransformation
+
+logger = logging.getLogger(__name__)
+
 
 class Context(object):
     pass
@@ -49,6 +56,96 @@ class TransformationGenerator(Iterable):
         raise NotImplementedError
 
 
+class RooibosGenerator(TransformationGenerator):
+    def __init__(self,
+                 problem: Problem,
+                 localization: Localization,
+                 schemas: List[Type[RooibosTransformation]]
+                 ) -> None:
+        client_rooibos = problem.rooibos
+        self.__problem = problem
+        size = 0
+        self.__localization = localization
+        self.__transformations = \
+            {l: {s: [] for s in schemas} for l in localization}  # type: Dict[FileLine, Dict[Type[RooibosTransformation], List[Transformation]]]  # noqa: pycodestyle
+
+        logger.debug("computing transformations")
+        for fn in localization.files:
+            file_contents = problem.sources.read_file(fn)
+            for schema in schemas:
+                logger.debug("finding matches of %s in %s", schema.__name__, fn)
+                tpl_match = schema.match
+                matches = client_rooibos.matches(file_contents, tpl_match)
+                for m in matches:
+                    line = FileLine(fn, m.location.start.line)
+                    if line not in localization:
+                        continue
+                    transformations = \
+                        list(self._match_to_transformations(fn, schema, m))
+                    size += len(transformations)
+                    self.__transformations[line][schema] += transformations
+
+        # trim redundant parts of transformation map
+        for line in localization:
+            for schema in schemas:
+                if not self.__transformations[line][schema]:
+                    del self.__transformations[line][schema]
+            if not self.__transformations[line]:
+                del self.__transformations[line]
+
+        # refine the fault localization to only cover represented lines
+        lines = list(self.__transformations.keys())
+        self.__localization = self.__localization.restricted_to_lines(lines)
+        logger.debug("finished computing transformations: %d transformations across %d lines",  # noqa: pycodestyle
+                     size, len(self.__transformations))
+        logger.debug("transformations: %s", self.__transformations)
+
+    def _match_to_transformations(self,
+                                  filename: str,
+                                  schema: Type[RooibosTransformation],
+                                  match: Match
+                                  ) -> List[Transformation]:
+        # FIXME for now, we only return a single transformation
+        args = {}  # type: Dict[str, str]
+        location = FileLocationRange(filename,
+                                     Location(match.location.start.line,
+                                              match.location.start.col),
+                                     Location(match.location.stop.line,
+                                              match.location.stop.col))
+        return [schema(location, args)]  # type: ignore
+
+    def __next__(self) -> Transformation:
+        line = self.__localization.sample()
+        logger.debug("looking for transformation at %s", line)
+        operator_to_transformations = self.__transformations[line]
+
+        # choose an operator at random
+        # if there are no operator choices, discard this line
+        # if no lines remain, we're finished
+        try:
+            op = random.choice(list(operator_to_transformations.keys()))
+            transformations = operator_to_transformations[op]
+        except IndexError:
+            logger.debug("no transformations left at %s", line)
+            del self.__transformations[line]
+            try:
+                self.__localization = self.__localization.without(line)
+            except NoImplicatedLines:
+                logger.debug("no transformations left in search space")
+                raise StopIteration
+            return self.__next__()
+
+        # choose a transformation at random
+        # if there are no more transformation choices, discard this operator
+        # choice
+        try:
+            return transformations.pop()
+        except IndexError:
+            logger.debug("exhausted all %s transformations at %s", op, line)
+            del operator_to_transformations[op]
+            return self.__next__()
+
+
 def all_transformations_in_file(
         problem: Problem,
         transformation_cls: Type[RooibosTransformation],
@@ -66,7 +163,7 @@ def all_transformations_in_file(
                                               m.location.start.col),
                                      Location(m.location.stop.line,
                                               m.location.stop.col))
-        yield transformation_cls(location, args)
+        yield transformation_cls(location, args)  # type: ignore
 
 
 class SingleEditPatches(CandidateGenerator):
@@ -84,7 +181,7 @@ class SingleEditPatches(CandidateGenerator):
             transformation = next(self.__transformations)
         except StopIteration:
             raise StopIteration
-        return Candidate([transformation])
+        return Candidate([transformation])  # type: ignore
 
 
 class TargetSnippetGenerator(Iterable):
