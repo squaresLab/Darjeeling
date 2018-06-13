@@ -268,7 +268,7 @@ class Searcher(object):
             logger_c.debug("executing tests")
             for test in self.__problem.tests:
                 cmd = self.__problem.bug.harness.command(test)[0]
-                logger_c.info("executing test: %s (%s)", test.name, candidate)
+                logger_c.debug("executing test: %s (%s)", test.name, candidate)
                 self.__counter_tests += 1
                 outcome = bz.containers.test(container, test)
                 logger_c.debug("* test outcome: %s (%s) [retcode=%d]\n$ %s\n%s",
@@ -279,9 +279,9 @@ class Searcher(object):
                                outcome.response.output)
                 self.outcomes.record_test(candidate, test.name, outcome)
                 if not outcome.passed:
-                    logger_c.info("* test failed: %s (%s)", test.name, candidate)
+                    logger_c.debug("* test failed: %s (%s)", test.name, candidate)
                     return True
-                logger_c.info("* test passed: %s (%s)", test.name, candidate)
+                logger_c.debug("* test passed: %s (%s)", test.name, candidate)
 
             # if we've found a repair, pause the search
             self.__found_patches.append(candidate)
