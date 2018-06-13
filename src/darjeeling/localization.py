@@ -67,7 +67,7 @@ class Localization(object):
         del scores[line]
         return Localization(scores)
 
-    def restricted_to_lines(self, lines: Sequence[FileLine]) -> None:
+    def restricted_to_lines(self, lines: Sequence[FileLine]) -> 'Localization':
         scores = {l: s for (l, s) in self.__line_to_score.items()
                   if l in lines}
         return Localization(scores)
