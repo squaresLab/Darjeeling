@@ -145,8 +145,7 @@ class Searcher(object):
             iteration_secs = time_now - self.__time_iteration_begun  # type: ignore
             iteration_delta = datetime.timedelta(seconds=iteration_secs)  # type: datetime.timedelta
             duration_delta = duration_delta + iteration_delta
-        logger.debug("time running: {:.2f} minutes",
-                     duration_delta.seconds / 60)
+        logger.debug("time running: %.2f minutes", duration_delta.seconds / 60)
         return duration_delta
 
     def stop(self) -> None:
