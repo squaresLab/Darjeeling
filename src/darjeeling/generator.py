@@ -112,7 +112,7 @@ class RooibosGenerator(TransformationGenerator):
                                               match.location.start.col),
                                      Location(match.location.stop.line,
                                               match.location.stop.col))
-        return [schema(location, args)]
+        return [schema(location, args)]  # type: ignore
 
     def __next__(self) -> Transformation:
         line = self.__localization.sample()
@@ -163,7 +163,7 @@ def all_transformations_in_file(
                                               m.location.start.col),
                                      Location(m.location.stop.line,
                                               m.location.stop.col))
-        yield transformation_cls(location, args)
+        yield transformation_cls(location, args)  # type: ignore
 
 
 class SingleEditPatches(CandidateGenerator):
@@ -181,7 +181,7 @@ class SingleEditPatches(CandidateGenerator):
             transformation = next(self.__transformations)
         except StopIteration:
             raise StopIteration
-        return Candidate([transformation])
+        return Candidate([transformation])  # type: ignore
 
 
 class TargetSnippetGenerator(Iterable):
