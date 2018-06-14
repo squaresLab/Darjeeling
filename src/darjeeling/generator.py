@@ -84,6 +84,9 @@ class RooibosGenerator(TransformationGenerator):
                     line = FileLine(fn, m.location.start.line)
                     if line not in localization:
                         continue
+                    if not schema.is_valid_match(m):
+                        logger.debug("skipping invalid match: %s", m)
+                        continue
                     transformations = \
                         list(self._match_to_transformations(fn, schema, m))
                     size += len(transformations)
@@ -117,14 +120,14 @@ class RooibosGenerator(TransformationGenerator):
                                   schema: Type[RooibosTransformation],
                                   match: Match
                                   ) -> List[Transformation]:
-        # FIXME for now, we only return a single transformation
-        args = {}  # type: Dict[str, str]
         location = FileLocationRange(filename,
                                      Location(match.location.start.line,
                                               match.location.start.col),
                                      Location(match.location.stop.line,
                                               match.location.stop.col))
-        return [schema(location, args)]  # type: ignore
+        return schema.match_to_transformations(self.__problem,
+                                               location,
+                                               match.environment)
 
     def __next__(self) -> Transformation:
         line = self.__localization.sample()
