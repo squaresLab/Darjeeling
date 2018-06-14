@@ -8,7 +8,6 @@ import logging
 import yaml
 
 from rooibos import Client as RooibosClient
-from bugzoo.localization import Localization
 from rooibos import Match
 
 from .exceptions import NoImplicatedLines
