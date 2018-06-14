@@ -88,12 +88,8 @@ class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta)
 
 
 class InsertVoidFunctionCall(RooibosTransformation):
-    # this one is tricky
     match = ";\n"
     rewrite = ";\n:[1]();\n"
-#    constraints = [
-#        ("1",)
-#    ]
 
     @classmethod
     def is_valid_match(cls, match: rooibos.Match) -> bool:
@@ -121,6 +117,66 @@ class InsertVoidFunctionCall(RooibosTransformation):
 
         # TODO find appropriate void functions
         args = {'1': 'foo'}
+        return [cls(location, args)]
+
+
+class InsertConditionalReturn(RooibosTransformation):
+    match = ";\n"
+    rewrite = ";\nif(:[1]){return;}\n"
+
+    @classmethod
+    def is_valid_match(cls, match: rooibos.Match) -> bool:
+        # TODO must be inside a void function
+        return True
+
+    @classmethod
+    def match_to_transformations(cls,
+                                 problem: Problem,
+                                 location: FileLocationRange,
+                                 environment: rooibos.Environment
+                                 ) -> List[Transformation]:
+        # TODO contains_return
+        # don't insert after a return statement (or a break?)
+        line_previous = FileLine(location.filename, location.start.line)
+        line_previous_content = \
+            problem.sources.read_line(line_previous)
+        if ' return ' in line_previous_content:
+            return []
+
+        # TODO find all unique insertion points
+
+        # TODO find appropriate if guards
+        args = {'1': 'true'}
+        return [cls(location, args)]
+
+
+class InsertConditionalBreak(RooibosTransformation):
+    match = ";\n"
+    rewrite = ";\nif(:[1]){break;}\n"
+
+    @classmethod
+    def is_valid_match(cls, match: rooibos.Match) -> bool:
+        # TODO must be inside a loop
+        return True
+
+    @classmethod
+    def match_to_transformations(cls,
+                                 problem: Problem,
+                                 location: FileLocationRange,
+                                 environment: rooibos.Environment
+                                 ) -> List[Transformation]:
+        # TODO contains_return
+        # don't insert after a return statement (or a break?)
+        line_previous = FileLine(location.filename, location.start.line)
+        line_previous_content = \
+            problem.sources.read_line(line_previous)
+        if ' return ' in line_previous_content:
+            return []
+
+        # TODO find all unique insertion points
+
+        # TODO find appropriate if guards
+        args = {'1': 'true'}
         return [cls(location, args)]
 
 
