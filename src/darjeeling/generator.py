@@ -10,6 +10,7 @@ import yaml
 from rooibos import Client as RooibosClient
 from rooibos import Match
 
+from .localization import Localization
 from .exceptions import NoImplicatedLines
 from .core import FileLocationRange, FileLine, Location
 from .problem import Problem
