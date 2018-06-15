@@ -180,6 +180,26 @@ class InsertConditionalBreak(RooibosTransformation):
         return [cls(location, args)]
 
 
+class ApplyTransformation(RooibosTransformation):
+    match = "= :[1];"
+    rewrite = "= :[2](:[1]);"
+
+    @classmethod
+    def is_valid_match(self, match: rooibos.Match) -> bool:
+        return ';' not in match.environment['1'].fragment
+
+    @classmethod
+    def match_to_transformations(cls,
+                                 problem: Problem,
+                                 location: FileLocationRange,
+                                 environment: rooibos.Environment
+                                 ) -> List[Transformation]:
+        # TODO find applicable transformations
+        args = {'1': environment['1'].fragment,
+                '2': 'foo'}  # type: Dict[str, str]
+        return [cls(location, args)]  # type: ignore
+
+
 class SignedToUnsigned(RooibosTransformation):
     match = "int :[1] ="
     rewrite = "unsigned int :[1] ="
