@@ -3,6 +3,8 @@ This module is responsible for describing concrete transformations to source
 code files.
 """
 from typing import List, Iterator, Dict, FrozenSet, Tuple
+import re
+import logging
 
 import attr
 import rooibos
@@ -11,6 +13,14 @@ from bugzoo.core.bug import Bug
 from .problem import Problem
 from .snippet import Snippet
 from .core import Replacement, FileLine, FileLocationRange
+
+logger = logging.getLogger(__name__)
+
+REGEX_HOLE = re.compile('(?<=:\[)\w+(?=\])')
+
+
+def is_single_token(snippet: str) -> bool:
+    return ' ' not in snippet
 
 
 class Transformation(object):
@@ -29,6 +39,15 @@ class RooibosTransformationMeta(type):
             if not 'rewrite' in dikt:
                 raise SyntaxError('missing "rewrite" property in {}'.format(name))
         # TODO add ability to specify constraints
+
+        # determine free holes
+        # holes_match = REGEX_HOLE.findall(dikt['match'])  # type: List[str]
+        # holes_rewrite = REGEX_HOLE.findall(dikt['rewrite'])  # type: List[str]
+
+        # synthesise a "is_valid_match" function for this transformation
+
+        # TODO compose a fast rewrite function
+
         return type.__new__(metacls, name, bases, dikt)
 
 
@@ -36,7 +55,7 @@ class RooibosTransformationMeta(type):
 class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta):  # noqa: pycodestyle
     location = attr.ib(type=FileLocationRange)
     arguments = attr.ib(type=FrozenSet[Tuple[str, str]],  # TODO replace with FrozenDict
-                        converter=frozenset)  # type: ignore
+                        converter=lambda args: frozenset(args.items()))  # type: ignore  # noqa: pycodestyle
 
     # FIXME need to use abstract properties
     @property
@@ -51,6 +70,156 @@ class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta)
         args = dict(self.arguments)
         text = problem.rooibos.substitute(self.rewrite, args)
         return Replacement(self.location, text)
+
+    # FIXME implement using constraints
+    @classmethod
+    def is_valid_match(cls, match: rooibos.Match) -> bool:
+        return True
+
+    # FIXME automagically generate
+    @classmethod
+    def match_to_transformations(cls,
+                                 problem: Problem,
+                                 location: FileLocationRange,
+                                 environment: rooibos.Environment
+                                 ) -> List[Transformation]:
+        args = {}  # type: Dict[str, str]
+        return [cls(location, args)]  # type: ignore
+
+
+class InsertVoidFunctionCall(RooibosTransformation):
+    match = ";\n"
+    rewrite = ";\n:[1]();\n"
+
+    @classmethod
+    def is_valid_match(cls, match: rooibos.Match) -> bool:
+        # TODO must be inside a function
+        return True
+
+    @classmethod
+    def match_to_transformations(cls,
+                                 problem: Problem,
+                                 location: FileLocationRange,
+                                 environment: rooibos.Environment
+                                 ) -> List[Transformation]:
+        # don't insert into small functions
+
+        # don't insert macros?
+
+        # don't insert after a return statement (or a break?)
+        line_previous = FileLine(location.filename, location.start.line)
+        line_previous_content = \
+            problem.sources.read_line(line_previous)
+        if ' return ' in line_previous_content:
+            return []
+
+        # TODO find all unique insertion points
+
+        # TODO find appropriate void functions
+        args = {'1': 'foo'}
+        return [cls(location, args)]
+
+
+class InsertConditionalReturn(RooibosTransformation):
+    match = ";\n"
+    rewrite = ";\nif(:[1]){return;}\n"
+
+    @classmethod
+    def is_valid_match(cls, match: rooibos.Match) -> bool:
+        # TODO must be inside a void function
+        return True
+
+    @classmethod
+    def match_to_transformations(cls,
+                                 problem: Problem,
+                                 location: FileLocationRange,
+                                 environment: rooibos.Environment
+                                 ) -> List[Transformation]:
+        # TODO contains_return
+        # don't insert after a return statement (or a break?)
+        line_previous = FileLine(location.filename, location.start.line)
+        line_previous_content = \
+            problem.sources.read_line(line_previous)
+        if ' return ' in line_previous_content:
+            return []
+
+        # TODO find all unique insertion points
+
+        # TODO find appropriate if guards
+        args = {'1': 'true'}
+        return [cls(location, args)]
+
+
+class InsertConditionalBreak(RooibosTransformation):
+    match = ";\n"
+    rewrite = ";\nif(:[1]){break;}\n"
+
+    @classmethod
+    def is_valid_match(cls, match: rooibos.Match) -> bool:
+        # TODO must be inside a loop
+        return True
+
+    @classmethod
+    def match_to_transformations(cls,
+                                 problem: Problem,
+                                 location: FileLocationRange,
+                                 environment: rooibos.Environment
+                                 ) -> List[Transformation]:
+        # TODO contains_return
+        # don't insert after a return statement (or a break?)
+        line_previous = FileLine(location.filename, location.start.line)
+        line_previous_content = \
+            problem.sources.read_line(line_previous)
+        if ' return ' in line_previous_content:
+            return []
+
+        # TODO find all unique insertion points
+
+        # TODO find appropriate if guards
+        args = {'1': 'true'}
+        return [cls(location, args)]
+
+
+class ApplyTransformation(RooibosTransformation):
+    match = "= :[1];"
+    rewrite = "= :[2](:[1]);"
+
+    @classmethod
+    def is_valid_match(self, match: rooibos.Match) -> bool:
+        return ';' not in match.environment['1'].fragment
+
+    @classmethod
+    def match_to_transformations(cls,
+                                 problem: Problem,
+                                 location: FileLocationRange,
+                                 environment: rooibos.Environment
+                                 ) -> List[Transformation]:
+        # TODO find applicable transformations
+        args = {'1': environment['1'].fragment,
+                '2': 'foo'}  # type: Dict[str, str]
+        return [cls(location, args)]  # type: ignore
+
+
+class SignedToUnsigned(RooibosTransformation):
+    match = "int :[1] ="
+    rewrite = "unsigned int :[1] ="
+    constraints = [
+        ("1", is_single_token)
+    ]
+
+    @classmethod
+    def is_valid_match(self, match: rooibos.Match) -> bool:
+        return is_single_token(match.environment['1'].fragment)
+
+    # FIXME borko?
+    @classmethod
+    def match_to_transformations(cls,
+                                 problem: Problem,
+                                 location: FileLocationRange,
+                                 environment: rooibos.Environment
+                                 ) -> List[Transformation]:
+        args = {'1': environment['1'].fragment}  # type: Dict[str, str]
+        return [cls(location, args)]  # type: ignore
 
 
 class AndToOr(RooibosTransformation):

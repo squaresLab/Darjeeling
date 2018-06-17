@@ -7,7 +7,6 @@ import os
 import boggart
 import rooibos
 import bugzoo
-import bugzoo.localization.suspiciousness as metrics
 from rooibos import Client as RooibosClient
 from bugzoo.core.fileline import FileLine, FileLineSet
 from bugzoo.core.container import Container
