@@ -368,5 +368,5 @@ class SampleByLocalization(TransformationGenerator):
             return next(source)
         except StopIteration:
             del self.__transformations_by_line[line]
-            self.__localization = self.__localization.without_line(line)
+            self.__localization = self.__localization.without(line)
             return self.__next__()
