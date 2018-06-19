@@ -1,7 +1,7 @@
 from typing import Dict, Optional, Iterator
 import attr
 
-from bugzoo.testing.base import TestOutcome as BugZooTestOutcome
+from bugzoo.core import TestOutcome as BugZooTestOutcome
 from bugzoo.compiler import CompilationOutcome as BugZooBuildOutcome
 
 from .candidate import Candidate
