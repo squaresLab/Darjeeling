@@ -13,8 +13,8 @@ from bugzoo.core.container import Container
 from bugzoo.core.bug import Bug
 from bugzoo.core.patch import Patch
 from bugzoo.core.coverage import TestSuiteCoverage
+from bugzoo.core.test import TestCase
 from bugzoo.compiler import CompilationOutcome as BuildOutcome
-from bugzoo.testing import TestCase
 from bugzoo.util import indent
 
 from .source import ProgramSourceManager

@@ -267,7 +267,6 @@ class Searcher(object):
             logger_c = logger.getChild(container.uid)
             logger_c.debug("executing tests")
             for test in self.__problem.tests:
-                cmd = self.__problem.bug.harness.command(test)[0]
                 logger_c.debug("executing test: %s (%s)", test.name, candidate)
                 self.__counter_tests += 1
                 outcome = bz.containers.test(container, test)
@@ -275,7 +274,7 @@ class Searcher(object):
                                test.name,
                                candidate,
                                outcome.response.code,
-                               cmd,
+                               test.command,
                                outcome.response.output)
                 self.outcomes.record_test(candidate, test.name, outcome)
                 if not outcome.passed:
