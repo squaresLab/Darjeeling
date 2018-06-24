@@ -247,6 +247,7 @@ class Searcher(object):
         try:
             candidate = next(self.__candidates) # type: ignore
             self.__history.append(candidate)
+            self.__counter_candidates += 1
         except StopIteration:
             logger.info("All candidate patches have been exhausted.")
             self.__exhausted_candidates = True
@@ -254,11 +255,11 @@ class Searcher(object):
         finally:
             self.__lock_candidates.release()
 
-        self.__counter_candidates += 1
         bz = self.__bugzoo
         mgr_src = self.__problem.sources
 
         patch = candidate.to_diff(self.__problem)
+        lines_changed = candidate.lines_changed(self.__problem)
         logger.info("evaluating candidate: %s\n%s\n", candidate, patch)
         logger.debug("building candidate: %s", candidate)
         container = None
@@ -273,6 +274,9 @@ class Searcher(object):
             logger_c = logger.getChild(container.uid)
             logger_c.debug("executing tests")
             for test in self.__problem.tests:
+                # is this test covered?
+
+
                 logger_c.debug("executing test: %s (%s)", test.name, candidate)
                 self.__counter_tests += 1
                 outcome = bz.containers.test(container, test)
