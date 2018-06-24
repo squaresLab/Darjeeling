@@ -30,7 +30,8 @@ class Searcher(object):
                  candidates: Iterable[Candidate],
                  *,
                  threads: int = 1,
-                 time_limit: Optional[datetime.timedelta] = None
+                 time_limit: Optional[datetime.timedelta] = None,
+                 candidate_limit: Optional[int] = None
                  ) -> None:
         """
         Constructs a new searcher for a given source of candidate patches.
@@ -44,6 +45,8 @@ class Searcher(object):
                 the search process.
             time_limit: an optional limit on the amount of time given to the
                 searcher.
+            candidate_limit: an optional limit on the number of candidate
+                patches that may be generated.
         """
         logger.debug("constructed searcher")
         assert time_limit is None or time_limit > datetime.timedelta(), \
@@ -53,6 +56,7 @@ class Searcher(object):
         self.__problem = problem
         self.__candidates = candidates
         self.__time_limit = time_limit
+        self.__candidate_limit = candidate_limit
         self.__num_threads = threads
         self.__outcomes = OutcomeManager()
 
@@ -104,10 +108,12 @@ class Searcher(object):
             return True
         if self.__exhausted_candidates:
             return True
-        if self.__time_limit is None:
-            return False
-        if self.time_running > self.__time_limit:
-            return True
+        if self.__time_limit is not None:
+            if self.time_running > self.__time_limit:  # type: ignore
+                return True
+        if self.__candidate_limit is not None:
+            if self.__counter_candidates > self.__candidate_limit:
+                return True
         return False
 
     @property
