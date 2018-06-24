@@ -260,6 +260,7 @@ class Searcher(object):
 
         patch = candidate.to_diff(self.__problem)
         lines_changed = candidate.lines_changed(self.__problem)
+        line_coverage_by_test = self.__problem.coverage
         logger.info("evaluating candidate: %s\n%s\n", candidate, patch)
         logger.debug("building candidate: %s", candidate)
         container = None
@@ -274,8 +275,11 @@ class Searcher(object):
             logger_c = logger.getChild(container.uid)
             logger_c.debug("executing tests")
             for test in self.__problem.tests:
-                # is this test covered?
-
+                test_line_coverage = line_coverage_by_test[test]
+                if any(line in test_line_coverage for line in lines_changed):
+                    logger_c.debug("skipping test: %s (%s)",
+                                   test.name, candidate)
+                    continue
 
                 logger_c.debug("executing test: %s (%s)", test.name, candidate)
                 self.__counter_tests += 1
