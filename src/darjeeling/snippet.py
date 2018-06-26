@@ -14,6 +14,15 @@ class Snippet(object):
     Represents a code snippet that may be inserted into a program under
     repair.
     """
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> 'Snippet':
+        snippet = Snippet(d['content'])
+        if 'locations' in d:
+            for loc_s in d['locations']:
+                loc = FileLocationRange.from_string(loc_s)
+                snippet.locations.add(loc)
+        return snippet
+
     def __init__(self, content: str) -> None:
         self.__content = content
         self.locations = set()  # type: Set[FileLocationRange]
@@ -31,6 +40,13 @@ class Snippet(object):
     @property
     def occurrences(self) -> int:
         return len(self.locations)
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = {}  # type: Dict[str, Any]
+        d['content'] = self.__content
+        if self.locations:
+            d['locations'] = [str(l) for l in self.locations]
+        return d
 
 
 class SnippetDatabase(object):
