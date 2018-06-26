@@ -9,6 +9,7 @@ import signal
 
 import bugzoo
 
+from .core import FileLine
 from .candidate import Candidate
 from .problem import Problem
 from .outcome import OutcomeManager
