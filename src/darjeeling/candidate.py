@@ -40,4 +40,7 @@ class Candidate(object):
         """
         replacements = \
             map(lambda t: t.to_replacement(problem), self.transformations)
-        return [rep.location for rep in replacements]
+        locations = [rep.location for rep in replacements]
+        lines = [FileLine(loc.filename, loc.start.line)
+                 for loc in locations]
+        return lines
