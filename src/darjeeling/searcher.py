@@ -259,7 +259,7 @@ class Searcher(object):
         mgr_src = self.__problem.sources
 
         patch = candidate.to_diff(self.__problem)
-        lines_changed = candidate.lines_changed(self.__problem)
+        lines_changed = candidate.lines_changed(self.__problem)  # type: List[FileLine]
         line_coverage_by_test = self.__problem.coverage
         logger.info("evaluating candidate: %s\n%s\n", candidate, patch)
         logger.debug("building candidate: %s", candidate)
@@ -276,7 +276,7 @@ class Searcher(object):
             logger_c.debug("executing tests")
             for test in self.__problem.tests:
                 test_line_coverage = line_coverage_by_test[test.name]
-                if any(line in test_line_coverage for line in lines_changed):
+                if not any(line in test_line_coverage for line in lines_changed):
                     logger_c.debug("skipping test: %s (%s)",
                                    test.name, candidate)
                     continue
