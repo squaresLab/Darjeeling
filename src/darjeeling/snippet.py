@@ -1,5 +1,7 @@
-from typing import List, Iterator, Set, Iterable, Optional, Dict, Callable
+from typing import List, Iterator, Set, Iterable, Optional, Dict, Callable, \
+                   Any
 import logging
+import attr
 
 from bugzoo.core.coverage import FileLine
 
@@ -8,29 +10,19 @@ from .problem import Problem
 logger = logging.getLogger(__name__)  # type: logging.Logger
 
 
-# FIXME use attrs
+@attr.s(frozen=True)
 class Snippet(object):
     """
-    Represents a donor code snippet.
+    Represents a code snippet that may be inserted into a program under
+    repair.
     """
-    def __init__(self, content: str) -> None:
-        self.__content = content
+    content = attr.ib(type=str)
 
-    @property
-    def content(self) -> str:
-        """
-        Returns the contents of the snippet as a string.
-        """
-        return self.__content
-
-    def __str__(self) -> str:
-        return self.__content
-
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, Snippet) and self.content == other.content
 
     def __hash__(self) -> int:
-        return hash(self.__content)
+        return hash(self.content)
 
 
 class SnippetDatabase(object):
