@@ -275,7 +275,7 @@ class Searcher(object):
             logger_c = logger.getChild(container.uid)
             logger_c.debug("executing tests")
             for test in self.__problem.tests:
-                test_line_coverage = line_coverage_by_test[test]
+                test_line_coverage = line_coverage_by_test[test.name]
                 if any(line in test_line_coverage for line in lines_changed):
                     logger_c.debug("skipping test: %s (%s)",
                                    test.name, candidate)
