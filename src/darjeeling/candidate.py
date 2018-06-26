@@ -5,7 +5,7 @@ from typing import List, Iterator, Dict, FrozenSet
 import attr
 from bugzoo.core.patch import Patch
 
-from .core import Replacement
+from .core import Replacement, FileLine
 from .problem import Problem
 from .transformation import Transformation
 
@@ -32,3 +32,15 @@ class Candidate(object):
             replacements_by_file[fn].append(rep)
         # FIXME order each collection of replacements by location
         return problem.sources.replacements_to_diff(replacements_by_file)
+
+    def lines_changed(self, problem: Problem) -> List[FileLine]:
+        """
+        Returns a list of source lines that are changed by this candidate
+        patch.
+        """
+        replacements = \
+            map(lambda t: t.to_replacement(problem), self.transformations)
+        locations = [rep.location for rep in replacements]
+        lines = [FileLine(loc.filename, loc.start.line)
+                 for loc in locations]
+        return lines
