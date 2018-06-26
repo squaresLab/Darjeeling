@@ -56,7 +56,7 @@ class SnippetDatabase(object):
         return SnippetDatabase(snippets)
 
     def __init__(self,
-                 snippets: Optional[Iterator[Snippet]] = None
+                 snippets: Optional[Iterable[Snippet]] = None
                  ) -> None:
         """
         Constructs an empty snippet database.
@@ -121,7 +121,7 @@ class SnippetDatabase(object):
         if origin is not None:
             snippet.locations.add(origin)
             if origin.filename not in self.__snippets_by_file:
-                self.__snippets_by_file[origin.filename] = {}
+                self.__snippets_by_file[origin.filename] = set()
             self.__snippets_by_file[origin.filename].add(snippet)
 
     def to_dict(self) -> List[Dict[str, Any]]:
