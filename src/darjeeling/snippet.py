@@ -111,6 +111,7 @@ class SnippetDatabase(object):
     def add(self,
             content: str,
             *,
+            kind: Optional[str] = None,
             origin: Optional[FileLocationRange] = None
             ) -> None:
         """
@@ -127,7 +128,7 @@ class SnippetDatabase(object):
         if content in self.__snippets:
             snippet = self.__snippets[content]
         else:
-            snippet = Snippet(content)
+            snippet = Snippet(content, kind)
             self.__snippets[content] = snippet
 
         if origin is not None:
