@@ -11,7 +11,7 @@ import rooibos
 from bugzoo.core.bug import Bug
 
 from .problem import Problem
-from .snippet import Snippet
+from .snippet import Snippet, SnippetDatabase
 from .core import Replacement, FileLine, FileLocationRange
 
 logger = logging.getLogger(__name__)
@@ -80,6 +80,7 @@ class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta)
     @classmethod
     def match_to_transformations(cls,
                                  problem: Problem,
+                                 snippets: SnippetDatabase,
                                  location: FileLocationRange,
                                  environment: rooibos.Environment
                                  ) -> List[Transformation]:
@@ -99,6 +100,7 @@ class InsertVoidFunctionCall(RooibosTransformation):
     @classmethod
     def match_to_transformations(cls,
                                  problem: Problem,
+                                 snippets: SnippetDatabase,
                                  location: FileLocationRange,
                                  environment: rooibos.Environment
                                  ) -> List[Transformation]:
@@ -162,6 +164,7 @@ class InsertConditionalBreak(RooibosTransformation):
     @classmethod
     def match_to_transformations(cls,
                                  problem: Problem,
+                                 snippets: SnippetDatabase,
                                  location: FileLocationRange,
                                  environment: rooibos.Environment
                                  ) -> List[Transformation]:
@@ -191,13 +194,20 @@ class ApplyTransformation(RooibosTransformation):
     @classmethod
     def match_to_transformations(cls,
                                  problem: Problem,
+                                 snippets: SnippetDatabase,
                                  location: FileLocationRange,
                                  environment: rooibos.Environment
                                  ) -> List[Transformation]:
+        transformations = []  # type: ignore
+
         # TODO find applicable transformations
-        args = {'1': environment['1'].fragment,
-                '2': 'foo'}  # type: Dict[str, str]
-        return [cls(location, args)]  # type: ignore
+        for snippet in snippets.in_file(location.filename):
+            args = {'1': environment['1'].fragment,
+                    '2': snippet.content}  # type: Dict[str, str]
+            transformation = cls(location, args)
+            transformations.append(transformation)
+
+        return transformations
 
 
 class SignedToUnsigned(RooibosTransformation):
@@ -215,6 +225,7 @@ class SignedToUnsigned(RooibosTransformation):
     @classmethod
     def match_to_transformations(cls,
                                  problem: Problem,
+                                 snippets: SnippetDatabase,
                                  location: FileLocationRange,
                                  environment: rooibos.Environment
                                  ) -> List[Transformation]:
