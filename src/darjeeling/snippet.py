@@ -1,69 +1,86 @@
-from typing import List, Iterator, Set, Iterable, Optional, Dict, Callable
+from typing import List, Iterator, Set, Iterable, Optional, Dict, Callable, \
+                   Any
 import logging
+import attr
 
-from bugzoo.core.coverage import FileLine
-
+from .core import FileLocationRange
 from .problem import Problem
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 
 
-# FIXME use attrs
 class Snippet(object):
     """
-    Represents a donor code snippet.
+    Represents a code snippet that may be inserted into a program under
+    repair.
     """
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> 'Snippet':
+        snippet = Snippet(d['content'])
+        if 'locations' in d:
+            for loc_s in d['locations']:
+                loc = FileLocationRange.from_string(loc_s)
+                snippet.locations.add(loc)
+        return snippet
+
     def __init__(self, content: str) -> None:
         self.__content = content
+        self.locations = set()  # type: Set[FileLocationRange]
 
-    @property
-    def content(self) -> str:
-        """
-        Returns the contents of the snippet as a string.
-        """
-        return self.__content
-
-    def __str__(self) -> str:
-        return self.__content
-
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, Snippet) and self.content == other.content
 
     def __hash__(self) -> int:
-        return hash(self.__content)
+        return hash(self.content)
+
+    @property
+    def content(self) -> str:
+        return self.__content
+
+    @property
+    def occurrences(self) -> int:
+        return len(self.locations)
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = {}  # type: Dict[str, Any]
+        d['content'] = self.__content
+        if self.locations:
+            d['locations'] = [str(l) for l in self.locations]
+        return d
 
 
 class SnippetDatabase(object):
-    # TODO: implement load and save functionality (use cPickle)
     @staticmethod
-    def from_problem(problem: Problem,
-                     filters: Optional[List[Callable[[str], bool]]] = None
-                     ) -> 'SnippetDatabase':
-        if filters is None:
-            filters = []
+    def from_dict(d: List[Dict[str, Any]]) -> 'SnippetDatabase':
+        snippets = [Snippet.from_dict(s) for s in d]
+        return SnippetDatabase(snippets)
 
-        logger.info("building snippet database for problem")
-        sources = problem.sources
-        db = SnippetDatabase()
+    def __init__(self,
+                 snippets: Optional[Iterable[Snippet]] = None
+                 ) -> None:
+        """
+        Constructs an empty snippet database.
+        """
+        if snippets is None:
+            snippets = []
 
-        for line in problem.lines:
-            content = sources.read_line(line).strip()
-            if all(f(content) for f in filters):
-                snippet = Snippet(content)
-                db.add(snippet, origin=line)
+        self.__snippets = {}  # type: Dict[str, Snippet]
+        for snippet in snippets:
+            self.__snippets[snippet.content] = snippet
 
-        logger.info("built snippet database: %d snippets", len(db))
-        return db
-
-    def __init__(self) -> None:
-        self.__snippets = set() # type: Set[Snippet]
-        self.__snippets_by_file = {} # type: Dict[str, Set[Snippet]]
+        self.__snippets_by_file = {}  # type: Dict[str, Set[Snippet]]
+        for snippet in snippets:
+            for location in snippet.locations:
+                fn = location.filename
+                if fn not in self.__snippets_by_file:
+                    self.__snippets_by_file[fn] = set()
+                self.__snippets_by_file[fn].add(snippet)
 
     def __iter__(self) -> Iterator[Snippet]:
         """
         Returns an iterator over the snippets contained in this databse.
         """
-        return self.__snippets.__iter__()
+        yield from self.__snippets.values()
 
     def __len__(self) -> int:
         """
@@ -78,34 +95,37 @@ class SnippetDatabase(object):
         """
         if fn in self.__snippets_by_file:
             yield from self.__snippets_by_file[fn]
-        return
 
     def add(self,
-            snippet: Snippet,
+            content: str,
             *,
-            origin: Optional[FileLine] = None
+            origin: Optional[FileLocationRange] = None
             ) -> None:
         """
         Adds a snippet to this database in-place.
 
         Parameters:
-            snippet: the snippet to add.
+            content: the content of the snippet.
             origin: an optional parameter that may be used to specify the
                 origin of the snippet.
 
         Returns:
             nothing.
         """
-        self.__snippets.add(snippet)
+        if content in self.__snippets:
+            snippet = self.__snippets[content]
+        else:
+            snippet = Snippet(content)
+            self.__snippets[content] = snippet
 
         if origin is not None:
+            snippet.locations.add(origin)
             if origin.filename not in self.__snippets_by_file:
-                self.__snippets_by_file[origin.filename] = {
-                    Snippet('return;'),
-                    Snippet('return true;'),
-                    Snippet('return false;')
-                }
+                self.__snippets_by_file[origin.filename] = set()
             self.__snippets_by_file[origin.filename].add(snippet)
+
+    def to_dict(self) -> List[Dict[str, Any]]:
+        return [s.to_dict() for s in self]
 
 
 class SnippetFinder(object):
@@ -113,4 +133,4 @@ class SnippetFinder(object):
         self.__database = database
 
     def __next__(self) -> Iterator[Snippet]:
-        return self.__database.__iter__()
+        yield from self.__database
