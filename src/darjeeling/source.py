@@ -34,6 +34,20 @@ class ProgramSourceManager(object):
     def files(self) -> Iterator[str]:
         yield from self.__files
 
+    def line_col_to_offset(self,
+                           filename: str,
+                           line: int,
+                           col: int
+                           ) -> int:
+        """
+        Transforms a line and column in a given file into a zero-indexed
+        offset.
+        """
+        return self.__mgr.line_col_to_offset(self.__snapshot,
+                                             filename,
+                                             line,
+                                             col)
+
     # FIXME move to boggart
     def line_to_location_range(self, line: FileLine) -> FileLocationRange:
         """
