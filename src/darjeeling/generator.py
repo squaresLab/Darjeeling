@@ -59,10 +59,12 @@ class TransformationGenerator(Iterable):
 class RooibosGenerator(TransformationGenerator):
     def __init__(self,
                  problem: Problem,
+                 snippets: SnippetDatabase,
                  localization: Localization,
                  schemas: List[Type[RooibosTransformation]]
                  ) -> None:
         client_rooibos = problem.rooibos
+        self.__snippets = snippets
         self.__problem = problem
         size = 0
         tally_by_file = \
@@ -126,6 +128,7 @@ class RooibosGenerator(TransformationGenerator):
                                      Location(match.location.stop.line,
                                               match.location.stop.col))
         return schema.match_to_transformations(self.__problem,
+                                               self.__snippets,
                                                location,
                                                match.environment)
 

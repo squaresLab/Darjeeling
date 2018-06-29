@@ -16,15 +16,21 @@ class Snippet(object):
     """
     @staticmethod
     def from_dict(d: Dict[str, Any]) -> 'Snippet':
-        snippet = Snippet(d['content'])
+        content = d['content']
+        kind = d.get('kind')
+        snippet = Snippet(content, kind)
         if 'locations' in d:
             for loc_s in d['locations']:
                 loc = FileLocationRange.from_string(loc_s)
                 snippet.locations.add(loc)
         return snippet
 
-    def __init__(self, content: str) -> None:
+    def __init__(self,
+                 content: str,
+                 kind: Optional[str] = None
+                 ) -> None:
         self.__content = content
+        self.__kind = kind
         self.locations = set()  # type: Set[FileLocationRange]
 
     def __eq__(self, other: Any) -> bool:
@@ -38,6 +44,10 @@ class Snippet(object):
         return self.__content
 
     @property
+    def kind(self) -> Optional[str]:
+        return self.__kind
+
+    @property
     def occurrences(self) -> int:
         return len(self.locations)
 
@@ -46,6 +56,8 @@ class Snippet(object):
         d['content'] = self.__content
         if self.locations:
             d['locations'] = [str(l) for l in self.locations]
+        if self.kind:
+            d['kind'] = self.kind
         return d
 
 
@@ -99,6 +111,7 @@ class SnippetDatabase(object):
     def add(self,
             content: str,
             *,
+            kind: Optional[str] = None,
             origin: Optional[FileLocationRange] = None
             ) -> None:
         """
@@ -115,7 +128,7 @@ class SnippetDatabase(object):
         if content in self.__snippets:
             snippet = self.__snippets[content]
         else:
-            snippet = Snippet(content)
+            snippet = Snippet(content, kind)
             self.__snippets[content] = snippet
 
         if origin is not None:
