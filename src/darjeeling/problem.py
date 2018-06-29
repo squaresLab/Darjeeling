@@ -2,6 +2,7 @@ from typing import List, Optional, Dict, Iterator, Callable, Set, Iterable
 from timeit import default_timer as timer
 import tempfile
 import logging
+import functools
 import os
 
 import boggart
@@ -75,6 +76,36 @@ class Problem(object):
                     ', '.join([t.name for t in self.__tests_failing]))
         if not self.__tests_failing:
             raise NoFailingTests
+
+        # perform test ordering
+        def ordering(x: TestCase, y: TestCase) -> int:
+            cov_x = self.__coverage[x.name]
+            cov_y = self.__coverage[y.name]
+            pass_x = cov_x.outcome.passed
+            pass_y = cov_y.outcome.passed
+            time_x = cov_x.outcome.duration
+            time_y = cov_y.outcome.duration
+
+            # prioritise failing tests over non-failing tests
+            if pass_x and not pass_y:
+                return 1
+            elif not pass_x and pass_y:
+                return -1
+
+            # if x and y have the same outcome, prioritise the fastest
+            elif time_x < time_y:
+                return -1
+            elif time_x > time_y:
+                return 1
+            else:
+                return 0
+
+        logger.info("ordering test cases")
+        self.__tests_ordered = \
+            sorted(bug.tests,
+                   key=functools.cmp_to_key(ordering)) # type: List[TestCase]
+        logger.info("test order: %s",
+                    ', '.join(t.name for t in self.__tests_ordered))
 
         # FIXME huge bottleneck!
         # cache contents of the implicated files
