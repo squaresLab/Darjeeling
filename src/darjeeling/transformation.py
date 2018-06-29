@@ -134,6 +134,7 @@ class InsertConditionalReturn(RooibosTransformation):
     @classmethod
     def match_to_transformations(cls,
                                  problem: Problem,
+                                 snippets: SnippetDatabase,
                                  location: FileLocationRange,
                                  environment: rooibos.Environment
                                  ) -> List[Transformation]:
@@ -198,7 +199,7 @@ class ApplyTransformation(RooibosTransformation):
                                  location: FileLocationRange,
                                  environment: rooibos.Environment
                                  ) -> List[Transformation]:
-        transformations = []  # type: ignore
+        transformations = []  # type: List[Transformation]
 
         # TODO find applicable transformations
         for snippet in snippets.in_file(location.filename):
