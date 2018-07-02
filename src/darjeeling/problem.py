@@ -17,6 +17,7 @@ from bugzoo.core.coverage import TestSuiteCoverage
 from bugzoo.core.test import TestCase
 from bugzoo.compiler import CompilationOutcome as BuildOutcome
 from bugzoo.util import indent
+from shuriken.analysis import Analysis
 
 from .source import ProgramSourceManager
 from .util import get_file_contents
@@ -36,6 +37,7 @@ class Problem(object):
                  bug: Bug,
                  coverage: TestSuiteCoverage,
                  *,
+                 analysis: Optional[Analysis] = None,
                  client_rooibos: Optional[RooibosClient] = None,
                  ) -> None:
         """
@@ -55,6 +57,7 @@ class Problem(object):
         self.__client_rooibos = client_rooibos
         self.__client_bugzoo = bz
         self.__coverage = coverage
+        self.__analysis = analysis
         self._dump_coverage()
 
         # determine the passing and failing tests
@@ -220,6 +223,13 @@ class Problem(object):
                     '\n* '.join(files))
         if len(lines) == 0:
             raise NoImplicatedLines
+
+    @property
+    def analysis(self) -> Optional[Analysis]:
+        """
+        Results of an optional static analysis for the progrram under repair.
+        """
+        return self.__analysis
 
     @property
     def rooibos(self) -> RooibosClient:
