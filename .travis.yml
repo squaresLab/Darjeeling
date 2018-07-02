@@ -9,7 +9,7 @@ install:
 - pip install mypy
 - pip install .
 script:
-- mypy src --ignore-missing-imports
+- mypy src
 notifications:
   email: false
 deploy:
