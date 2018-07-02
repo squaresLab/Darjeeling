@@ -117,9 +117,14 @@ class InsertVoidFunctionCall(RooibosTransformation):
 
         # TODO find all unique insertion points
 
-        # TODO find appropriate void functions
-        args = {'1': 'foo'}
-        return [cls(location, args)]
+        # find appropriate void functions
+        transformations = []  # type: List[Transformation]
+        for snippet in snippets.in_file(location.filename):
+            if snippet.kind != 'void-call':
+                continue
+            t = cls(location, {'1': snippet.content})
+            transformations.append(t)
+        return transformations
 
 
 class InsertConditionalReturn(RooibosTransformation):
@@ -203,6 +208,9 @@ class ApplyTransformation(RooibosTransformation):
 
         # TODO find applicable transformations
         for snippet in snippets.in_file(location.filename):
+            if snippet.kind != 'transformer':
+                continue
+
             args = {'1': environment['1'].fragment,
                     '2': snippet.content}  # type: Dict[str, str]
             transformation = cls(location, args)
