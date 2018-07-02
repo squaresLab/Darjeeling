@@ -89,3 +89,9 @@ class Localization(object):
         Returns a list of files that contain suspicious lines.
         """
         return list(self.__files)
+
+    def __repr__(self) -> str:
+        # FIXME order!
+        repr_scores = ["  {}: {:.2f}".format(str(l), self[l])
+                       for l in sorted(self.__lines)]
+        return 'Localization(\n{})'.format(';\n'.join(repr_scores))
