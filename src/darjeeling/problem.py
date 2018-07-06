@@ -17,7 +17,7 @@ from bugzoo.core.coverage import TestSuiteCoverage
 from bugzoo.core.test import TestCase
 from bugzoo.compiler import CompilationOutcome as BuildOutcome
 from bugzoo.util import indent
-from shuriken.analysis import Analysis
+from kaskara.analysis import Analysis
 
 from .source import ProgramSourceManager
 from .util import get_file_contents
