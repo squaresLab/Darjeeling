@@ -23,6 +23,7 @@ from .transformation import Transformation, \
                             ReplaceTransformation
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class Context(object):
@@ -157,12 +158,11 @@ class RooibosGenerator(TransformationGenerator):
         # choose a transformation at random
         # if there are no more transformation choices, discard this operator
         # choice
-        try:
-            return transformations.pop()
-        except IndexError:
+        if not transformations:
             logger.debug("exhausted all %s transformations at %s", op, line)
             del operator_to_transformations[op]
             return self.__next__()
+        return transformations.pop()
 
 
 def all_transformations_in_file(

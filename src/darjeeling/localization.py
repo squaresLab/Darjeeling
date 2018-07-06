@@ -31,6 +31,7 @@ class Localization(object):
             NoImplicatedLines: if no lines are determined to be suspicious.
             ValueError: if a line is assigned a negative suspiciousness.
         """
+        assert scores != []
         self.__line_to_score = scores.copy()
         self.__lines = []  # type: List[FileLine]
         self.__scores = []  # type: List[float]
@@ -73,8 +74,11 @@ class Localization(object):
         return Localization(scores)
 
     def sample(self) -> FileLine:
+        assert self.__scores != []
         mu = random.random()
-        i = bisect.bisect(self.__scores, mu)
+        i = bisect.bisect_left(self.__scores, mu)
+        assert i >= 0
+        assert i < len(self.__scores)
         return self.__lines[i]
 
     def __len__(self) -> int:
