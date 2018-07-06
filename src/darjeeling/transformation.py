@@ -5,6 +5,7 @@ code files.
 from typing import List, Iterator, Dict, FrozenSet, Tuple
 import re
 import logging
+import os
 
 import attr
 import rooibos
@@ -12,7 +13,7 @@ from bugzoo.core.bug import Bug
 
 from .problem import Problem
 from .snippet import Snippet, SnippetDatabase
-from .core import Replacement, FileLine, FileLocationRange
+from .core import Replacement, FileLine, FileLocationRange, FileLocation
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +110,7 @@ class InsertVoidFunctionCall(RooibosTransformation):
         # don't insert macros?
 
         # don't insert after a return statement (or a break?)
+        # FIXME improve handling of filenames
         line_previous = FileLine(location.filename, location.start.line)
         line_previous_content = \
             problem.sources.read_line(line_previous)
@@ -153,9 +155,23 @@ class InsertConditionalReturn(RooibosTransformation):
 
         # TODO find all unique insertion points
 
-        # TODO find appropriate if guards
-        args = {'1': 'true'}
-        return [cls(location, args)]
+        # only insert into void functions
+        if problem.analysis:
+            filename = os.path.join(problem.bug.source_dir, location.filename)
+            loc_start = FileLocation(filename, location.start)
+            if not problem.analysis.is_inside_void_function(loc_start):
+                return []
+
+        # find appropriate if guards
+        transformations = []  # type: List[Transformation]
+        for snippet in snippets:
+            if snippet.kind != 'guard':
+                continue
+            if all(l.filename != location.filename for l in snippet.locations):
+                continue
+            t = cls(location, {'1': snippet.content})
+            transformations.append(t)
+        return transformations
 
 
 class InsertConditionalBreak(RooibosTransformation):
@@ -182,11 +198,25 @@ class InsertConditionalBreak(RooibosTransformation):
         if ' return ' in line_previous_content:
             return []
 
+        # only insert into loops
+        if problem.analysis:
+            filename = os.path.join(problem.bug.source_dir, location.filename)
+            loc_start = FileLocation(filename, location.start)
+            if not problem.analysis.is_inside_loop(loc_start):
+                return []
+
         # TODO find all unique insertion points
 
-        # TODO find appropriate if guards
-        args = {'1': 'true'}
-        return [cls(location, args)]
+        # find appropriate if guards
+        transformations = []  # type: List[Transformation]
+        for snippet in snippets:
+            if snippet.kind != 'guard':
+                continue
+            if all(l.filename != location.filename for l in snippet.locations):
+                continue
+            t = cls(location, {'1': snippet.content})
+            transformations.append(t)
+        return transformations
 
 
 class ApplyTransformation(RooibosTransformation):
