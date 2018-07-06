@@ -12,7 +12,7 @@ from rooibos import Match
 
 from .localization import Localization
 from .exceptions import NoImplicatedLines
-from .core import FileLocationRange, FileLine, Location
+from .core import FileLocationRange, FileLine, Location, LocationRange
 from .problem import Problem
 from .snippet import Snippet, SnippetDatabase
 from .candidate import Candidate
@@ -122,11 +122,12 @@ class RooibosGenerator(TransformationGenerator):
                                   schema: Type[RooibosTransformation],
                                   match: Match
                                   ) -> List[Transformation]:
+        loc_start = Location(match.location.start.line,
+                             match.location.start.col)
+        loc_stop = Location(match.location.stop.line,
+                             match.location.stop.col)
         location = FileLocationRange(filename,
-                                     Location(match.location.start.line,
-                                              match.location.start.col),
-                                     Location(match.location.stop.line,
-                                              match.location.stop.col))
+                                     LocationRange(loc_start, loc_stop))
         return schema.match_to_transformations(self.__problem,
                                                self.__snippets,
                                                location,
