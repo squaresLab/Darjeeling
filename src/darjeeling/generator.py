@@ -110,7 +110,6 @@ class RooibosGenerator(TransformationGenerator):
         self.__localization = self.__localization.restricted_to_lines(lines)
         logger.info("finished computing transformations: %d transformations across %d lines",  # noqa: pycodestyle
                     size, len(self.__transformations))
-        logger.info("transformations: %s", self.__transformations)
         logger.info('tranformations by schema:\n%s',
                     '\n'.join(['  * {}: {}'.format(s.__name__, count)
                                for (s, count) in tally_by_schema.items()]))
