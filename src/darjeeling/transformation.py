@@ -155,9 +155,23 @@ class InsertConditionalReturn(RooibosTransformation):
 
         # TODO find all unique insertion points
 
-        # TODO find appropriate if guards
-        args = {'1': 'true'}
-        return [cls(location, args)]
+        # only insert into void functions
+        if problem.analysis:
+            filename = os.path.join(problem.bug.source_dir, location.filename)
+            loc_start = FileLocation(filename, location.start)
+            if not problem.analysis.is_inside_void_function(loc_start):
+                return []
+
+        # find appropriate if guards
+        transformations = []  # type: List[Transformation]
+        for snippet in snippets:
+            if snippet.kind != 'guard':
+                continue
+            if all(l.filename != location.filename for l in snippet.locations):
+                continue
+            t = cls(location, {'1': snippet.content})
+            transformations.append(t)
+        return transformations
 
 
 class InsertConditionalBreak(RooibosTransformation):
@@ -189,10 +203,7 @@ class InsertConditionalBreak(RooibosTransformation):
             filename = os.path.join(problem.bug.source_dir, location.filename)
             loc_start = FileLocation(filename, location.start)
             if not problem.analysis.is_inside_loop(loc_start):
-                logger.info("skipping location: %s", loc_start)
                 return []
-            else:
-                logger.info("let's insert at location: %s", loc_start)
 
         # TODO find all unique insertion points
 
