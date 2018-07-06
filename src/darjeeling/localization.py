@@ -3,12 +3,16 @@ __all__ = ['Metric', 'Localization']
 from typing import Dict, Callable, List, Iterator, FrozenSet, Sequence
 import random
 import bisect
+import logging
 
 from bugzoo.core.spectra import Spectra
 
 from .problem import Problem
 from .core import FileLine
 from .exceptions import NoImplicatedLines
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 Metric = Callable[[int, int, int, int], float]
 
@@ -74,11 +78,10 @@ class Localization(object):
         return Localization(scores)
 
     def sample(self) -> FileLine:
-        assert self.__scores != []
         mu = random.random()
-        i = bisect.bisect_left(self.__scores, mu)
+        i = max(bisect.bisect_left(self.__cdf, mu) - 1, 0)
         assert i >= 0
-        assert i < len(self.__scores)
+        assert i < len(self.__cdf)
         return self.__lines[i]
 
     def __len__(self) -> int:
