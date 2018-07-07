@@ -6,6 +6,7 @@ import bisect
 import logging
 
 from bugzoo.core.spectra import Spectra
+from bugzoo.core.coverage import TestSuiteCoverage
 
 from .problem import Problem
 from .core import FileLine
@@ -19,10 +20,22 @@ Metric = Callable[[int, int, int, int], float]
 
 class Localization(object):
     @staticmethod
-    def build(problem: Problem,
-              metric: Metric
-              ) -> 'Localization':
-        spectra = Spectra.from_coverage(problem.coverage)
+    def from_problem(problem: Problem,
+                     metric: Metric
+                     ) -> 'Localization':
+        return Localization.from_coverage(problem.coverage)
+
+    @staticmethod
+    def from_coverage(coverage: TestSuiteCoverage,
+                      metric: Metric
+                      ) -> 'Localization':
+        spectra = Spectra.from_coverage(coverage)
+        return Localization.from_spectra(spectra, metric)
+
+    @staticmethod
+    def from_spectra(spectra: Spectra,
+                     metric: Metric
+                     ) -> 'Localization':
         scores = {}  # type: Dict[FileLine, float]
         for line in spectra:
             row = spectra[line]
