@@ -23,7 +23,7 @@ class Localization(object):
     def from_problem(problem: Problem,
                      metric: Metric
                      ) -> 'Localization':
-        return Localization.from_coverage(problem.coverage)
+        return Localization.from_coverage(problem.coverage, metric)
 
     @staticmethod
     def from_coverage(coverage: TestSuiteCoverage,
