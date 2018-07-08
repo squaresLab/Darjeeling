@@ -11,10 +11,13 @@ import attr
 import rooibos
 from bugzoo.core.bug import Bug
 from kaskara import InsertionPoint
+from kaskara import Analysis as KaskaraAnalysis
+from rooibos import Match
 
 from .problem import Problem
 from .snippet import Snippet, SnippetDatabase
-from .core import Replacement, FileLine, FileLocationRange, FileLocation
+from .core import Replacement, FileLine, FileLocationRange, FileLocation, \
+                  FileLineSet, Location, LocationRange
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +41,9 @@ class Transformation(object):
     @classmethod
     def all_at_lines(cls,
                      problem: Problem,
+                     snippets: SnippetDatabase,
                      lines: Iterable[FileLine]
-                     ) -> Dict[FileLine, Iterator['Transformation']]:
+                     ) -> Dict[FileLine, Iterable['Transformation']]:
         """
         Returns a dictionary from lines to streams of all the possible
         transformations of this type that can be performed at that line.
@@ -73,6 +77,76 @@ class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta)
     arguments = attr.ib(type=FrozenSet[Tuple[str, str]],  # TODO replace with FrozenDict
                         converter=lambda args: frozenset(args.items()))  # type: ignore  # noqa: pycodestyle
 
+    @classmethod
+    def matches_in_file(cls,
+                        problem: Problem,
+                        filename: str
+                        ) -> Iterable[Match]:
+        """
+        Returns an iterator over all of the matches of this transformation's
+        schema in a given file.
+        """
+        client_rooibos = problem.rooibos
+        file_contents = problem.sources.read_file(filename)
+        logger.debug("finding matches of %s in %s", cls.__name__, filename)
+        matches = client_rooibos.matches(file_contents, cls.match)
+        yield from matches
+
+    @classmethod
+    def all_at_lines(cls,
+                     problem: Problem,
+                     snippets: SnippetDatabase,
+                     lines: Iterable[FileLine]
+                     ) -> Dict[FileLine, Iterable[Transformation]]:
+        file_to_matches = {}  # type: Dict[str, Iterable[Match]]
+        filenames = FileLineSet(lines).files
+        for filename in filenames:
+            file_to_matches[filename] = cls.matches_in_file(problem, filename)
+
+        line_to_matches = {}  # type: Dict[FileLine, List[Match]]
+        for (filename, matches_in_file) in file_to_matches.items():
+            for match in matches_in_file:
+                line = FileLine(filename, match.location.start.line)
+
+                # ignore matches at out-of-scope lines
+                if line not in lines:
+                    continue
+
+                # ignore invalid matches
+                if not cls.is_valid_match(match):
+                    continue
+
+                if line not in line_to_matches:
+                    line_to_matches[line] = []
+                line_to_matches[line].append(match)
+
+        def matches_at_line_to_transformations(line: FileLine,
+                                               matches: Iterable[Match],
+                                               ) -> Iterable[Transformation]:
+            """
+            Converts a stream of matches at a given line into a stream of
+            transformations.
+            """
+            filename = line.filename
+            for match in matches:
+                loc_start = Location(match.location.start.line,
+                                     match.location.start.col)
+                loc_stop = Location(match.location.stop.line,
+                                     match.location.stop.col)
+                location = FileLocationRange(filename,
+                                             LocationRange(loc_start, loc_stop))
+                yield from cls.match_to_transformations(problem,
+                                                        snippets,
+                                                        location,
+                                                        match.environment)
+
+        line_to_transformations = {}  # type: Dict[FileLine, Iterable[Transformation]]  # noqa: pycodestyle
+        for (line, matches_at_line) in line_to_matches.items():
+            line_to_transformations[line] = \
+                matches_at_line_to_transformations(line, matches_at_line)
+
+        return line_to_transformations
+
     # FIXME need to use abstract properties
     @property
     def rewrite(self) -> str:
@@ -93,6 +167,7 @@ class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta)
         return True
 
     # FIXME automagically generate
+    # FIXME return an Iterable
     @classmethod
     def match_to_transformations(cls,
                                  problem: Problem,
@@ -115,6 +190,34 @@ class InsertStatement(Transformation):
                               self.location.location,
                               self.location.location)
         return Replacement(r, self.statement.content)
+
+    @classmethod
+    def all_at_lines(cls,
+                     problem: Problem,
+                     snippets: SnippetDatabase,
+                     lines: Iterable[FileLine]
+                     ) -> Dict[FileLine, Iterable[Transformation]]:
+        return {line: cls.all_at_line(problem, snippets, line)
+                for line in lines}
+
+    @classmethod
+    def all_at_line(cls,
+                    problem: Problem,
+                    snippets: SnippetDatabase,
+                    line: Iterable[FileLine]
+                    ) -> Iterable[Transformation]:
+        """
+        Returns an iterator over all of the possible transformations of this
+        kind that can be performed at a given line.
+        """
+        if problem.analysis is None:
+            logger.warning("cannot determine statement insertions: no Kaskara analysis found")  # noqa: pycodestyle
+            yield from []
+            return
+
+        points = problem.analysis.insertions.at_line(line)  # type: Iterable[InsertionPoint]  # noqa: pycodestyle
+        for point in points:
+            yield from cls.all_at_point(problem, snippets, point)
 
     @classmethod
     def should_insert_at_location(cls,
@@ -146,14 +249,14 @@ class InsertStatement(Transformation):
         yield from snippets
 
     @classmethod
-    def all_at_insertion_point(cls,
-                               problem: Problem,
-                               snippets: SnippetDatabase,
-                               point: InsertionPoint
-                               ) -> Iterator[Transformation]:
+    def all_at_point(cls,
+                     problem: Problem,
+                     snippets: SnippetDatabase,
+                     point: InsertionPoint
+                     ) -> Iterator[Transformation]:
         """
-        Finds all insertions that can be performed at a given insertion point
-        using the snippets provided by a given database.
+        Returns an iterator over all of the transformations of this kind that
+        can be performed at a given insertion point.
         """
         location = point.location
         if not cls.should_insert_at_location(problem, location):
@@ -162,134 +265,68 @@ class InsertStatement(Transformation):
             yield cls(location, snippet)
 
 
-class InsertVoidFunctionCall(RooibosTransformation):
-    match = ";\n"
-    rewrite = ";\n:[1]();\n"
+#class InsertVoidFunctionCall(InsertStatement):
+#    @classmethod
+#    def match_to_transformations(cls,
+#                                 problem: Problem,
+#                                 snippets: SnippetDatabase,
+#                                 location: FileLocationRange,
+#                                 environment: rooibos.Environment
+#                                 ) -> List[Transformation]:
+#        # find appropriate void functions
+#        transformations = []  # type: List[Transformation]
+#        for snippet in snippets.in_file(location.filename):
+#            if snippet.kind != 'void-call':
+#                continue
+#            t = cls(location, {'1': snippet.content})
+#            transformations.append(t)
+#        return transformations
+
+
+class InsertConditionalReturn(InsertStatement):
+    @classmethod
+    def should_insert_at_location(cls,
+                                  problem: Problem,
+                                  location: FileLocation
+                                  ) -> bool:
+        if not super().should_insert_at_location:
+            return False
+        if not problem.analysis:
+            return True
+        return problem.analysis.is_inside_void_function(location)
 
     @classmethod
-    def is_valid_match(cls, match: rooibos.Match) -> bool:
-        # TODO must be inside a function
-        return True
+    def viable_snippets(cls,
+                        problem: Problem,
+                        snippets: SnippetDatabase,
+                        point: InsertionPoint
+                        ) -> Iterator[Snippet]:
+        for snippet in super().viable_snippets(problem, snippets, point):
+            if snippet.kind == 'guarded-return':
+                yield snippet
+
+
+class InsertConditionalBreak(InsertStatement):
+    @classmethod
+    def should_insert_at_location(cls,
+                                  problem: Problem,
+                                  location: FileLocation
+                                  ) -> bool:
+        if not super().should_insert_at_location:
+            return False
+        if not problem.analysis:
+            return True
+        return problem.analysis.is_inside_loop(location)
 
     @classmethod
-    def match_to_transformations(cls,
-                                 problem: Problem,
-                                 snippets: SnippetDatabase,
-                                 location: FileLocationRange,
-                                 environment: rooibos.Environment
-                                 ) -> List[Transformation]:
-        # don't insert into small functions
-
-        # don't insert macros?
-
-        # don't insert after a return statement (or a break?)
-        # FIXME improve handling of filenames
-        line_previous = FileLine(location.filename, location.start.line)
-        line_previous_content = \
-            problem.sources.read_line(line_previous)
-        if ' return ' in line_previous_content:
-            return []
-
-        # TODO find all unique insertion points
-
-        # find appropriate void functions
-        transformations = []  # type: List[Transformation]
-        for snippet in snippets.in_file(location.filename):
-            if snippet.kind != 'void-call':
-                continue
-            t = cls(location, {'1': snippet.content})
-            transformations.append(t)
-        return transformations
-
-
-class InsertConditionalReturn(RooibosTransformation):
-    match = ";\n"
-    rewrite = ";\nif(:[1]){return;}\n"
-
-    @classmethod
-    def is_valid_match(cls, match: rooibos.Match) -> bool:
-        # TODO must be inside a void function
-        return True
-
-    @classmethod
-    def match_to_transformations(cls,
-                                 problem: Problem,
-                                 snippets: SnippetDatabase,
-                                 location: FileLocationRange,
-                                 environment: rooibos.Environment
-                                 ) -> List[Transformation]:
-        # TODO contains_return
-        # don't insert after a return statement (or a break?)
-        line_previous = FileLine(location.filename, location.start.line)
-        line_previous_content = \
-            problem.sources.read_line(line_previous)
-        if ' return ' in line_previous_content:
-            return []
-
-        # TODO find all unique insertion points
-
-        # only insert into void functions
-        if problem.analysis:
-            filename = os.path.join(problem.bug.source_dir, location.filename)
-            loc_start = FileLocation(filename, location.start)
-            if not problem.analysis.is_inside_void_function(loc_start):
-                return []
-
-        # find appropriate if guards
-        transformations = []  # type: List[Transformation]
-        for snippet in snippets:
-            if snippet.kind != 'guard':
-                continue
-            if all(l.filename != location.filename for l in snippet.locations):
-                continue
-            t = cls(location, {'1': snippet.content})
-            transformations.append(t)
-        return transformations
-
-
-class InsertConditionalBreak(RooibosTransformation):
-    match = ";\n"
-    rewrite = ";\nif(:[1]){break;}\n"
-
-    @classmethod
-    def is_valid_match(cls, match: rooibos.Match) -> bool:
-        # TODO must be inside a loop
-        return True
-
-    @classmethod
-    def match_to_transformations(cls,
-                                 problem: Problem,
-                                 snippets: SnippetDatabase,
-                                 location: FileLocationRange,
-                                 environment: rooibos.Environment
-                                 ) -> List[Transformation]:
-        # TODO contains_return
-        # don't insert after a return statement (or a break?)
-        line_previous = FileLine(location.filename, location.start.line)
-        line_previous_content = \
-            problem.sources.read_line(line_previous)
-        if ' return ' in line_previous_content:
-            return []
-
-        # only insert into loops
-        if problem.analysis:
-            filename = os.path.join(problem.bug.source_dir, location.filename)
-            loc_start = FileLocation(filename, location.start)
-            if not problem.analysis.is_inside_loop(loc_start):
-                return []
-
-        # TODO find all unique insertion points
-
-        # find appropriate if guards
-        transformations = []  # type: List[Transformation]
-        for snippet in snippets:
-            if snippet.kind != 'guard':
-                continue
-            if all(l.filename != location.filename for l in snippet.locations):
-                continue
-            t = cls(location, {'1': snippet.content})
-            transformations.append(t)
-        return transformations
+    def viable_snippets(cls,
+                        problem: Problem,
+                        snippets: SnippetDatabase,
+                        point: InsertionPoint
+                        ) -> Iterator[Snippet]:
+        for snippet in super().viable_snippets(problem, snippets, point):
+            if snippet.kind == 'guarded-break':
+                yield snippet
 
 
 class ApplyTransformation(RooibosTransformation):
