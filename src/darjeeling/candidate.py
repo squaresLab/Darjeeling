@@ -1,6 +1,6 @@
 __all__ = ['Candidate']
 
-from typing import List, Iterator, Dict, FrozenSet
+from typing import List, Iterator, Dict, FrozenSet, Iterable
 
 import attr
 from bugzoo.core.patch import Patch
@@ -44,3 +44,13 @@ class Candidate(object):
         lines = [FileLine(loc.filename, loc.start.line)
                  for loc in locations]
         return lines
+
+
+def all_single_edit_patches(transformations: Iterable[Transformation]
+                            ) -> Iterable[Candidate]:
+    """
+    Returns an iterator over all of the single-edit patches that can be
+    composed using a provided source of transformations.
+    """
+    for t in transformations:
+        yield Candidate([t])
