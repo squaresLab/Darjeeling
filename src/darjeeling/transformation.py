@@ -10,6 +10,7 @@ import os
 import attr
 import rooibos
 from bugzoo.core.bug import Bug
+from kaskara import InsertionPoint
 
 from .problem import Problem
 from .snippet import Snippet, SnippetDatabase
@@ -87,6 +88,57 @@ class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta)
                                  ) -> List[Transformation]:
         args = {}  # type: Dict[str, str]
         return [cls(location, args)]  # type: ignore
+
+
+@attr.s(frozen=True)
+class InsertStatement(Transformation):
+    location = attr.ib(type=FileLocation)
+    statement = attr.ib(type=Snippet)
+
+    def to_replacement(self, problem: Problem) -> Replacement:
+        # FIXME will this work?
+        r = FileLocationRange(self.location.filename,
+                              self.location.location,
+                              self.location.location)
+        return Replacement(r, self.statement.content)
+
+    @classmethod
+    def should_insert_at_location(cls,
+                                  problem: Problem,
+                                  location: FileLocation
+                                  ) -> bool:
+        # TODO only insert inside functions!
+        return True
+
+    @classmethod
+    def viable_snippets(cls,
+                        problem: Problem,
+                        snippets: SnippetDatabase,
+                        point: InsertionPoint
+                        ) -> Iterator[Snippet]:
+        """
+        Returns an iterator over the set of snippets that can be used as
+        viable insertions at a given insertion point.
+        """
+        filename = point.location.filename
+        viable = snippets.in_file(filename)
+        yield from snippets
+
+    @classmethod
+    def all_at_insertion_point(cls,
+                               problem: Problem,
+                               snippets: SnippetDatabase,
+                               point: InsertionPoint
+                               ) -> Iterator[Transformation]:
+        """
+        Finds all insertions that can be performed at a given insertion point
+        using the snippets provided by a given database.
+        """
+        location = point.location
+        if not cls.should_insert_at_location(problem, location):
+            return
+        for snippet in cls.viable_snippets(problem, snippets, point):
+            yield cls(location, snippet)
 
 
 class InsertVoidFunctionCall(RooibosTransformation):
