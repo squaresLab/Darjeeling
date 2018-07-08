@@ -28,7 +28,7 @@ logger.setLevel(logging.DEBUG)
 
 
 def all_single_edit_patches(transformations: Iterable[Transformation]
-                            ) -> Candidate:
+                            ) -> Iterable[Candidate]:
     """
     Returns an iterator over all of the single-edit patches that can be
     composed using a provided source of transformations.
