@@ -103,7 +103,7 @@ def sample_by_localization_and_type(problem: Problem,
 
             if not transformations_by_schema:
                 logger.debug("no transformations left at %s", line)
-                del transformations_by_schema[line]
+                del line_to_transformations_by_schema[line]
                 try:
                     localization = localization.without(line)
                 except NoImplicatedLines:
@@ -124,9 +124,16 @@ def sample_by_localization_and_type(problem: Problem,
                 yield t
             except StopIteration:
                 logger.debug("no %s left at %s", schema.__name__, line)
-                del transformations_by_schema[schema]
-                logger.debug("removed entry for schema %s at line %s",
-                         schema.__name__, line)
+                try:
+                    del transformations_by_schema[schema]
+                    logger.debug("removed entry for schema %s at line %s",
+                             schema.__name__, line)
+                except Exception:
+                    logger.exception(
+                        "failed to remove entry for %s at %s.\nchoices: %s",
+                        schema.__name__, line,
+                        [s.__name__ for s in transformations_by_schema.keys()])
+                    raise
 
     yield from sample(localization)
 
