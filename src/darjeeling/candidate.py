@@ -53,4 +53,4 @@ def all_single_edit_patches(transformations: Iterable[Transformation]
     composed using a provided source of transformations.
     """
     for t in transformations:
-        yield Candidate([t])
+        yield Candidate([t])  # type: ignore
