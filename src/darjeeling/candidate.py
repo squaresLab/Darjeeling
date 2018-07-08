@@ -1,4 +1,4 @@
-__all__ = ['Candidate']
+__all__ = ['Candidate', 'all_single_edit_patches']
 
 from typing import List, Iterator, Dict, FrozenSet, Iterable
 
