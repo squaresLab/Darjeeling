@@ -158,7 +158,7 @@ class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta)
                      lines: Iterable[FileLine]
                      ) -> Dict[FileLine, Iterable[Transformation]]:
         file_to_matches = {}  # type: Dict[str, Iterable[Match]]
-        filenames = FileLineSet(lines).files
+        filenames = FileLineSet.from_iter(lines).files
         for filename in filenames:
             file_to_matches[filename] = cls.matches_in_file(problem, filename)
 
