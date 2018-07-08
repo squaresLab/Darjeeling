@@ -2,10 +2,11 @@
 This module is responsible for describing concrete transformations to source
 code files.
 """
-from typing import List, Iterator, Dict, FrozenSet, Tuple, Iterable
+from typing import List, Iterator, Dict, FrozenSet, Tuple, Iterable, Type
 import re
 import logging
 import os
+import random
 
 import attr
 import rooibos
@@ -14,6 +15,8 @@ from kaskara import InsertionPoint
 from kaskara import Analysis as KaskaraAnalysis
 from rooibos import Match
 
+from .exceptions import NoImplicatedLines
+from .localization import Localization
 from .problem import Problem
 from .snippet import Snippet, SnippetDatabase
 from .core import Replacement, FileLine, FileLocationRange, FileLocation, \
@@ -49,6 +52,62 @@ class Transformation(object):
         transformations of this type that can be performed at that line.
         """
         raise NotImplementedError
+
+
+def sample_by_localization_and_type(problem: Problem,
+                                    snippets: SnippetDatabase,
+                                    localization: Localization,
+                                    schemas: List[Type[Transformation]],
+                                    *,
+                                    eager: bool = False,
+                                    randomize: bool = False
+                                    ) -> Iterable[Transformation]:
+    """
+    Returns an iterator that samples transformations at the different lines
+    contained within the fault localization in accordance to the probability
+    distribution defined by their suspiciousness scores.
+    """
+    lines = list(localization)  # type: List[FileLine]
+    schema_to_transformations_by_line = {
+        s: s.all_at_lines(problem, snippets, lines) for s in schemas
+    }  # type: Dict[Type[Transformation], Dict[FileLine, Iterable[Transformation]]]  # noqa: pycodestyle
+
+    line_to_transformations_by_schema = {
+        line: {sc: schema_to_transformations_by_line[sc][line] for sc in schemas}  # noqa: pycodestyle
+        for line in lines
+    } # type: Dict[FileLine, Dict[Type[Transformation], Iterable[Transformation]]]  # noqa: pycodestyle
+
+    # TODO add an optional eager step
+
+    def sample(localization: Localization) -> Iterable[Transformation]:
+        line = localization.sample()
+        transformations_by_schema = line_to_transformations_by_schema[line]
+
+        if not transformations_by_schema:
+            logger.debug("no transformations left at %s", line)
+            del transformations_by_schema[line]
+            try:
+                localization = localization.without(line)
+            except NoImplicatedLines:
+                logger.debug("no transformations left in search space")
+                raise StopIteration
+            return sample(localization)
+
+        schema = random.choice(list(transformations_by_schema.keys()))
+        transformations = transformations_by_schema[schema]
+
+        # attempt to fetch the next transformation for the line and schema
+        try:
+            yield next(transformations)
+            return sample(localization)
+        # if none are left, we remove the schema choice outside the exception
+        # handler to avoid producing a huge stack trace
+        except StopIteration:
+            pass
+        del transformations_by_schema[schema]
+        return sample(localization)
+
+    yield from sample(localization)
 
 
 class RooibosTransformationMeta(type):
