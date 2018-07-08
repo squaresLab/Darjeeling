@@ -26,9 +26,15 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-class Context(object):
-    pass
-    # provide access to files
+
+def all_single_edit_patches(transformations: Iterable[Transformation]
+                            ) -> Candidate:
+    """
+    Returns an iterator over all of the single-edit patches that can be
+    composed using a provided source of transformations.
+    """
+    for t in transformations:
+        yield Candidate([t])
 
 
 class CandidateGenerator(Iterable):
