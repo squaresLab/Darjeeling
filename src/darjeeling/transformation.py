@@ -3,6 +3,8 @@ This module is responsible for describing concrete transformations to source
 code files.
 """
 from typing import List, Iterator, Dict, FrozenSet, Tuple, Iterable, Type
+from timeit import default_timer as timer
+from concurrent.futures import ThreadPoolExecutor
 import re
 import logging
 import os
@@ -45,8 +47,10 @@ class Transformation(object):
     def all_at_lines(cls,
                      problem: Problem,
                      snippets: SnippetDatabase,
-                     lines: Iterable[FileLine]
-                     ) -> Dict[FileLine, Iterable['Transformation']]:
+                     lines: List[FileLine],
+                     *,
+                     threads: int = 1
+                     ) -> Dict[FileLine, Iterator['Transformation']]:
         """
         Returns a dictionary from lines to streams of all the possible
         transformations of this type that can be performed at that line.
@@ -60,52 +64,69 @@ def sample_by_localization_and_type(problem: Problem,
                                     schemas: List[Type[Transformation]],
                                     *,
                                     eager: bool = False,
-                                    randomize: bool = False
-                                    ) -> Iterable[Transformation]:
+                                    randomize: bool = False,
+                                    threads: int = 1
+                                    ) -> Iterator[Transformation]:
     """
     Returns an iterator that samples transformations at the different lines
     contained within the fault localization in accordance to the probability
     distribution defined by their suspiciousness scores.
     """
     lines = list(localization)  # type: List[FileLine]
-    schema_to_transformations_by_line = {
-        s: s.all_at_lines(problem, snippets, lines) for s in schemas
-    }  # type: Dict[Type[Transformation], Dict[FileLine, Iterable[Transformation]]]  # noqa: pycodestyle
+    try:
+        schema_to_transformations_by_line = {
+            s: s.all_at_lines(problem, snippets, lines, threads=threads)
+            for s in schemas
+        }  # type: Dict[Type[Transformation], Dict[FileLine, Iterator[Transformation]]]  # noqa: pycodestyle
+        logger.debug("built schema->line->transformations map")
+    except Exception:
+        logger.exception("failed to build schema->line->transformations map")
+        raise
 
-    line_to_transformations_by_schema = {
-        line: {sc: schema_to_transformations_by_line[sc][line] for sc in schemas}  # noqa: pycodestyle
-        for line in lines
-    } # type: Dict[FileLine, Dict[Type[Transformation], Iterable[Transformation]]]  # noqa: pycodestyle
+    try:
+        line_to_transformations_by_schema = {
+            line: {sc: schema_to_transformations_by_line[sc].get(line, iter([])) for sc in schemas}  # noqa: pycodestyle
+            for line in lines
+        } # type: Dict[FileLine, Dict[Type[Transformation], Iterator[Transformation]]]  # noqa: pycodestyle
+        logger.debug("built line->schema->transformations map")
+    except Exception:
+        logger.exception("failed to build line->schema->transformations map")
+        raise
 
     # TODO add an optional eager step
 
-    def sample(localization: Localization) -> Iterable[Transformation]:
-        line = localization.sample()
-        transformations_by_schema = line_to_transformations_by_schema[line]
+    def sample(localization: Localization) -> Iterator[Transformation]:
+        while True:
+            line = localization.sample()
+            logger.debug("finding transformation at line: %s", line)
+            transformations_by_schema = line_to_transformations_by_schema[line]
 
-        if not transformations_by_schema:
-            logger.debug("no transformations left at %s", line)
-            del transformations_by_schema[line]
+            if not transformations_by_schema:
+                logger.debug("no transformations left at %s", line)
+                del transformations_by_schema[line]
+                try:
+                    localization = localization.without(line)
+                except NoImplicatedLines:
+                    logger.debug("no transformations left in search space")
+                    raise StopIteration
+                continue
+
+            schema = random.choice(list(transformations_by_schema.keys()))
+            transformations = transformations_by_schema[schema]
+            logger.debug("generating transformation using %s at %s",
+                         schema.__name__, line)
+
+            # attempt to fetch the next transformation for the line and schema
+            # if none are left, we remove the schema choice
             try:
-                localization = localization.without(line)
-            except NoImplicatedLines:
-                logger.debug("no transformations left in search space")
-                raise StopIteration
-            return sample(localization)
-
-        schema = random.choice(list(transformations_by_schema.keys()))
-        transformations = transformations_by_schema[schema]
-
-        # attempt to fetch the next transformation for the line and schema
-        try:
-            yield next(transformations)
-            return sample(localization)
-        # if none are left, we remove the schema choice outside the exception
-        # handler to avoid producing a huge stack trace
-        except StopIteration:
-            pass
-        del transformations_by_schema[schema]
-        return sample(localization)
+                t = next(transformations)
+                logger.debug("sampled transformation: %s", t)
+                yield t
+            except StopIteration:
+                logger.debug("no %s left at %s", schema.__name__, line)
+                del transformations_by_schema[schema]
+                logger.debug("removed entry for schema %s at line %s",
+                         schema.__name__, line)
 
     yield from sample(localization)
 
@@ -140,7 +161,7 @@ class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta)
     def matches_in_file(cls,
                         problem: Problem,
                         filename: str
-                        ) -> Iterable[Match]:
+                        ) -> List[Match]:
         """
         Returns an iterator over all of the matches of this transformation's
         schema in a given file.
@@ -148,20 +169,37 @@ class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta)
         client_rooibos = problem.rooibos
         file_contents = problem.sources.read_file(filename)
         logger.debug("finding matches of %s in %s", cls.__name__, filename)
-        matches = client_rooibos.matches(file_contents, cls.match)
-        yield from matches
+        time_start = timer()
+        matches = list(client_rooibos.matches(file_contents, cls.match))
+        time_taken = timer() - time_start
+        logger.debug("found %d matches of %s in %s (took %.3f seconds)",
+                     len(matches), cls.__name__, filename, time_taken)
+        return matches
 
     @classmethod
     def all_at_lines(cls,
                      problem: Problem,
                      snippets: SnippetDatabase,
-                     lines: Iterable[FileLine]
-                     ) -> Dict[FileLine, Iterable[Transformation]]:
-        file_to_matches = {}  # type: Dict[str, Iterable[Match]]
+                     lines: List[FileLine],
+                     *,
+                     threads: int = 1
+                     ) -> Dict[FileLine, Iterator[Transformation]]:
+        file_to_matches = {}  # type: Dict[str, List[Match]]
         filenames = FileLineSet.from_iter(lines).files
+        logger.debug("finding all matches of %s in files: %s",
+                     cls.__name__, filenames)
+        # FIXME compute in parallel
+        threads = 8
+        with ThreadPoolExecutor(max_workers=threads) as executor:
+            file_to_matches = dict(
+                executor.map(lambda f: (f, cls.matches_in_file(problem, f)),
+                             filenames))
+        """
         for filename in filenames:
             file_to_matches[filename] = cls.matches_in_file(problem, filename)
+        """
 
+        num_matches = 0
         line_to_matches = {}  # type: Dict[FileLine, List[Match]]
         for (filename, matches_in_file) in file_to_matches.items():
             for match in matches_in_file:
@@ -175,19 +213,24 @@ class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta)
                 if not cls.is_valid_match(match):
                     continue
 
+                num_matches += 1
                 if line not in line_to_matches:
                     line_to_matches[line] = []
                 line_to_matches[line].append(match)
+        logger.debug("found %d matches of %s across all lines",
+                     num_matches, cls.__name__)
 
         def matches_at_line_to_transformations(line: FileLine,
                                                matches: Iterable[Match],
-                                               ) -> Iterable[Transformation]:
+                                               ) -> Iterator[Transformation]:
             """
             Converts a stream of matches at a given line into a stream of
             transformations.
             """
             filename = line.filename
             for match in matches:
+                logger.debug("transforming match [%s] to transformations",
+                             match)
                 loc_start = Location(match.location.start.line,
                                      match.location.start.col)
                 loc_stop = Location(match.location.stop.line,
@@ -199,11 +242,10 @@ class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta)
                                                         location,
                                                         match.environment)
 
-        line_to_transformations = {}  # type: Dict[FileLine, Iterable[Transformation]]  # noqa: pycodestyle
-        for (line, matches_at_line) in line_to_matches.items():
-            line_to_transformations[line] = \
-                matches_at_line_to_transformations(line, matches_at_line)
-
+        line_to_transformations = {
+            line: matches_at_line_to_transformations(line, matches_at_line)
+            for (line, matches_at_line) in line_to_matches.items()
+        }  # type: Dict[FileLine, Iterator[Transformation]]
         return line_to_transformations
 
     # FIXME need to use abstract properties
@@ -254,8 +296,10 @@ class InsertStatement(Transformation):
     def all_at_lines(cls,
                      problem: Problem,
                      snippets: SnippetDatabase,
-                     lines: Iterable[FileLine]
-                     ) -> Dict[FileLine, Iterable[Transformation]]:
+                     lines: List[FileLine],
+                     *,
+                     threads: int = 1
+                     ) -> Dict[FileLine, Iterator[Transformation]]:
         return {line: cls.all_at_line(problem, snippets, line)
                 for line in lines}
 
@@ -263,8 +307,8 @@ class InsertStatement(Transformation):
     def all_at_line(cls,
                     problem: Problem,
                     snippets: SnippetDatabase,
-                    line: Iterable[FileLine]
-                    ) -> Iterable[Transformation]:
+                    line: FileLine
+                    ) -> Iterator[Transformation]:
         """
         Returns an iterator over all of the possible transformations of this
         kind that can be performed at a given line.
@@ -274,7 +318,7 @@ class InsertStatement(Transformation):
             yield from []
             return
 
-        points = problem.analysis.insertions.at_line(line)  # type: Iterable[InsertionPoint]  # noqa: pycodestyle
+        points = problem.analysis.insertions.at_line(line)  # type: Iterator[InsertionPoint]  # noqa: pycodestyle
         for point in points:
             yield from cls.all_at_point(problem, snippets, point)
 
