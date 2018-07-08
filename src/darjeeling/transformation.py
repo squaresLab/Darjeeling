@@ -2,7 +2,7 @@
 This module is responsible for describing concrete transformations to source
 code files.
 """
-from typing import List, Iterator, Dict, FrozenSet, Tuple
+from typing import List, Iterator, Dict, FrozenSet, Tuple, Iterable
 import re
 import logging
 import os
@@ -30,6 +30,20 @@ class Transformation(object):
     Represents a transformation to a source code file.
     """
     def to_replacement(self, problem: Problem) -> Replacement:
+        """
+        Converts a transformation into a concrete source code replacement.
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def all_at_lines(cls,
+                     problem: Problem,
+                     lines: Iterable[FileLine]
+                     ) -> Dict[FileLine, Iterator['Transformation']]:
+        """
+        Returns a dictionary from lines to streams of all the possible
+        transformations of this type that can be performed at that line.
+        """
         raise NotImplementedError
 
 
@@ -107,7 +121,14 @@ class InsertStatement(Transformation):
                                   problem: Problem,
                                   location: FileLocation
                                   ) -> bool:
-        # TODO only insert inside functions!
+        """
+        Determines whether an insertion of this kind should be made at a given
+        location.
+        """
+        if not problem.analysis:
+            return True
+        if not problem.analysis.is_inside_function(location):
+            return False
         return True
 
     @classmethod
