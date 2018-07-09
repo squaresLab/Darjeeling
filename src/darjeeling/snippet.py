@@ -118,7 +118,8 @@ class SnippetDatabase(object):
             content: str,
             *,
             kind: Optional[str] = None,
-            origin: Optional[FileLocationRange] = None
+            origin: Optional[FileLocationRange] = None,
+            reads: Optional[List[str]] = None
             ) -> None:
         """
         Adds a snippet to this database in-place.
@@ -131,10 +132,12 @@ class SnippetDatabase(object):
         Returns:
             nothing.
         """
+        reads = list(reads) if reads else []
+
         if content in self.__snippets:
             snippet = self.__snippets[content]
         else:
-            snippet = Snippet(content, kind)
+            snippet = Snippet(content, kind, reads)
             self.__snippets[content] = snippet
 
         if origin is not None:
