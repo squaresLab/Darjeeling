@@ -295,8 +295,7 @@ class InsertStatement(Transformation):
     def to_replacement(self, problem: Problem) -> Replacement:
         # FIXME will this work?
         r = FileLocationRange(self.location.filename,
-                              self.location.location,
-                              self.location.location)
+                              LocationRange(self.location.location, self.location.location))
         return Replacement(r, self.statement.content)
 
     @classmethod
@@ -322,7 +321,7 @@ class InsertStatement(Transformation):
         """
         if problem.analysis is None:
             logger.warning("cannot determine statement insertions: no Kaskara analysis found")  # noqa: pycodestyle
-            yield from []
+            yield from []  # TODO this is redundant?
             return
 
         points = problem.analysis.insertions.at_line(line)  # type: Iterator[InsertionPoint]  # noqa: pycodestyle
