@@ -80,6 +80,13 @@ class Localization(object):
     def __getitem__(self, line: FileLine) -> float:
         return self.__line_to_score.get(line, 0.0)
 
+    def __contains__(self, line: FileLine) -> bool:
+        """
+        Determines whether a given line is deemed suspicious by this fault
+        localization.
+        """
+        return line in self.__line_to_score
+
     def without(self, line: FileLine) -> 'Localization':
         scores = self.__line_to_score.copy()
         del scores[line]
