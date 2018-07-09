@@ -371,7 +371,11 @@ class InsertStatement(Transformation):
         if not cls.should_insert_at_location(problem, location):
             return
         for snippet in cls.viable_snippets(problem, snippets, point):
-            yield cls(location, snippet)
+            if snippet.reads.issubset(point.visible):
+                yield cls(location, snippet)
+            # else:
+            #     logger.debug("skipping snippet [%s]: failed scope analysis.",
+            #                  snippet.content)
 
 
 #class InsertVoidFunctionCall(InsertStatement):
