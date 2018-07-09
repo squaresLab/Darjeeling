@@ -249,22 +249,7 @@ class Problem(object):
         """
         Returns an iterator over the tests for this problem.
         """
-        yield from self.__tests_failing
-        yield from self.__tests_passing
-
-    @property
-    def tests_failing(self) -> Iterator[TestCase]:
-        """
-        Returns an iterator over the failing tests for this problem.
-        """
-        return self.__tests_failing.__iter__()
-
-    @property
-    def tests_passing(self) -> Iterator[TestCase]:
-        """
-        Returns an iterator over the passing tests for this problem.
-        """
-        return self.__tests_passing.__iter__()
+        yield from self.__tests_ordered
 
     @property
     def coverage(self) -> TestSuiteCoverage:
