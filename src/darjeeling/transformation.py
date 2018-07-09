@@ -191,6 +191,7 @@ class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta)
                      *,
                      threads: int = 1
                      ) -> Dict[FileLine, Iterator[Transformation]]:
+        analysis = problem.analysis  # type: Optional[KaskaraAnalysis]
         file_to_matches = {}  # type: Dict[str, List[Match]]
         filenames = FileLineSet.from_iter(lines).files
         logger.debug("finding all matches of %s in files: %s",
@@ -211,6 +212,9 @@ class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta)
         for (filename, matches_in_file) in file_to_matches.items():
             for match in matches_in_file:
                 line = FileLine(filename, match.location.start.line)
+                floc = FileLocation(filename,
+                                    Location(match.location.start.line,
+                                             match.location.start.col))
 
                 # ignore matches at out-of-scope lines
                 if line not in lines:
@@ -218,6 +222,10 @@ class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta)
 
                 # ignore invalid matches
                 if not cls.is_valid_match(match):
+                    continue
+
+                # ignore anything outside of a function
+                if analysis and not analysis.is_inside_function(floc):
                     continue
 
                 num_matches += 1
@@ -378,22 +386,16 @@ class InsertStatement(Transformation):
             #                  snippet.content)
 
 
-#class InsertVoidFunctionCall(InsertStatement):
-#    @classmethod
-#    def match_to_transformations(cls,
-#                                 problem: Problem,
-#                                 snippets: SnippetDatabase,
-#                                 location: FileLocationRange,
-#                                 environment: rooibos.Environment
-#                                 ) -> List[Transformation]:
-#        # find appropriate void functions
-#        transformations = []  # type: List[Transformation]
-#        for snippet in snippets.in_file(location.filename):
-#            if snippet.kind != 'void-call':
-#                continue
-#            t = cls(location, {'1': snippet.content})
-#            transformations.append(t)
-#        return transformations
+class InsertVoidFunctionCall(InsertStatement):
+    @classmethod
+    def viable_snippets(cls,
+                        problem: Problem,
+                        snippets: SnippetDatabase,
+                        point: InsertionPoint
+                        ) -> Iterator[Snippet]:
+        for snippet in super().viable_snippets(problem, snippets, point):
+            if snippet.kind == 'void-call':
+                yield snippet
 
 
 class InsertConditionalReturn(InsertStatement):
