@@ -1,5 +1,5 @@
 from typing import List, Iterator, Set, Iterable, Optional, Dict, Callable, \
-                   Any
+                   Any, FrozenSet
 import logging
 import attr
 
@@ -18,7 +18,9 @@ class Snippet(object):
     def from_dict(d: Dict[str, Any]) -> 'Snippet':
         content = d['content']
         kind = d.get('kind')
-        snippet = Snippet(content, kind)
+        reads = d.get('reads', [])
+        snippet = Snippet(content, kind, reads)
+
         if 'locations' in d:
             for loc_s in d['locations']:
                 loc = FileLocationRange.from_string(loc_s)
@@ -27,10 +29,12 @@ class Snippet(object):
 
     def __init__(self,
                  content: str,
-                 kind: Optional[str] = None
+                 kind: Optional[str] = None,
+                 reads: Iterable[str] = []
                  ) -> None:
         self.__content = content
         self.__kind = kind
+        self.reads = frozenset(reads)  # type: FrozenSet[str]
         self.locations = set()  # type: Set[FileLocationRange]
 
     def __eq__(self, other: Any) -> bool:
@@ -58,6 +62,8 @@ class Snippet(object):
             d['locations'] = [str(l) for l in self.locations]
         if self.kind:
             d['kind'] = self.kind
+        if self.reads:
+            d['reads'] = [str(r) for r in self.reads]
         return d
 
 
