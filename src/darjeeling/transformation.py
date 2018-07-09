@@ -94,7 +94,65 @@ def sample_by_localization_and_type(problem: Problem,
         logger.exception("failed to build line->schema->transformations map")
         raise
 
-    # TODO add an optional eager step
+    if eager:
+        logger.info('eagerly computing entire transformation space')
+        collect_transformations = {
+            line: {sc: list(line_to_transformations_by_schema[line][sc])
+                   for sc in schemas}
+            for line in lines
+        }  # type: Dict[FileLine, Dict[Type[Transformation], List[Transformation]]]
+        logger.info('finished eagerly computing entire transformation space')
+
+        # compute stats
+        num_transformations_by_line = {
+            line: 0 for line in lines
+        }  # type: Dict[FileLine, int]
+        num_transformations_by_schema = {
+            schema: 0 for schema in schemas
+        }  # type: Dict[Type[Transformation], int]
+        num_transformations_by_file = {}  # type: Dict[str, int]
+
+        for line in lines:
+            sc_to_tx = collect_transformations[line]
+            for (sc, tx) in sc_to_tx.items():
+                num_transformations_by_line[line] += len(tx)
+                num_transformations_by_schema[sc] += len(tx)
+
+        num_transformations_by_line = {
+            line: num
+            for (line, num) in num_transformations_by_line.items() if num > 0
+        }
+
+        for (line, num_tx) in num_transformations_by_line.items():
+            filename = line.filename
+            if filename not in num_transformations_by_file:
+                num_transformations_by_file[filename] = 0
+            num_transformations_by_file[filename] += num_tx
+
+        num_transformations_total = sum(num_transformations_by_line.values())
+
+        # report stats
+        logger.info("# transformations: %d",
+                    num_transformations_total)
+        logger.info("# transformations by file:\n%s",
+                    "\n".join(['  * {}: {}'.format(fn, num)
+                               for (fn, num) in num_transformations_by_file.items()]))  # noqa: pycodestyle
+        logger.info("# transformations by schema:\n%s",
+                    "\n".join(['  * {}: {}'.format(sc.__name__, num)
+                               for (sc, num) in num_transformations_by_schema.items()]))  # noqa: pycodestyle
+        logger.info("# transformations by line:\n%s",
+                    "\n".join(['  * {}: {}'.format(str(line), num)
+                               for (line, num) in num_transformations_by_line.items()]))  # noqa: pycodestyle
+
+        # TODO apply optional randomization
+
+        logger.info('constructing transformation stream from precomputed transformations')  # noqa: pycodestyle
+        line_to_transformations_by_schema = {
+            line: {schema: iter(collect_transformations[line][schema])
+                   for schema in schemas}
+            for line in lines
+        }
+        logger.info('constructed transformation stream from precomputed transformations')  # noqa: pycodestyle
 
     def sample(localization: Localization) -> Iterator[Transformation]:
         while True:
@@ -197,8 +255,6 @@ class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta)
         filenames = FileLineSet.from_iter(lines).files
         logger.debug("finding all matches of %s in files: %s",
                      cls.__name__, filenames)
-        # FIXME compute in parallel
-        threads = 8
         with ThreadPoolExecutor(max_workers=threads) as executor:
             file_to_matches = dict(
                 executor.map(lambda f: (f, cls.matches_in_file(problem, f)),
