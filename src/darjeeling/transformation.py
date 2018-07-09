@@ -2,7 +2,8 @@
 This module is responsible for describing concrete transformations to source
 code files.
 """
-from typing import List, Iterator, Dict, FrozenSet, Tuple, Iterable, Type
+from typing import List, Iterator, Dict, FrozenSet, Tuple, Iterable, Type, \
+                   Optional
 from timeit import default_timer as timer
 from concurrent.futures import ThreadPoolExecutor
 import re
