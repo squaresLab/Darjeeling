@@ -285,12 +285,12 @@ class Searcher(object):
                 logger_c.debug("executing test: %s (%s)", test.name, candidate)
                 self.__counter_tests += 1
                 outcome = bz.containers.test(container, test)
-                logger_c.debug("* test outcome: %s (%s) [retcode=%d]\n$ %s\n%s",
-                               test.name,
-                               candidate,
-                               outcome.response.code,
-                               test.command,
-                               outcome.response.output)
+                #logger_c.debug("* test outcome: %s (%s) [retcode=%d]\n$ %s\n%s",
+                #               test.name,
+                #               candidate,
+                #               outcome.response.code,
+                #               test.command,
+                #               outcome.response.output)
                 self.outcomes.record_test(candidate, test.name, outcome)
                 if not outcome.passed:
                     logger_c.debug("* test failed: %s (%s)", test.name, candidate)
