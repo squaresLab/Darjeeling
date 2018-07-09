@@ -120,7 +120,7 @@ def sample_by_localization_and_type(problem: Problem,
 
         num_transformations_by_line = {
             line: num
-            for (line, num) in num_transformations_by_line if num > 0
+            for (line, num) in num_transformations_by_line.items() if num > 0
         }
 
         for (line, num_tx) in num_transformations_by_line.items():
