@@ -259,10 +259,6 @@ class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta)
             file_to_matches = dict(
                 executor.map(lambda f: (f, cls.matches_in_file(problem, f)),
                              filenames))
-        """
-        for filename in filenames:
-            file_to_matches[filename] = cls.matches_in_file(problem, filename)
-        """
 
         num_matches = 0
         line_to_matches = {}  # type: Dict[FileLine, List[Match]]
@@ -419,8 +415,7 @@ class InsertStatement(Transformation):
         viable insertions at a given insertion point.
         """
         filename = point.location.filename
-        viable = snippets.in_file(filename)
-        yield from snippets
+        yield from snippets.in_file(filename)
 
     @classmethod
     def all_at_point(cls,
@@ -435,6 +430,9 @@ class InsertStatement(Transformation):
         location = point.location
         if not cls.should_insert_at_location(problem, location):
             return
+        viable_snippets = list(cls.viable_snippets(problem, snippets, point))
+        # logger.info("VIABLE SNIPPETS AT POINT [%s]: %s",
+        #             point, [s.content for s in viable_snippets])
         for snippet in cls.viable_snippets(problem, snippets, point):
             if snippet.reads.issubset(point.visible):
                 yield cls(location, snippet)
