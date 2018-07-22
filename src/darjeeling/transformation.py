@@ -134,15 +134,15 @@ def sample_by_localization_and_type(problem: Problem,
         # report stats
         logger.info("# transformations: %d",
                     num_transformations_total)
-        logger.info("# transformations by file:\n%s",
-                    "\n".join(['  * {}: {}'.format(fn, num)
-                               for (fn, num) in num_transformations_by_file.items()]))  # noqa: pycodestyle
-        logger.info("# transformations by schema:\n%s",
-                    "\n".join(['  * {}: {}'.format(sc.__name__, num)
-                               for (sc, num) in num_transformations_by_schema.items()]))  # noqa: pycodestyle
-        logger.info("# transformations by line:\n%s",
-                    "\n".join(['  * {}: {}'.format(str(line), num)
-                               for (line, num) in num_transformations_by_line.items()]))  # noqa: pycodestyle
+        logger.debug("# transformations by file:\n%s",
+                     "\n".join(['  * {}: {}'.format(fn, num)
+                                for (fn, num) in num_transformations_by_file.items()]))  # noqa: pycodestyle
+        logger.debug("# transformations by schema:\n%s",
+                     "\n".join(['  * {}: {}'.format(sc.__name__, num)
+                                for (sc, num) in num_transformations_by_schema.items()]))  # noqa: pycodestyle
+        logger.debug("# transformations by line:\n%s",
+                     "\n".join(['  * {}: {}'.format(str(line), num)
+                                for (line, num) in num_transformations_by_line.items()]))  # noqa: pycodestyle
 
         # TODO apply optional randomization
 
@@ -217,7 +217,7 @@ class RooibosTransformationMeta(type):
         return type.__new__(metacls, name, bases, dikt)
 
 
-@attr.s(frozen=True)
+@attr.s(frozen=True, repr=False)
 class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta):  # noqa: pycodestyle
     location = attr.ib(type=FileLocationRange)
     arguments = attr.ib(type=FrozenSet[Tuple[str, str]],  # TODO replace with FrozenDict
@@ -347,6 +347,13 @@ class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta)
         args = {}  # type: Dict[str, str]
         return [cls(location, args)]  # type: ignore
 
+    def __repr__(self) -> str:
+        args = ["{}: {}".format(str(k), str(v))
+                for (k, v) in dict(self.arguments).items()]
+        s_args = "<{}>".format('; '.join(args)) if args else ""
+        s = "{}[{}]{}"
+        s = s.format(self.__class__.__name__, str(self.location), s_args)
+        return s
 
 @attr.s(frozen=True)
 class InsertStatement(Transformation):
