@@ -10,7 +10,7 @@ from .problem import Problem
 from .transformation import Transformation
 
 
-@attr.s(frozen=True)
+@attr.s(frozen=True, repr=False)
 class Candidate(object):
     """
     Represents a candidate repair as a set of atomic program transformations.
@@ -44,6 +44,10 @@ class Candidate(object):
         lines = [FileLine(loc.filename, loc.start.line)
                  for loc in locations]
         return lines
+
+    def __repr__(self) -> str:
+        tx = [repr(t) for t in self.transformations]
+        return "Candidate({})".format('; '.join(tx))
 
 
 def all_single_edit_patches(transformations: Iterable[Transformation]
