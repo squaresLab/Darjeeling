@@ -355,7 +355,7 @@ class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta)
         s = s.format(self.__class__.__name__, str(self.location), s_args)
         return s
 
-@attr.s(frozen=True)
+@attr.s(frozen=True, repr=False)
 class InsertStatement(Transformation):
     location = attr.ib(type=FileLocation)
     statement = attr.ib(type=Snippet)
@@ -446,6 +446,11 @@ class InsertStatement(Transformation):
             # else:
             #     logger.debug("skipping snippet [%s]: failed scope analysis.",
             #                  snippet.content)
+
+    def __repr__(self) -> str:
+        s = "InsertStatement[{}]<{}>"
+        s = s.format(str(self.location), str(self.statement.content))
+        return s
 
 
 class InsertVoidFunctionCall(InsertStatement):
