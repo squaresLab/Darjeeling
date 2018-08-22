@@ -13,7 +13,6 @@ setup(
     name='darjeeling',
     version=__version__,
     description='Distributed, language-independent, compositional search-based program repair',
-    long_description='TBA',
     author='Chris Timperley',
     author_email='ctimperley@cmu.edu',
     url='https://github.com/squaresLab/Darjeeling',
