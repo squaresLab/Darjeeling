@@ -68,7 +68,8 @@ def find_all(problem: Problem,
     Returns an iterator over the set of all transformations that can be
     performed at a given set of lines using provided schemas and snippets.
     """
-    raise NotImplementedError
+    for schema in schemas:
+        yield from schema.all_at_lines(problem, snippets, lines)
 
 
 def sample_by_localization_and_type(problem: Problem,
