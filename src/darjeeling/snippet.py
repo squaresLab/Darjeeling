@@ -1,5 +1,6 @@
 from typing import List, Iterator, Set, Iterable, Optional, Dict, Callable, \
                    Any, FrozenSet
+import json
 import logging
 import attr
 
@@ -72,6 +73,16 @@ class SnippetDatabase(object):
     def from_dict(d: List[Dict[str, Any]]) -> 'SnippetDatabase':
         snippets = [Snippet.from_dict(s) for s in d]
         return SnippetDatabase(snippets)
+
+    @staticmethod
+    def from_file(fn: str) -> 'SnippetDatabase':
+        logger.debug("loading snippet database from file: %s", fn)
+        with open(fn, 'r') as f:
+            jsn = json.load(f)
+        db = SnippetDatabase.from_dict(jsn)
+        logger.debug("loaded snippet database from file: %s (%d snippets)",
+                     fn, len(db))
+        return db
 
     def __init__(self,
                  snippets: Optional[Iterable[Snippet]] = None
@@ -148,6 +159,13 @@ class SnippetDatabase(object):
 
     def to_dict(self) -> List[Dict[str, Any]]:
         return [s.to_dict() for s in self]
+
+    def to_file(self, fn: str) -> None:
+        logger.debug("saving snippet database to file: %s", fn)
+        jsn = self.to_dict()
+        with open(fn, 'w') as f:
+            json.dump(jsn, f)
+        logger.debug("saved snippet database to file: %s", fn)
 
 
 class SnippetFinder(object):
