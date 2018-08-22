@@ -69,7 +69,9 @@ def find_all(problem: Problem,
     performed at a given set of lines using provided schemas and snippets.
     """
     for schema in schemas:
-        yield from schema.all_at_lines(problem, snippets, lines)
+        line_to_trans = schema.all_at_lines(problem, snippets, lines)
+        for trans in line_to_trans.values():
+            yield from trans
 
 
 def sample_by_localization_and_type(problem: Problem,
