@@ -59,6 +59,18 @@ class Transformation(object):
         raise NotImplementedError
 
 
+def find_all(problem: Problem,
+             lines: List[FileLine],
+             snippets: SnippetDatabase,
+             schemas: List[Type[Transformation]]
+             ) -> Iterator[Transformation]:
+    """
+    Returns an iterator over the set of all transformations that can be
+    performed at a given set of lines using provided schemas and snippets.
+    """
+    raise NotImplementedError
+
+
 def sample_by_localization_and_type(problem: Problem,
                                     snippets: SnippetDatabase,
                                     localization: Localization,
