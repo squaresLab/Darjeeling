@@ -18,12 +18,12 @@ from kaskara import InsertionPoint
 from kaskara import Analysis as KaskaraAnalysis
 from rooibos import Match
 
-from .exceptions import NoImplicatedLines
-from .localization import Localization
-from .problem import Problem
-from .snippet import Snippet, SnippetDatabase
-from .core import Replacement, FileLine, FileLocationRange, FileLocation, \
-                  FileLineSet, Location, LocationRange
+from ..exceptions import NoImplicatedLines
+from ..localization import Localization
+from ..problem import Problem
+from ..snippet import Snippet, SnippetDatabase
+from ..core import Replacement, FileLine, FileLocationRange, FileLocation, \
+                   FileLineSet, Location, LocationRange
 
 logger = logging.getLogger(__name__)
 
