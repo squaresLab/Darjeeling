@@ -395,7 +395,7 @@ class InsertStatement(Transformation):
     statement = attr.ib(type=Snippet)
 
     @staticmethod
-    def from_dict(d: Dict[str, Any]) -> 'Statement':
+    def from_dict(d: Dict[str, Any]) -> 'Transformation':
         location = FileLocation.from_string(d['location'])
         statement = Snippet.from_dict(d['snippet'])
         return InsertStatement(location, statement)
