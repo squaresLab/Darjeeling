@@ -3,7 +3,7 @@ This module is responsible for describing concrete transformations to source
 code files.
 """
 from typing import List, Iterator, Dict, FrozenSet, Tuple, Iterable, Type, \
-                   Optional
+                   Optional, Any
 from timeit import default_timer as timer
 from concurrent.futures import ThreadPoolExecutor
 import re
@@ -44,6 +44,17 @@ class Transformation(object):
         """
         raise NotImplementedError
 
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> 'Transformation':
+        # FIXME use meta-classes for automation
+        kind = d['kind']
+        if kind == 'InsertStatement':
+            return InsertStatement.from_dict(d)
+
+        msg = "unrecognised transformation kind: {}"
+        msg = msg.format(kind)
+        raise Exception(msg)
+
     @classmethod
     def all_at_lines(cls,
                      problem: Problem,
@@ -56,6 +67,14 @@ class Transformation(object):
         Returns a dictionary from lines to streams of all the possible
         transformations of this type that can be performed at that line.
         """
+        raise NotImplementedError
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = self._to_dict()
+        d['kind'] = self.__class__.__name__
+        return d
+
+    def _to_dict(self) -> Dict[str, Any]:
         raise NotImplementedError
 
 
@@ -374,6 +393,16 @@ class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta)
 class InsertStatement(Transformation):
     location = attr.ib(type=FileLocation)
     statement = attr.ib(type=Snippet)
+
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> 'Statement':
+        location = FileLocation.from_string(d['location'])
+        statement = Snippet.from_dict(d['snippet'])
+        return InsertStatement(location, statement)
+
+    def _to_dict(self) -> Dict[str, Any]:
+        return {'location': str(self.location),
+                'statement': self.statement.to_dict()}
 
     def to_replacement(self, problem: Problem) -> Replacement:
         # FIXME will this work?
