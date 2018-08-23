@@ -45,7 +45,7 @@ class Localization(object):
 
     @staticmethod
     def from_dict(d: Dict[str, float]) -> 'Localization':
-        scores = [FileLine.from_string(l): v for (l, v) in d]
+        scores = {FileLine.from_string(l): v for (l, v) in d}
         return Localization(scores)
 
     @staticmethod
@@ -90,7 +90,7 @@ class Localization(object):
             cum += p
 
     def to_dict(self) -> Dict[str, float]:
-        return [str(line): val for (line, val) in self.__scores]
+        return {str(line): val for (line, val) in self.__scores}
 
     def to_file(self, fn: str) -> None:
         logger.debug("writing localization to file: %s", fn)
