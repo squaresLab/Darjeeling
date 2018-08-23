@@ -10,15 +10,6 @@ other services are also language independent.)
 Once those auxillary concerns are removed, what is left is a lightweight
 framework for composing and executing repair algorithms: Darjeeling.
 
-### Approach
-
-Uses Relix and Rooibos to do all of the heavy lifting!
-
-* Uses Relix to safely collect coverage information and to evaluate candidate
-  patches. Darjeeling distributes the repair process over multiple machines
-  by using Relix to provision and interact with Docker containers on those
-  machines.
-
 ## Features
 
 * Multi-threaded asynchronous patch evaluation: maximises throughput by
@@ -33,7 +24,7 @@ We recommend that you use `pipenv` to install Darjeeling, although `pip3` or
 `easy_install` may be used instead:
 
 ```
-$ pipenv install bugzoo
+$ pipenv install darjeeling
 ```
 
 Darjeeling supports Python >= 3.5.
