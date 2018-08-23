@@ -45,14 +45,14 @@ class Localization(object):
 
     @staticmethod
     def from_dict(d: Dict[str, float]) -> 'Localization':
-        scores = {FileLine.from_string(l): v for (l, v) in d}
+        scores = {FileLine.from_string(l): v for (l, v) in d.items()}
         return Localization(scores)
 
     @staticmethod
     def from_file(fn: str) -> 'Localization':
         logger.debug("loading localization from file: %s", fn)
         with open(fn, 'r') as f:
-            jsn = json.load(fn)
+            jsn = json.load(f)
         localization = Localization.from_dict(jsn)
         logger.debug("loaded localization from file: %s", fn)
         return localization
@@ -90,7 +90,7 @@ class Localization(object):
             cum += p
 
     def to_dict(self) -> Dict[str, float]:
-        return {str(line): val for (line, val) in self.__scores}
+        return {str(line): val for (line, val) in self.__scores.items()}
 
     def to_file(self, fn: str) -> None:
         logger.debug("writing localization to file: %s", fn)
