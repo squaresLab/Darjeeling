@@ -42,6 +42,11 @@ class Localization(object):
             scores[line] = metric(row.ep, row.np, row.ef, row.nf)
         return Localization(scores)
 
+    @staticmethod
+    def from_dict(d: Dict[str, float]) -> 'Localization':
+        scores = [FileLine.from_string(l): v for (l, v) in d]
+        return Localization(scores)
+
     def __init__(self, scores: Dict[FileLine, float]) -> None:
         """
         Raises:
@@ -73,6 +78,9 @@ class Localization(object):
         for p in pdf[1:]:
             self.__cdf.append(cum)
             cum += p
+
+    def to_dict(self) -> Dict[str, float]:
+        return [str(line): val for (line, val) in self.__scores]
 
     def __iter__(self) -> Iterator[FileLine]:
         yield from self.__lines
