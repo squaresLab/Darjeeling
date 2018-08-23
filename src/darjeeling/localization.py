@@ -90,7 +90,8 @@ class Localization(object):
             cum += p
 
     def to_dict(self) -> Dict[str, float]:
-        return {str(line): val for (line, val) in self.__scores.items()}
+        return {str(line): val
+                for (line, val) in self.__line_to_score.items()}
 
     def to_file(self, fn: str) -> None:
         logger.debug("writing localization to file: %s", fn)
