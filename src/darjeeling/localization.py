@@ -1,6 +1,7 @@
 __all__ = ['Metric', 'Localization']
 
 from typing import Dict, Callable, List, Iterator, FrozenSet, Sequence
+import json
 import random
 import bisect
 import logging
@@ -42,6 +43,20 @@ class Localization(object):
             scores[line] = metric(row.ep, row.np, row.ef, row.nf)
         return Localization(scores)
 
+    @staticmethod
+    def from_dict(d: Dict[str, float]) -> 'Localization':
+        scores = {FileLine.from_string(l): v for (l, v) in d.items()}
+        return Localization(scores)
+
+    @staticmethod
+    def from_file(fn: str) -> 'Localization':
+        logger.debug("loading localization from file: %s", fn)
+        with open(fn, 'r') as f:
+            jsn = json.load(f)
+        localization = Localization.from_dict(jsn)
+        logger.debug("loaded localization from file: %s", fn)
+        return localization
+
     def __init__(self, scores: Dict[FileLine, float]) -> None:
         """
         Raises:
@@ -73,6 +88,17 @@ class Localization(object):
         for p in pdf[1:]:
             self.__cdf.append(cum)
             cum += p
+
+    def to_dict(self) -> Dict[str, float]:
+        return {str(line): val
+                for (line, val) in self.__line_to_score.items()}
+
+    def to_file(self, fn: str) -> None:
+        logger.debug("writing localization to file: %s", fn)
+        jsn = self.to_dict()
+        with open(fn, 'r') as f:
+            json.dump(jsn, f)
+        logger.debug("wrote localization to file: %s", fn)
 
     def __iter__(self) -> Iterator[FileLine]:
         yield from self.__lines
