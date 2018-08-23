@@ -96,7 +96,7 @@ class Localization(object):
     def to_file(self, fn: str) -> None:
         logger.debug("writing localization to file: %s", fn)
         jsn = self.to_dict()
-        with open(fn, 'r') as f:
+        with open(fn, 'w') as f:
             json.dump(jsn, f)
         logger.debug("wrote localization to file: %s", fn)
 
