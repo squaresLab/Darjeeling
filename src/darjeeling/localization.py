@@ -91,7 +91,8 @@ class Localization(object):
 
     def to_dict(self) -> Dict[str, float]:
         return {str(line): val
-                for (line, val) in self.__line_to_score.items()}
+                for (line, val) in self.__line_to_score.items()
+                if val > 0.0}
 
     def to_file(self, fn: str) -> None:
         logger.debug("writing localization to file: %s", fn)
