@@ -179,64 +179,6 @@ def sample_by_localization_and_type(problem: Problem,
     yield from sample(localization)
 
 
-class InsertVoidFunctionCall(InsertStatement):
-    @classmethod
-    def viable_snippets(cls,
-                        problem: Problem,
-                        snippets: SnippetDatabase,
-                        point: InsertionPoint
-                        ) -> Iterator[Snippet]:
-        for snippet in super().viable_snippets(problem, snippets, point):
-            if snippet.kind == 'void-call':
-                yield snippet
-
-
-class InsertConditionalReturn(InsertStatement):
-    @classmethod
-    def should_insert_at_location(cls,
-                                  problem: Problem,
-                                  location: FileLocation
-                                  ) -> bool:
-        if not super().should_insert_at_location:
-            return False
-        if not problem.analysis:
-            return True
-        return problem.analysis.is_inside_void_function(location)
-
-    @classmethod
-    def viable_snippets(cls,
-                        problem: Problem,
-                        snippets: SnippetDatabase,
-                        point: InsertionPoint
-                        ) -> Iterator[Snippet]:
-        for snippet in super().viable_snippets(problem, snippets, point):
-            if snippet.kind == 'guarded-return':
-                yield snippet
-
-
-class InsertConditionalBreak(InsertStatement):
-    @classmethod
-    def should_insert_at_location(cls,
-                                  problem: Problem,
-                                  location: FileLocation
-                                  ) -> bool:
-        if not super().should_insert_at_location:
-            return False
-        if not problem.analysis:
-            return True
-        return problem.analysis.is_inside_loop(location)
-
-    @classmethod
-    def viable_snippets(cls,
-                        problem: Problem,
-                        snippets: SnippetDatabase,
-                        point: InsertionPoint
-                        ) -> Iterator[Snippet]:
-        for snippet in super().viable_snippets(problem, snippets, point):
-            if snippet.kind == 'guarded-break':
-                yield snippet
-
-
 @attr.s(frozen=True)
 class LocationRangeTransformation(Transformation):
     location = attr.ib(type=FileLocationRange,
