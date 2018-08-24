@@ -1,17 +1,32 @@
 __all__ = [
-    'RooibosTransformation'
+    'RooibosTransformation',
+    'ApplyTransformation',
+    'SignedToUnsigned',
+    'AndToOr',
+    'OrToAnd',
+    'LEToGT',
+    'GTToLE',
+    'LTToGE',
+    'GEToLT',
+    'EQToNEQ',
+    'NEQToEQ',
+    'PlusToMinus',
+    'MinusToPlus',
+    'DivToMul',
+    'MulToDiv'
 ]
 
-from typing import Dict, FrozenSet, Tuple, List
+from typing import Dict, FrozenSet, Tuple, List, Iterator, Iterable
 from timeit import default_timer as timer
 from concurrent.futures import ThreadPoolExecutor
+import re
 import logging
 
 import attr
 import rooibos
 import kaskara
 
-from .base import Transformation
+from .base import Transformation, register
 from ..snippet import Snippet, SnippetDatabase
 from ..core import Replacement, FileLine, FileLocationRange, FileLocation, \
                    FileLineSet, Location, LocationRange
@@ -19,6 +34,12 @@ from ..problem import Problem
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
+
+REGEX_HOLE = re.compile('(?<=:\[)\w+(?=\])')
+
+
+def is_single_token(snippet: str) -> bool:
+    return ' ' not in snippet
 
 
 class RooibosTransformationMeta(type):
@@ -177,3 +198,130 @@ class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta)
         s = "{}[{}]{}"
         s = s.format(self.__class__.__name__, str(self.location), s_args)
         return s
+
+
+@register("ApplyTransformation")
+class ApplyTransformation(RooibosTransformation):
+    match = "= :[1];"
+    rewrite = "= :[2](:[1]);"
+
+    @classmethod
+    def is_valid_match(self, match: rooibos.Match) -> bool:
+        return ';' not in match.environment['1'].fragment
+
+    @classmethod
+    def match_to_transformations(cls,
+                                 problem: Problem,
+                                 snippets: SnippetDatabase,
+                                 location: FileLocationRange,
+                                 environment: rooibos.Environment
+                                 ) -> List[Transformation]:
+        transformations = []  # type: List[Transformation]
+
+        # TODO find applicable transformations
+        for snippet in snippets.in_file(location.filename):
+            if snippet.kind != 'transformer':
+                continue
+
+            args = {'1': environment['1'].fragment,
+                    '2': snippet.content}  # type: Dict[str, str]
+            transformation = cls(location, args)
+            transformations.append(transformation)
+
+        return transformations
+
+
+@register("SignedToUnsigned")
+class SignedToUnsigned(RooibosTransformation):
+    match = "int :[1] ="
+    rewrite = "unsigned int :[1] ="
+    constraints = [
+        ("1", is_single_token)
+    ]
+
+    @classmethod
+    def is_valid_match(self, match: rooibos.Match) -> bool:
+        return is_single_token(match.environment['1'].fragment)
+
+    # FIXME borko?
+    @classmethod
+    def match_to_transformations(cls,
+                                 problem: Problem,
+                                 snippets: SnippetDatabase,
+                                 location: FileLocationRange,
+                                 environment: rooibos.Environment
+                                 ) -> List[Transformation]:
+        args = {'1': environment['1'].fragment}  # type: Dict[str, str]
+        return [cls(location, args)]  # type: ignore
+
+
+@register("AndToOr")
+class AndToOr(RooibosTransformation):
+    match = "&&"
+    rewrite = "||"
+
+
+@register("OrToAnd")
+class OrToAnd(RooibosTransformation):
+    match = "||"
+    rewrite = "&&"
+
+
+@register("LEToGT")
+class LEToGT(RooibosTransformation):
+    match = "<="
+    rewrite = ">"
+
+
+@register("GTToLE")
+class GTToLE(RooibosTransformation):
+    match = ">"
+    rewrite = "<="
+
+
+@register("LTToGE")
+class LTToGE(RooibosTransformation):
+    match = "<"
+    rewrite = ">="
+
+
+@register("GEToLT")
+class GEToLT(RooibosTransformation):
+    match = ">="
+    rewrite = "<"
+
+
+@register("EQToNEQ")
+class EQToNEQ(RooibosTransformation):
+    match = "=="
+    rewrite = "!="
+
+
+@register("NEQToEQ")
+class NEQToEQ(RooibosTransformation):
+    match = "!="
+    rewrite = "=="
+
+
+@register("PlusToMinus")
+class PlusToMinus(RooibosTransformation):
+    match = "+"
+    rewrite = "-"
+
+
+@register("MinusToPlus")
+class MinusToPlus(RooibosTransformation):
+    match = "-"
+    rewrite = "+"
+
+
+@register("DivToMul")
+class DivToMul(RooibosTransformation):
+    match = "/"
+    rewrite = "*"
+
+
+@register("MulToDiv")
+class MulToDiv(RooibosTransformation):
+    match = "*"
+    rewrite = "/"
