@@ -186,15 +186,6 @@ class LocationRangeTransformation(Transformation):
 
 
 @attr.s(frozen=True)
-class DeleteTransformation(LocationRangeTransformation):
-    def __str__(self) -> str:
-        return "DELETE[{}]".format(self.location)
-
-    def to_replacement(self, problem: Problem) -> Replacement:
-        return Replacement(self.location, "")
-
-
-@attr.s(frozen=True)
 class ReplaceTransformation(LocationRangeTransformation):
     """
     Replaces a numbered line in a given file with a provided snippet.
@@ -206,19 +197,3 @@ class ReplaceTransformation(LocationRangeTransformation):
 
     def to_replacement(self, problem: Problem) -> Replacement:
         return Replacement(self.location, self.snippet.content)
-
-
-@attr.s(frozen=True)
-class AppendTransformation(LocationRangeTransformation):
-    """
-    Appends a given snippet to a specific line in a given file.
-    """
-    snippet = attr.ib(type=Snippet)
-
-    def __str__(self) -> str:
-        return "APPEND[{}; {}]".format(self.location, self.snippet)
-
-    def to_replacement(self, problem: Problem) -> Replacement:
-        old = problem.sources.read_chars(self.location)
-        new = old + self.snippet.content
-        return Replacement(self.location, new)

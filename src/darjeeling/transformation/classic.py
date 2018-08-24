@@ -1,6 +1,10 @@
-__all__ = ['InsertStatement']
+__all__ = [
+    'InsertStatement',
+    'DeleteStatement'
+]
 
 from typing import List, Iterator, Iterable, Dict, Any
+import logging
 
 import attr
 import kaskara
@@ -11,10 +15,83 @@ from ..snippet import Snippet, SnippetDatabase
 from ..core import Replacement, FileLine, FileLocationRange, FileLocation, \
                    FileLineSet, Location, LocationRange
 
+logger = logging.getLogger(__name__)  # type: logging.Logger
+logger.setLevel(logging.DEBUG)
+
+
+class StatementTransformation(Transformation):
+    """
+    Base class for all transformations that are applied to a statement.
+    """
+    @classmethod
+    def all_at_lines(cls,
+                     problem: Problem,
+                     snippets: SnippetDatabase,
+                     lines: List[FileLine],
+                     *,
+                     threads: int = 1
+                     ) -> Dict[FileLine, Iterator[Transformation]]:
+        return {line: cls.all_at_line(problem, snippets, line)
+                for line in lines}
+
+    @classmethod
+    def all_at_line(cls,
+                    problem: Problem,
+                    snippets: SnippetDatabase,
+                    line: FileLine
+                    ) -> Iterator[Transformation]:
+        """
+        Returns an iterator over all of the possible transformations of this
+        kind that can be performed at a given line.
+        """
+        raise NotImplementedError
+
+
+@register("DeleteStatement")
+@attr.s(frozen=True, repr=False)
+class DeleteStatement(StatementTransformation):
+    location = attr.ib(type=FileLocationRange)
+
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> 'Transformation':
+        location = FileLocationRange.from_string(d['location'])
+        return DeleteStatement(location)
+
+    def _to_dict(self) -> Dict[str, Any]:
+        return {'location': str(self.location)}
+
+    def __repr__(self) -> str:
+        s = "DeleteStatement<{}>".format(str(self.location))
+        return s
+
+    def to_replacement(self, problem: Problem) -> Replacement:
+        return Replacement(self.location, '')
+
+    @classmethod
+    def all_at_line(cls,
+                    problem: Problem,
+                    snippets: SnippetDatabase,
+                    line: FileLine
+                    ) -> Iterator[Transformation]:
+        logger.debug("finding all delete statement transformations at line [%s]",  # noqa: pycodestyle
+                     line)
+        analysis = problem.analysis
+        if analysis is None:
+            logger.warning("cannot determine statement deletions: no Kaskara analysis found")  # noqa: pycodestyle
+            return
+
+        statements = analysis.statements.at_line(line)  # type: Iterator[kaskara.Statement]  # noqa: pycodestyle
+        for statement in statements:
+            logger.debug("found delete statement at line [%s]: %s",
+                         line, statement)
+            yield DeleteStatement(statement.location)
+        logger.debug("found all delete statement transformations at line [%s]",
+                     line)
+
 
 @register("InsertStatement")
 @attr.s(frozen=True, repr=False)
-class InsertStatement(Transformation):
+class InsertStatement(StatementTransformation):
     location = attr.ib(type=FileLocation)
     statement = attr.ib(type=Snippet)
 
@@ -37,17 +114,6 @@ class InsertStatement(Transformation):
         r = FileLocationRange(self.location.filename,
                               LocationRange(self.location.location, self.location.location))
         return Replacement(r, self.statement.content)
-
-    @classmethod
-    def all_at_lines(cls,
-                     problem: Problem,
-                     snippets: SnippetDatabase,
-                     lines: List[FileLine],
-                     *,
-                     threads: int = 1
-                     ) -> Dict[FileLine, Iterator[Transformation]]:
-        return {line: cls.all_at_line(problem, snippets, line)
-                for line in lines}
 
     @classmethod
     def all_at_line(cls,
