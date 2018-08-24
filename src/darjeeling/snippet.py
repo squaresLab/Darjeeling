@@ -4,6 +4,8 @@ import json
 import logging
 import attr
 
+from kaskara import Statement
+
 from .core import FileLocationRange
 from .problem import Problem
 
@@ -69,6 +71,15 @@ class Snippet(object):
 
 
 class SnippetDatabase(object):
+    @staticmethod
+    def from_statements(statements: Iterable[Statement]) -> 'SnippetDatabase':
+        logger.debug("constructing snippet database from statements")
+        db = SnippetDatabase()
+        for stmt in statements:
+            db.add(stmt.content, origin=stmt.location, reads=stmt.reads)
+        logger.debug("constructed snippet database from snippets")
+        return db
+
     @staticmethod
     def from_dict(d: List[Dict[str, Any]]) -> 'SnippetDatabase':
         snippets = [Snippet.from_dict(s) for s in d]
