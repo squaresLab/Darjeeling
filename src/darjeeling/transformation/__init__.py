@@ -4,8 +4,6 @@ code files.
 """
 from typing import List, Iterator, Dict, FrozenSet, Tuple, Iterable, Type, \
                    Optional, Any
-from timeit import default_timer as timer
-from concurrent.futures import ThreadPoolExecutor
 import re
 import logging
 import os
@@ -13,12 +11,10 @@ import random
 
 import attr
 import rooibos
-from bugzoo.core.bug import Bug
 from kaskara import InsertionPoint
-from kaskara import Analysis as KaskaraAnalysis
-from rooibos import Match
 
 from .base import Transformation, register
+from .rooibos import RooibosTransformation
 from ..exceptions import NoImplicatedLines
 from ..localization import Localization
 from ..problem import Problem
@@ -26,7 +22,7 @@ from ..snippet import Snippet, SnippetDatabase
 from ..core import Replacement, FileLine, FileLocationRange, FileLocation, \
                    FileLineSet, Location, LocationRange
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
 REGEX_HOLE = re.compile('(?<=:\[)\w+(?=\])')
@@ -188,164 +184,6 @@ def sample_by_localization_and_type(problem: Problem,
 
     yield from sample(localization)
 
-
-class RooibosTransformationMeta(type):
-    def __new__(metacls: type, name: str, bases, dikt):
-        if name != 'RooibosTransformation':
-            if not 'match' in dikt:
-                raise SyntaxError('missing "match" property in {}'.format(name))
-            if not 'rewrite' in dikt:
-                raise SyntaxError('missing "rewrite" property in {}'.format(name))
-        # TODO add ability to specify constraints
-
-        # determine free holes
-        # holes_match = REGEX_HOLE.findall(dikt['match'])  # type: List[str]
-        # holes_rewrite = REGEX_HOLE.findall(dikt['rewrite'])  # type: List[str]
-
-        # synthesise a "is_valid_match" function for this transformation
-
-        # TODO compose a fast rewrite function
-
-        return type.__new__(metacls, name, bases, dikt)
-
-
-@attr.s(frozen=True, repr=False)
-class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta):  # noqa: pycodestyle
-    location = attr.ib(type=FileLocationRange)
-    arguments = attr.ib(type=FrozenSet[Tuple[str, str]],  # TODO replace with FrozenDict
-                        converter=lambda args: frozenset(args.items()))  # type: ignore  # noqa: pycodestyle
-
-    @classmethod
-    def matches_in_file(cls,
-                        problem: Problem,
-                        filename: str
-                        ) -> List[Match]:
-        """
-        Returns an iterator over all of the matches of this transformation's
-        schema in a given file.
-        """
-        client_rooibos = problem.rooibos
-        file_contents = problem.sources.read_file(filename)
-        logger.debug("finding matches of %s in %s", cls.__name__, filename)
-        time_start = timer()
-        matches = list(client_rooibos.matches(file_contents, cls.match))
-        time_taken = timer() - time_start
-        logger.debug("found %d matches of %s in %s (took %.3f seconds)",
-                     len(matches), cls.__name__, filename, time_taken)
-        return matches
-
-    @classmethod
-    def all_at_lines(cls,
-                     problem: Problem,
-                     snippets: SnippetDatabase,
-                     lines: List[FileLine],
-                     *,
-                     threads: int = 1
-                     ) -> Dict[FileLine, Iterator[Transformation]]:
-        analysis = problem.analysis  # type: Optional[KaskaraAnalysis]
-        file_to_matches = {}  # type: Dict[str, List[Match]]
-        filenames = FileLineSet.from_iter(lines).files
-        logger.debug("finding all matches of %s in files: %s",
-                     cls.__name__, filenames)
-        with ThreadPoolExecutor(max_workers=threads) as executor:
-            file_to_matches = dict(
-                executor.map(lambda f: (f, cls.matches_in_file(problem, f)),
-                             filenames))
-
-        num_matches = 0
-        line_to_matches = {}  # type: Dict[FileLine, List[Match]]
-        for (filename, matches_in_file) in file_to_matches.items():
-            for match in matches_in_file:
-                line = FileLine(filename, match.location.start.line)
-                floc = FileLocation(filename,
-                                    Location(match.location.start.line,
-                                             match.location.start.col))
-
-                # ignore matches at out-of-scope lines
-                if line not in lines:
-                    continue
-
-                # ignore invalid matches
-                if not cls.is_valid_match(match):
-                    continue
-
-                # ignore anything outside of a function
-                if analysis and not analysis.is_inside_function(floc):
-                    continue
-
-                num_matches += 1
-                if line not in line_to_matches:
-                    line_to_matches[line] = []
-                line_to_matches[line].append(match)
-        logger.debug("found %d matches of %s across all lines",
-                     num_matches, cls.__name__)
-
-        def matches_at_line_to_transformations(line: FileLine,
-                                               matches: Iterable[Match],
-                                               ) -> Iterator[Transformation]:
-            """
-            Converts a stream of matches at a given line into a stream of
-            transformations.
-            """
-            filename = line.filename
-            for match in matches:
-                logger.debug("transforming match [%s] to transformations",
-                             match)
-                loc_start = Location(match.location.start.line,
-                                     match.location.start.col)
-                loc_stop = Location(match.location.stop.line,
-                                     match.location.stop.col)
-                location = FileLocationRange(filename,
-                                             LocationRange(loc_start, loc_stop))
-                yield from cls.match_to_transformations(problem,
-                                                        snippets,
-                                                        location,
-                                                        match.environment)
-
-        line_to_transformations = {
-            line: matches_at_line_to_transformations(line, matches_at_line)
-            for (line, matches_at_line) in line_to_matches.items()
-        }  # type: Dict[FileLine, Iterator[Transformation]]
-        return line_to_transformations
-
-    # FIXME need to use abstract properties
-    @property
-    def rewrite(self) -> str:
-        raise NotImplementedError
-
-    @property
-    def match(self) -> str:
-        raise NotImplementedError
-
-    def to_replacement(self, problem: Problem) -> Replacement:
-        args = dict(self.arguments)
-        text = problem.rooibos.substitute(self.rewrite, args)
-        return Replacement(self.location, text)
-
-    # FIXME implement using constraints
-    @classmethod
-    def is_valid_match(cls, match: rooibos.Match) -> bool:
-        return True
-
-    # FIXME automagically generate
-    # FIXME return an Iterable
-    @classmethod
-    def match_to_transformations(cls,
-                                 problem: Problem,
-                                 snippets: SnippetDatabase,
-                                 location: FileLocationRange,
-                                 environment: rooibos.Environment
-                                 ) -> List[Transformation]:
-        args = {}  # type: Dict[str, str]
-        return [cls(location, args)]  # type: ignore
-
-    def __repr__(self) -> str:
-        args = ["{}: {}".format(str(k), str(v))
-                for (k, v) in dict(self.arguments).items()]
-        s_args = "<{}>".format('; '.join(args)) if args else ""
-        s = "{}[{}]{}"
-        s = s.format(self.__class__.__name__, str(self.location), s_args)
-        return s
 
 @register("InsertStatement")
 @attr.s(frozen=True, repr=False)
