@@ -28,3 +28,13 @@ class NameInUseException(DarjeelingError):
     """
     A given name is already in use by another resource.
     """
+
+
+class UnknownTransformationSchemaException(DarjeelingError):
+    """
+    A given transformation uses a schema that does not exist or has not been
+    registered.
+    """
+    def __init__(self, name: str) -> None:
+        msg = "unknown transformation schema: {}".format(name)
+        super().__init__(msg)
