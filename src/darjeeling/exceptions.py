@@ -1,5 +1,7 @@
 class DarjeelingError(Exception):
-    pass
+    """
+    Base class used by all Darjeeling exceptions.
+    """
 
 
 class NoFailingTests(DarjeelingError):
@@ -19,4 +21,10 @@ class NoImplicatedLines(DarjeelingError):
 class BuildFailure(DarjeelingError):
     """
     The project failed to build.
+    """
+
+
+class NameInUseException(DarjeelingError):
+    """
+    A given name is already in use by another resource.
     """
