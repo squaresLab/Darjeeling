@@ -18,6 +18,7 @@ from kaskara import InsertionPoint
 from kaskara import Analysis as KaskaraAnalysis
 from rooibos import Match
 
+from .base import Transformation, register
 from ..exceptions import NoImplicatedLines
 from ..localization import Localization
 from ..problem import Problem
@@ -26,56 +27,13 @@ from ..core import Replacement, FileLine, FileLocationRange, FileLocation, \
                    FileLineSet, Location, LocationRange
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 REGEX_HOLE = re.compile('(?<=:\[)\w+(?=\])')
 
 
 def is_single_token(snippet: str) -> bool:
     return ' ' not in snippet
-
-
-class Transformation(object):
-    """
-    Represents a transformation to a source code file.
-    """
-    def to_replacement(self, problem: Problem) -> Replacement:
-        """
-        Converts a transformation into a concrete source code replacement.
-        """
-        raise NotImplementedError
-
-    @staticmethod
-    def from_dict(d: Dict[str, Any]) -> 'Transformation':
-        # FIXME use meta-classes for automation
-        kind = d['kind']
-        if kind == 'InsertStatement':
-            return InsertStatement.from_dict(d)
-
-        msg = "unrecognised transformation kind: {}"
-        msg = msg.format(kind)
-        raise Exception(msg)
-
-    @classmethod
-    def all_at_lines(cls,
-                     problem: Problem,
-                     snippets: SnippetDatabase,
-                     lines: List[FileLine],
-                     *,
-                     threads: int = 1
-                     ) -> Dict[FileLine, Iterator['Transformation']]:
-        """
-        Returns a dictionary from lines to streams of all the possible
-        transformations of this type that can be performed at that line.
-        """
-        raise NotImplementedError
-
-    def to_dict(self) -> Dict[str, Any]:
-        d = self._to_dict()
-        d['kind'] = self.__class__.__name__
-        return d
-
-    def _to_dict(self) -> Dict[str, Any]:
-        raise NotImplementedError
 
 
 def find_all(problem: Problem,
@@ -389,6 +347,7 @@ class RooibosTransformation(Transformation, metaclass=RooibosTransformationMeta)
         s = s.format(self.__class__.__name__, str(self.location), s_args)
         return s
 
+@register("InsertStatement")
 @attr.s(frozen=True, repr=False)
 class InsertStatement(Transformation):
     location = attr.ib(type=FileLocation)
@@ -405,7 +364,6 @@ class InsertStatement(Transformation):
                 'statement': self.statement.to_dict()}
 
     def to_replacement(self, problem: Problem) -> Replacement:
-        # FIXME will this work?
         r = FileLocationRange(self.location.filename,
                               LocationRange(self.location.location, self.location.location))
         return Replacement(r, self.statement.content)
