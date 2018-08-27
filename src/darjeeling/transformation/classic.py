@@ -1,6 +1,7 @@
 __all__ = [
     'InsertStatement',
-    'DeleteStatement'
+    'DeleteStatement',
+    'ReplaceStatement'
 ]
 
 from typing import List, Iterator, Iterable, Dict, Any
@@ -92,6 +93,45 @@ class DeleteStatement(StatementTransformation):
                          statement: kaskara.Statement
                          ) -> Iterator[Transformation]:
         yield DeleteStatement(statement.location)
+
+
+@register("ReplaceStatement")
+@attr.s(frozen=True, repr=False)
+class ReplaceStatement(StatementTransformation):
+    location = attr.ib(type=FileLocationRange)
+    replacement = attr.ib(type=Snippet)
+
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> 'Transformation':
+        location = FileLocationRange.from_string(d['location'])
+        replacement = Snippet.from_dict(d['replacement'])
+        return ReplaceStatement(location, replacement)
+
+    def _to_dict(self) -> Dict[str, Any]:
+        return {'location': str(self.location),
+                'replacement': self.replacement.to_dict()}
+
+    def __repr__(self) -> str:
+        s = "ReplaceStatement[{}]<{}>"
+        s = s.format(str(self.replacement), str(self.location))
+        return s
+
+    def to_replacement(self, problem: Problem) -> Replacement:
+        return Replacement(self.location, str(replacement))
+
+    @classmethod
+    def all_at_statement(cls,
+                         problem: Problem,
+                         snippets: SnippetDatabase,
+                         statement: kaskara.Statement
+                         ) -> Iterator[Transformation]:
+        filename = statement.location.filename
+        snippets = snippets.in_file(filename)
+
+        # FIXME filter snippets
+
+        for snippet in snippets:
+            yield ReplaceStatement(statement.location, snippet)
 
 
 @register("InsertStatement")
