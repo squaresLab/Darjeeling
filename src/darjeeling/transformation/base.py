@@ -95,7 +95,7 @@ def register(name: str
 
         # TODO class must implement a "from_dict" method
 
-        schema.NAME = name
+        schema.NAME = name  # type: ignore
         __REGISTRY[name] = schema  # type: ignore
         logger.debug("registered transformation schema [%s] under name [%s]",
                      schema, name)
