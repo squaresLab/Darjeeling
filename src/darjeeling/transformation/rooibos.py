@@ -16,7 +16,7 @@ __all__ = [
     'MulToDiv'
 ]
 
-from typing import Dict, FrozenSet, Tuple, List, Iterator, Iterable
+from typing import Dict, FrozenSet, Tuple, List, Iterator, Iterable, Optional
 from timeit import default_timer as timer
 from concurrent.futures import ThreadPoolExecutor
 import re
