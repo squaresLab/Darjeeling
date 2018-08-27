@@ -117,7 +117,7 @@ class ReplaceStatement(StatementTransformation):
         return s
 
     def to_replacement(self, problem: Problem) -> Replacement:
-        return Replacement(self.location, str(replacement))
+        return Replacement(self.location, str(self.replacement))
 
     @classmethod
     def all_at_statement(cls,
