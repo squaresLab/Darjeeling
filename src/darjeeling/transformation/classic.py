@@ -126,11 +126,11 @@ class ReplaceStatement(StatementTransformation):
                          statement: kaskara.Statement
                          ) -> Iterator[Transformation]:
         filename = statement.location.filename
-        snippets = snippets.in_file(filename)
+        viable_snippets = snippets.in_file(filename)
 
         # FIXME filter snippets
 
-        for snippet in snippets:
+        for snippet in viable_snippets:
             yield ReplaceStatement(statement.location, snippet)
 
 
