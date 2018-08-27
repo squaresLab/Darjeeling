@@ -70,7 +70,7 @@ class Transformation(object):
 
     def to_dict(self) -> Dict[str, Any]:
         d = self._to_dict()
-        d['kind'] = self.__class__.NAME
+        d['kind'] = self.__class__.NAME  # type: ignore
         return d
 
     def _to_dict(self) -> Dict[str, Any]:
@@ -96,7 +96,7 @@ def register(name: str
         # TODO class must implement a "from_dict" method
 
         schema.NAME = name
-        __REGISTRY[name] = schema
+        __REGISTRY[name] = schema  # type: ignore
         logger.debug("registered transformation schema [%s] under name [%s]",
                      schema, name)
         return schema
