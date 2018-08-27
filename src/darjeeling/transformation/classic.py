@@ -44,6 +44,24 @@ class StatementTransformation(Transformation):
         Returns an iterator over all of the possible transformations of this
         kind that can be performed at a given line.
         """
+        analysis = problem.analysis
+        if analysis is None:
+            logger.warning("cannot determine statement transformations: no Kaskara analysis found")  # noqa: pycodestyle
+            return
+        statements = analysis.statements.at_line(line)  # type: Iterator[kaskara.Statement]  # noqa: pycodestyle
+        for statement in statements:
+            yield from cls.all_at_statement(problem, snippets, statement)
+
+    @classmethod
+    def all_at_statement(cls,
+                         problem: Problem,
+                         snippets: SnippetDatabase,
+                         statement: kaskara.Statement
+                         ) -> Iterator[Transformation]:
+        """
+        Returns an iterator over all of the possible transformations of this
+        kind that can be performed at a given statement.
+        """
         raise NotImplementedError
 
 
@@ -68,25 +86,12 @@ class DeleteStatement(StatementTransformation):
         return Replacement(self.location, '')
 
     @classmethod
-    def all_at_line(cls,
-                    problem: Problem,
-                    snippets: SnippetDatabase,
-                    line: FileLine
-                    ) -> Iterator[Transformation]:
-        logger.debug("finding all delete statement transformations at line [%s]",  # noqa: pycodestyle
-                     line)
-        analysis = problem.analysis
-        if analysis is None:
-            logger.warning("cannot determine statement deletions: no Kaskara analysis found")  # noqa: pycodestyle
-            return
-
-        statements = analysis.statements.at_line(line)  # type: Iterator[kaskara.Statement]  # noqa: pycodestyle
-        for statement in statements:
-            logger.debug("found delete statement at line [%s]: %s",
-                         line, statement)
-            yield DeleteStatement(statement.location)
-        logger.debug("found all delete statement transformations at line [%s]",
-                     line)
+    def all_at_statement(cls,
+                         problem: Problem,
+                         snippets: SnippetDatabase,
+                         statement: kaskara.Statement
+                         ) -> Iterator[Transformation]:
+        yield DeleteStatement(statement.location)
 
 
 @register("InsertStatement")
@@ -163,6 +168,7 @@ class InsertStatement(StatementTransformation):
         filename = point.location.filename
         yield from snippets.in_file(filename)
 
+    # FIXME use all_at_statement
     @classmethod
     def all_at_point(cls,
                      problem: Problem,
