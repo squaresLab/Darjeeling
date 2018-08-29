@@ -89,8 +89,12 @@ class StatementTransformation(Transformation):
             in_scope = statement.visible  # type: FrozenSet[str]
             viable = filter(lambda s: all(v in in_scope for v in s.uses), viable)
 
+        # do not insert code that (only) writes to a dead variable
         if problem.settings.ignore_dead_code:
-            logger.info("IGNORING DEAD CODE")
+            live_vars = statement.live_before  # type: FrozenSet[str]
+            viable = filter(
+                lambda s: not any(w not in live_vars for w in s.writes),
+                viable)
 
         yield from viable
 
