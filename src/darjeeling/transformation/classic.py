@@ -166,7 +166,7 @@ class PrependStatement(StatementTransformation):
     def from_dict(d: Dict[str, Any]) -> 'Transformation':
         location = FileLocation.from_string(d['location'])
         statement = Snippet.from_dict(d['snippet'])
-        return InsertStatement(location, statement)
+        return PrependStatement(location, statement)
 
     def _to_dict(self) -> Dict[str, Any]:
         return {'location': str(self.location),
