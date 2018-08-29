@@ -82,10 +82,10 @@ class StatementTransformation(Transformation):
 
         # TODO syntax checking
 
-        # use_scope_analysis = True  # FIXME
-        # if use_scope_analysis:
-        #     in_scope = statement.visible  # type: FrozenSet[str]
-        #     viable = filter(lambda s: all(v in in_scope for v in s.uses), viable)
+        use_scope_analysis = True  # FIXME
+        if use_scope_analysis:
+            in_scope = statement.visible  # type: FrozenSet[str]
+            viable = filter(lambda s: all(v in in_scope for v in s.uses), viable)
 
         # TODO liveness analysis
 
