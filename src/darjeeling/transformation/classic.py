@@ -78,7 +78,10 @@ class StatementTransformation(Transformation):
         filename = statement.location.filename
         viable =  snippets.in_file(filename)  # type: Iterator[Snippet]
 
-        # TODO restrict to executed statements
+        if problem.settings.only_insert_executed_code:
+            executed = problem.coverage.lines
+            viable = filter(lambda s: any(l in executed for l in s.lines),
+                            viable)
 
         # TODO syntax checking
 
