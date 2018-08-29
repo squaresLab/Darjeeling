@@ -82,12 +82,12 @@ class StatementTransformation(Transformation):
 
         # TODO syntax checking
 
-        use_scope_analysis = True  # FIXME
-        if use_scope_analysis:
+        if problem.settings.use_scope_checking:
             in_scope = statement.visible  # type: FrozenSet[str]
             viable = filter(lambda s: all(v in in_scope for v in s.uses), viable)
 
-        # TODO liveness analysis
+        if problem.settings.ignore_dead_code:
+            logger.info("IGNORING DEAD CODE")
 
         yield from viable
 
@@ -174,7 +174,7 @@ class PrependStatement(StatementTransformation):
 
     def __repr__(self) -> str:
         s = "PrependStatement[{}]<{}>"
-        s = s.formatm(str(self.location), str(self.statement.content))
+        s = s.format(str(self.location), str(self.statement.content))
         return s
 
     def to_replacement(self, problem: Problem) -> Replacement:
