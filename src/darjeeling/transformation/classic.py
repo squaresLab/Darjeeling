@@ -1,10 +1,10 @@
 __all__ = [
-    'InsertStatement',
+    'PrependStatement',
     'DeleteStatement',
     'ReplaceStatement'
 ]
 
-from typing import List, Iterator, Iterable, Dict, Any
+from typing import List, Iterator, Iterable, Dict, Any, FrozenSet
 import logging
 
 import attr
@@ -64,6 +64,32 @@ class StatementTransformation(Transformation):
         kind that can be performed at a given statement.
         """
         raise NotImplementedError
+
+    @classmethod
+    def viable_snippets(cls,
+                        problem: Problem,
+                        snippets: SnippetDatabase,
+                        statement: kaskara.Statement
+                        ) -> Iterator[Snippet]:
+        """
+        Returns an iterator over the set of snippets that can be inserted
+        immediately before a given statement.
+        """
+        filename = statement.location.filename
+        viable =  snippets.in_file(filename)  # type: Iterator[Snippet]
+
+        # TODO restrict to executed statements
+
+        # TODO syntax checking
+
+        # use_scope_analysis = True  # FIXME
+        # if use_scope_analysis:
+        #     in_scope = statement.visible  # type: FrozenSet[str]
+        #     viable = filter(lambda s: all(v in in_scope for v in s.uses), viable)
+
+        # TODO liveness analysis
+
+        yield from viable
 
 
 @register("DeleteStatement")
@@ -125,18 +151,14 @@ class ReplaceStatement(StatementTransformation):
                          snippets: SnippetDatabase,
                          statement: kaskara.Statement
                          ) -> Iterator[Transformation]:
-        filename = statement.location.filename
-        viable_snippets = snippets.in_file(filename)
-
-        # FIXME filter snippets
-
-        for snippet in viable_snippets:
+        for snippet in cls.viable_snippets(problem, snippets, statement):
+            # FIXME do not allow self-replacement
             yield ReplaceStatement(statement.location, snippet)
 
 
-@register("InsertStatement")
+@register("PrependStatement")
 @attr.s(frozen=True, repr=False)
-class InsertStatement(StatementTransformation):
+class PrependStatement(StatementTransformation):
     location = attr.ib(type=FileLocation)
     statement = attr.ib(type=Snippet)
 
@@ -151,34 +173,14 @@ class InsertStatement(StatementTransformation):
                 'statement': self.statement.to_dict()}
 
     def __repr__(self) -> str:
-        s = "InsertStatement[{}]<{}>"
-        s = s.format(str(self.location), str(self.statement.content))
+        s = "PrependStatement[{}]<{}>"
+        s = s.formatm(str(self.location), str(self.statement.content))
         return s
 
     def to_replacement(self, problem: Problem) -> Replacement:
         r = FileLocationRange(self.location.filename,
                               LocationRange(self.location.location, self.location.location))
         return Replacement(r, self.statement.content)
-
-    @classmethod
-    def all_at_line(cls,
-                    problem: Problem,
-                    snippets: SnippetDatabase,
-                    line: FileLine
-                    ) -> Iterator[Transformation]:
-        """
-        Returns an iterator over all of the possible transformations of this
-        kind that can be performed at a given line.
-        """
-        analysis = problem.analysis
-        if analysis is None:
-            logger.warning("cannot determine statement insertions: no Kaskara analysis found")  # noqa: pycodestyle
-            yield from []  # TODO this is redundant?
-            return
-
-        points = analysis.insertions.at_line(line)  # type: Iterator[kaskara.InsertionPoint]  # noqa: pycodestyle
-        for point in points:
-            yield from cls.all_at_point(problem, snippets, point)
 
     @classmethod
     def should_insert_at_location(cls,
@@ -196,38 +198,14 @@ class InsertStatement(StatementTransformation):
         return True
 
     @classmethod
-    def viable_snippets(cls,
-                        problem: Problem,
-                        snippets: SnippetDatabase,
-                        point: kaskara.InsertionPoint
-                        ) -> Iterator[Snippet]:
-        """
-        Returns an iterator over the set of snippets that can be used as
-        viable insertions at a given insertion point.
-        """
-        filename = point.location.filename
-        yield from snippets.in_file(filename)
-
-    # FIXME use all_at_statement
-    @classmethod
-    def all_at_point(cls,
-                     problem: Problem,
-                     snippets: SnippetDatabase,
-                     point: kaskara.InsertionPoint
-                     ) -> Iterator[Transformation]:
-        """
-        Returns an iterator over all of the transformations of this kind that
-        can be performed at a given insertion point.
-        """
-        location = point.location
+    def all_at_statement(cls,
+                         problem: Problem,
+                         snippets: SnippetDatabase,
+                         statement: kaskara.Statement
+                         ) -> Iterator[Transformation]:
+        location = FileLocation(statement.location.filename,
+                                statement.location.start)
         if not cls.should_insert_at_location(problem, location):
-            return
-        viable_snippets = list(cls.viable_snippets(problem, snippets, point))
-        # logger.info("VIABLE SNIPPETS AT POINT [%s]: %s",
-        #             point, [s.content for s in viable_snippets])
-        for snippet in cls.viable_snippets(problem, snippets, point):
-            if snippet.reads.issubset(point.visible):
-                yield cls(location, snippet)
-            # else:
-            #     logger.debug("skipping snippet [%s]: failed scope analysis.",
-            #                  snippet.content)
+            yield from []
+        for snippet in cls.viable_snippets(problem, snippets, statement):
+            yield PrependStatement(location, snippet)
