@@ -23,7 +23,8 @@ class Snippet(object):
         kind = d.get('kind')
         reads = d.get('reads', [])
         writes = d.get('writes', [])
-        snippet = Snippet(content, kind, reads, writes)
+        declares = d.get('declares', [])
+        snippet = Snippet(content, kind, reads, writes, declares)
 
         if 'locations' in d:
             for loc_s in d['locations']:
@@ -35,12 +36,14 @@ class Snippet(object):
                  content: str,
                  kind: Optional[str] = None,
                  reads: Iterable[str] = [],
-                 writes: Iterable[str] = []
+                 writes: Iterable[str] = [],
+                 declares: Iterable[str] = []
                  ) -> None:
         self.__content = content
         self.__kind = kind
         self.reads = frozenset(reads)  # type: FrozenSet[str]
         self.writes = frozenset(writes)  # type: FrozenSet[str]
+        self.declares = frozenset(declares)  # type: FrozenSet[str]
         self.locations = set()  # type: Set[FileLocationRange]
 
     def __eq__(self, other: Any) -> bool:
@@ -55,7 +58,7 @@ class Snippet(object):
         Returns the set of variables used by this snippet, given by their
         names.
         """
-        return self.reads + self.writes
+        return self.reads | self.writes
 
     @property
     def content(self) -> str:
@@ -80,6 +83,8 @@ class Snippet(object):
             d['reads'] = [str(r) for r in self.reads]
         if self.writes:
             d['writes'] = [str(w) for w in self.writes]
+        if self.declares:
+            d['declares'] = [str(v) for v in self.declares]
         return d
 
 
@@ -92,7 +97,8 @@ class SnippetDatabase(object):
             db.add(stmt.content,
                    origin=stmt.location,
                    reads=stmt.reads,
-                   writes=stmt.writes)
+                   writes=stmt.writes,
+                   declares=stmt.declares)
         logger.debug("constructed snippet database from snippets")
         return db
 
@@ -158,7 +164,8 @@ class SnippetDatabase(object):
             kind: Optional[str] = None,
             origin: Optional[FileLocationRange] = None,
             reads: Optional[List[str]] = None,
-            writes: Optional[List[str]] = None
+            writes: Optional[List[str]] = None,
+            declares: Optional[List[str]] = None
             ) -> None:
         """
         Adds a snippet to this database in-place.
@@ -173,6 +180,7 @@ class SnippetDatabase(object):
         """
         reads = list(reads) if reads else []
         writes = list(writes) if writes else []
+        declares = list(declares) if declares else []
 
         if content in self.__snippets:
             snippet = self.__snippets[content]
