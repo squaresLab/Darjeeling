@@ -89,7 +89,10 @@ class SnippetDatabase(object):
         logger.debug("constructing snippet database from statements")
         db = SnippetDatabase()
         for stmt in statements:
-            db.add(stmt.content, origin=stmt.location, reads=stmt.reads)
+            db.add(stmt.content,
+                   origin=stmt.location,
+                   reads=stmt.reads,
+                   writes=stmt.writes)
         logger.debug("constructed snippet database from snippets")
         return db
 
@@ -154,7 +157,8 @@ class SnippetDatabase(object):
             *,
             kind: Optional[str] = None,
             origin: Optional[FileLocationRange] = None,
-            reads: Optional[List[str]] = None
+            reads: Optional[List[str]] = None,
+            writes: Optional[List[str]] = None
             ) -> None:
         """
         Adds a snippet to this database in-place.
@@ -168,11 +172,12 @@ class SnippetDatabase(object):
             nothing.
         """
         reads = list(reads) if reads else []
+        writes = list(writes) if writes else []
 
         if content in self.__snippets:
             snippet = self.__snippets[content]
         else:
-            snippet = Snippet(content, kind, reads)
+            snippet = Snippet(content, kind, reads, writes)
             self.__snippets[content] = snippet
 
         if origin is not None:
