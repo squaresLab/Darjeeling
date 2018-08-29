@@ -6,7 +6,7 @@ import attr
 
 from kaskara import Statement
 
-from .core import FileLocationRange
+from .core import FileLocationRange, FileLine
 from .problem import Problem
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
@@ -67,6 +67,17 @@ class Snippet(object):
     @property
     def kind(self) -> Optional[str]:
         return self.__kind
+
+    @property
+    def lines(self) -> Iterator[FileLine]:
+        """
+        Returns an iterator over the file lines at which this snippet has
+        been observed.
+        """
+        for location in self.locations:
+            line = FileLine(location.filename,
+                            location.start.line)
+            yield line
 
     @property
     def occurrences(self) -> int:
