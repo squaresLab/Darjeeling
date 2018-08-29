@@ -7,3 +7,4 @@ class Settings(object):
     ignore_dead_code = attr.ib(type=bool, default=True)
     ignore_equivalent_appends = attr.ib(type=bool, default=True)
     ignore_untyped_returns = attr.ib(type=bool, default=True)
+    only_insert_executed_code = attr.ib(type=bool, default=False)
