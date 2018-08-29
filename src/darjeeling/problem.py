@@ -22,6 +22,7 @@ from kaskara.analysis import Analysis
 from .source import ProgramSourceManager
 from .util import get_file_contents
 from .exceptions import NoFailingTests, NoImplicatedLines, BuildFailure
+from .settings import Settings
 
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
@@ -39,6 +40,7 @@ class Problem(object):
                  *,
                  analysis: Optional[Analysis] = None,
                  client_rooibos: Optional[RooibosClient] = None,
+                 settings: Optional[Settings] = None
                  ) -> None:
         """
         Constructs a Darjeeling problem description.
@@ -58,6 +60,7 @@ class Problem(object):
         self.__client_bugzoo = bz
         self.__coverage = coverage
         self.__analysis = analysis
+        self.__settings = settings if settings else Settings()
         self._dump_coverage()
 
         # determine the passing and failing tests
@@ -223,6 +226,10 @@ class Problem(object):
                     '\n* '.join(files))
         if len(lines) == 0:
             raise NoImplicatedLines
+
+    @property
+    def settings(self) -> Settings:
+        return self.__settings
 
     @property
     def analysis(self) -> Optional[Analysis]:
