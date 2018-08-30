@@ -76,6 +76,7 @@ class StatementTransformation(Transformation):
         immediately before a given statement.
         """
         filename = statement.location.filename
+        location = FileLocation(filename, statement.location.start)
         viable =  snippets.in_file(filename)  # type: Iterator[Snippet]
 
         if problem.settings.only_insert_executed_code:
@@ -83,7 +84,13 @@ class StatementTransformation(Transformation):
             viable = filter(lambda s: any(l in executed for l in s.lines),
                             viable)
 
-        # TODO syntax checking
+        if problem.settings.use_syntax_scope_checking:
+            in_loop = problem.analysis.is_inside_loop(location)
+            in_switch = False  # FIXME
+            viable = filter(lambda s: in_loop or not s.requires_continue,
+                            viable)
+            viable = filter(lambda s: in_switch or in_loop or not s.requires_break,  # noqa: pycodestyle
+                            viable)
 
         if problem.settings.use_scope_checking:
             in_scope = statement.visible  # type: FrozenSet[str]
