@@ -172,7 +172,7 @@ class PrependStatement(StatementTransformation):
     @staticmethod
     def from_dict(d: Dict[str, Any]) -> 'Transformation':
         location = FileLocation.from_string(d['location'])
-        statement = Snippet.from_dict(d['snippet'])
+        statement = Snippet.from_dict(d['statement'])
         return PrependStatement(location, statement)
 
     def _to_dict(self) -> Dict[str, Any]:
