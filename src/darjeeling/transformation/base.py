@@ -15,7 +15,7 @@ logger.setLevel(logging.DEBUG)
 """
 Maintains a registry of transformation schemas indexed by name.
 """
-__REGISTRY = {}  # type: Dict[str, Type[Transformation]]
+REGISTRY = {}  # type: Dict[str, Type[Transformation]]
 
 
 class Transformation(object):
@@ -48,7 +48,7 @@ class Transformation(object):
             raise SyntaxError(msg)
 
         try:
-            schema = __REGISTRY[kind]
+            schema = REGISTRY[kind]
         except KeyError:
             raise UnknownTransformationSchemaException(kind)
 
@@ -89,14 +89,14 @@ def register(name: str
     def decorator(schema: Type[Transformation]) -> Type[Transformation]:
         logger.debug("registering transformation schema [%s] under name [%s]",
                      schema, name)
-        global __REGISTRY
-        if name in __REGISTRY:
+        global REGISTRY
+        if name in REGISTRY:
             raise NameInUseException
 
         # TODO class must implement a "from_dict" method
 
         schema.NAME = name  # type: ignore
-        __REGISTRY[name] = schema  # type: ignore
+        REGISTRY[name] = schema  # type: ignore
         logger.debug("registered transformation schema [%s] under name [%s]",
                      schema, name)
         return schema
