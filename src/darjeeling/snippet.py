@@ -24,7 +24,13 @@ class Snippet(object):
         reads = d.get('reads', [])
         writes = d.get('writes', [])
         declares = d.get('declares', [])
-        snippet = Snippet(content, kind, reads, writes, declares)
+        requires_syntax = d.get('requires_syntax', [])
+        snippet = Snippet(content=content,
+                          kind=kind,
+                          reads=reads,
+                          writes=writes,
+                          declares=declares,
+                          requires_syntax=requires_syntax)
 
         if 'locations' in d:
             for loc_s in d['locations']:
@@ -37,13 +43,16 @@ class Snippet(object):
                  kind: Optional[str] = None,
                  reads: Iterable[str] = [],
                  writes: Iterable[str] = [],
-                 declares: Iterable[str] = []
+                 declares: Iterable[str] = [],
+                 requires_syntax: Iterable[str] = []
                  ) -> None:
         self.__content = content
         self.__kind = kind
         self.reads = frozenset(reads)  # type: FrozenSet[str]
         self.writes = frozenset(writes)  # type: FrozenSet[str]
         self.declares = frozenset(declares)  # type: FrozenSet[str]
+        self.requires_syntax = \
+            frozenset(requires_syntax)  # type: FrozenSet[str]
         self.locations = set()  # type: Set[FileLocationRange]
 
     def __eq__(self, other: Any) -> bool:
@@ -51,6 +60,14 @@ class Snippet(object):
 
     def __hash__(self) -> int:
         return hash(self.content)
+
+    @property
+    def requires_break(self) -> bool:
+        return 'break' in self.requires_syntax
+
+    @property
+    def requires_continue(self) -> bool:
+        return 'continue' in self.requires_syntax
 
     @property
     def uses(self) -> FrozenSet[str]:
@@ -96,6 +113,8 @@ class Snippet(object):
             d['writes'] = [str(w) for w in self.writes]
         if self.declares:
             d['declares'] = [str(v) for v in self.declares]
+        if self.requires_syntax:
+            d['requires_syntax'] = list(self.requires_syntax)
         return d
 
 
@@ -109,7 +128,8 @@ class SnippetDatabase(object):
                    origin=stmt.location,
                    reads=stmt.reads,
                    writes=stmt.writes,
-                   declares=stmt.declares)
+                   declares=stmt.declares,
+                   requires_syntax=stmt.requires_syntax)
         logger.debug("constructed snippet database from snippets")
         return db
 
@@ -176,7 +196,8 @@ class SnippetDatabase(object):
             origin: Optional[FileLocationRange] = None,
             reads: Optional[List[str]] = None,
             writes: Optional[List[str]] = None,
-            declares: Optional[List[str]] = None
+            declares: Optional[List[str]] = None,
+            requires_syntax: Optional[List[str]] = None
             ) -> None:
         """
         Adds a snippet to this database in-place.
@@ -192,11 +213,17 @@ class SnippetDatabase(object):
         reads = list(reads) if reads else []
         writes = list(writes) if writes else []
         declares = list(declares) if declares else []
+        requires_syntax = list(requires_syntax) if requires_syntax else []
 
         if content in self.__snippets:
             snippet = self.__snippets[content]
         else:
-            snippet = Snippet(content, kind, reads, writes)
+            snippet = Snippet(content=content,
+                              kind=kind,
+                              reads=reads,
+                              writes=writes,
+                              declares=declares,
+                              requires_syntax=requires_syntax)
             self.__snippets[content] = snippet
 
         if origin is not None:
