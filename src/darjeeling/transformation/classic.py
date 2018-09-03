@@ -77,7 +77,7 @@ class StatementTransformation(Transformation):
         """
         filename = statement.location.filename
         location = FileLocation(filename, statement.location.start)
-        viable =  snippets.in_file(filename)  # type: Iterator[Snippet]
+        viable = snippets.in_file(filename)  # type: Iterator[Snippet]
 
         if problem.settings.only_insert_executed_code:
             executed = problem.coverage.lines
@@ -85,6 +85,7 @@ class StatementTransformation(Transformation):
                             viable)
 
         if problem.settings.use_syntax_scope_checking:
+            assert problem.analysis
             in_loop = problem.analysis.is_inside_loop(location)
             in_switch = False  # FIXME
             viable = filter(lambda s: in_loop or not s.requires_continue,
