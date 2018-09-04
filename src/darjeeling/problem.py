@@ -41,7 +41,8 @@ class Problem(object):
                  *,
                  analysis: Optional[Analysis] = None,
                  client_rooibos: Optional[RooibosClient] = None,
-                 settings: Optional[Settings] = None
+                 settings: Optional[Settings] = None,
+                 restrict_to_files: Optional[List[str]] = None
                  ) -> None:
         """
         Constructs a Darjeeling problem description.
@@ -118,10 +119,13 @@ class Problem(object):
         # cache contents of the implicated files
         t_start = timer()
         logger.debug("storing contents of source code files")
+        source_files = set(self.implicated_files)
+        if restrict_to_files:
+            source_files &= restrict_to_files
         self.__sources = ProgramSourceManager(bz,
                                               client_rooibos,
                                               bug,
-                                              files=self.implicated_files)
+                                              files=source_files)
         logger.debug("stored contents of source code files (took %.1f seconds)",
                      timer() - t_start)
 
