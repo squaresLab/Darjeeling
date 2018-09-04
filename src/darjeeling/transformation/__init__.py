@@ -177,23 +177,3 @@ def sample_by_localization_and_type(problem: Problem,
                     raise
 
     yield from sample(localization)
-
-
-@attr.s(frozen=True)
-class LocationRangeTransformation(Transformation):
-    location = attr.ib(type=FileLocationRange,
-                       validator=attr.validators.instance_of(FileLocationRange))  # noqa: pycodestyle
-
-
-@attr.s(frozen=True)
-class ReplaceTransformation(LocationRangeTransformation):
-    """
-    Replaces a numbered line in a given file with a provided snippet.
-    """
-    snippet = attr.ib(type=Snippet)
-
-    def __str__(self) -> str:
-        return "REPLACE[{}; {}]".format(self.location, self.snippet)
-
-    def to_replacement(self, problem: Problem) -> Replacement:
-        return Replacement(self.location, self.snippet.content)
