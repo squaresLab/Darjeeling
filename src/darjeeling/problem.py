@@ -281,7 +281,7 @@ class Problem(object):
 
     @property
     def implicated_files(self) -> Iterator[str]:
-        return self.lines.files
+        return self.__coverage.failing.lines.files
 
     @property
     def sources(self) -> ProgramSourceManager:
