@@ -121,7 +121,7 @@ class Problem(object):
         logger.debug("storing contents of source code files")
         source_files = set(self.implicated_files)
         if restrict_to_files:
-            source_files &= restrict_to_files
+            source_files &= set(restrict_to_files)
         self.__sources = ProgramSourceManager(bz,
                                               client_rooibos,
                                               bug,
