@@ -9,6 +9,7 @@ import boggart
 import rooibos
 import bugzoo
 from rooibos import Client as RooibosClient
+from bugzoo.client import Client as BugZooClient
 from bugzoo.core.fileline import FileLine, FileLineSet
 from bugzoo.core.container import Container
 from bugzoo.core.bug import Bug
@@ -226,6 +227,10 @@ class Problem(object):
                     '\n* '.join(files))
         if len(lines) == 0:
             raise NoImplicatedLines
+
+    @property
+    def bugzoo(self) -> BugZooClient:
+        return self.__client_bugzoo
 
     @property
     def settings(self) -> Settings:
