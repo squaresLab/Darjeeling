@@ -120,11 +120,15 @@ class Snippet(object):
 
 class SnippetDatabase(object):
     @staticmethod
-    def from_statements(statements: Iterable[Statement]) -> 'SnippetDatabase':
+    def from_statements(statements: Iterable[Statement],
+                        *,
+                        use_canonical_form: bool=False
+                        ) -> 'SnippetDatabase':
         logger.debug("constructing snippet database from statements")
         db = SnippetDatabase()
         for stmt in statements:
-            db.add(stmt.content,
+            content = stmt.canonical if use_canonical_form else stmt.content
+            db.add(content,
                    origin=stmt.location,
                    reads=stmt.reads,
                    writes=stmt.writes,
