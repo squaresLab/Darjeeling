@@ -168,11 +168,11 @@ class ReplaceStatement(StatementTransformation):
 
     def __repr__(self) -> str:
         s = "ReplaceStatement[{}]<{}>"
-        s = s.format(str(self.replacement.content), str(self.location))
+        s = s.format(str(self.replacement), str(self.location))
         return s
 
     def to_replacement(self, problem: Problem) -> Replacement:
-        return Replacement(self.location, str(self.replacement))
+        return Replacement(self.location, str(self.replacement.content))
 
     @property
     def line(self) -> FileLine:
