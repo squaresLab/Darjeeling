@@ -166,9 +166,17 @@ class ReplaceStatement(StatementTransformation):
                          snippets: SnippetDatabase,
                          statement: kaskara.Statement
                          ) -> Iterator[Transformation]:
+        check_equiv = problem.settings.ignore_string_equivalent_snippets
         for snippet in cls.viable_snippets(problem, snippets, statement):
-            # FIXME do not allow self-replacement
-            yield ReplaceStatement(statement.location, snippet)
+            eq_content = \
+                not check_equiv and snippet.content == statement.content
+            eq_canonical = \
+                check_equiv and snippet.content == statement.canonical
+            if eq_content or eq_canonical:
+                logger.debug("prevented self-replacement of statement [%s]",
+                             statement.location)
+            else:
+                yield ReplaceStatement(statement.location, snippet)
 
 
 @register("PrependStatement")
