@@ -168,7 +168,7 @@ class ReplaceStatement(StatementTransformation):
 
     def __repr__(self) -> str:
         s = "ReplaceStatement[{}]<{}>"
-        s = s.format(str(self.replacement), str(self.location))
+        s = s.format(str(self.replacement.content), str(self.location))
         return s
 
     def to_replacement(self, problem: Problem) -> Replacement:
