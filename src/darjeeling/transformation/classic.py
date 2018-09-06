@@ -84,6 +84,11 @@ class StatementTransformation(Transformation):
             viable = filter(lambda s: any(l in executed for l in s.lines),
                             viable)
 
+        # do not insert declaration statements
+        if problem.settings.ignore_decls:
+            assert problem.analysis
+            viable = filter(lambda s: s.kind != 'DeclStmt', viable)
+
         if problem.settings.use_syntax_scope_checking:
             assert problem.analysis
             in_loop = problem.analysis.is_inside_loop(location)
