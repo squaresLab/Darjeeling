@@ -130,6 +130,7 @@ class SnippetDatabase(object):
             content = stmt.canonical if use_canonical_form else stmt.content
             db.add(content,
                    origin=stmt.location,
+                   kind=stmt.kind,
                    reads=stmt.reads,
                    writes=stmt.writes,
                    declares=stmt.declares,
