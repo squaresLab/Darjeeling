@@ -84,6 +84,11 @@ class StatementTransformation(Transformation):
             viable = filter(lambda s: any(l in executed for l in s.lines),
                             viable)
 
+        # do not insert declaration statements
+        if problem.settings.ignore_decls:
+            assert problem.analysis
+            viable = filter(lambda s: s.kind != 'DeclStmt', viable)
+
         if problem.settings.use_syntax_scope_checking:
             assert problem.analysis
             in_loop = problem.analysis.is_inside_loop(location)
@@ -133,6 +138,10 @@ class DeleteStatement(StatementTransformation):
                          snippets: SnippetDatabase,
                          statement: kaskara.Statement
                          ) -> Iterator[Transformation]:
+        # do not delete declaration statements
+        if problem.settings.ignore_decls and statement.kind == 'DeclStmt':
+            return
+
         yield DeleteStatement(statement.location)
 
 
@@ -166,6 +175,10 @@ class ReplaceStatement(StatementTransformation):
                          snippets: SnippetDatabase,
                          statement: kaskara.Statement
                          ) -> Iterator[Transformation]:
+        # do not replace declaration statements
+        if problem.settings.ignore_decls and statement.kind == 'DeclStmt':
+            return
+
         check_equiv = problem.settings.ignore_string_equivalent_snippets
         for snippet in cls.viable_snippets(problem, snippets, statement):
             eq_content = \
