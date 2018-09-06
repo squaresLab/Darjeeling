@@ -9,4 +9,5 @@ class Settings(object):
     ignore_equivalent_appends = attr.ib(type=bool, default=False)
     ignore_untyped_returns = attr.ib(type=bool, default=False)
     ignore_string_equivalent_snippets = attr.ib(type=bool, default=False)
+    ignore_decls = attr.ib(type=bool, default=True)
     only_insert_executed_code = attr.ib(type=bool, default=False)
