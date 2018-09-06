@@ -138,6 +138,10 @@ class DeleteStatement(StatementTransformation):
                          snippets: SnippetDatabase,
                          statement: kaskara.Statement
                          ) -> Iterator[Transformation]:
+        # do not delete declaration statements
+        if problem.settings.ignore_decls and statement.kind == 'DeclStmt':
+            return
+
         yield DeleteStatement(statement.location)
 
 
