@@ -132,6 +132,11 @@ class DeleteStatement(StatementTransformation):
     def to_replacement(self, problem: Problem) -> Replacement:
         return Replacement(self.location, '')
 
+    @property
+    def line(self) -> FileLine:
+        return FileLine(self.location.filename,
+                        self.location.start.line)
+
     @classmethod
     def all_at_statement(cls,
                          problem: Problem,
@@ -168,6 +173,11 @@ class ReplaceStatement(StatementTransformation):
 
     def to_replacement(self, problem: Problem) -> Replacement:
         return Replacement(self.location, str(self.replacement))
+
+    @property
+    def line(self) -> FileLine:
+        return FileLine(self.location.filename,
+                        self.location.start.line)
 
     @classmethod
     def all_at_statement(cls,
@@ -212,6 +222,11 @@ class PrependStatement(StatementTransformation):
         s = "PrependStatement[{}]<{}>"
         s = s.format(str(self.location), str(self.statement.content))
         return s
+
+    @property
+    def line(self) -> FileLine:
+        return FileLine(self.location.filename,
+                        self.location.line)
 
     def to_replacement(self, problem: Problem) -> Replacement:
         r = FileLocationRange(self.location.filename,
