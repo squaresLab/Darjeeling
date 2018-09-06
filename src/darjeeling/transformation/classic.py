@@ -171,6 +171,10 @@ class ReplaceStatement(StatementTransformation):
                          snippets: SnippetDatabase,
                          statement: kaskara.Statement
                          ) -> Iterator[Transformation]:
+        # do not replace declaration statements
+        if problem.settings.ignore_decls and statement.kind == 'DeclStmt':
+            return
+
         check_equiv = problem.settings.ignore_string_equivalent_snippets
         for snippet in cls.viable_snippets(problem, snippets, statement):
             eq_content = \
