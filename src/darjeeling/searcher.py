@@ -299,7 +299,9 @@ class Searcher(object):
 
             # if we've found a repair, pause the search
             self.__found_patches.append(candidate)
-            logger_c.info("FOUND A REPAIR: %s", candidate)
+            logger_c.info("found a repair after %.2f minutes: %s",
+                          (self.time_running.seconds / 60),
+                          candidate)
             return True
 
         except BuildFailure:
