@@ -19,10 +19,10 @@ setup(
     license='mit',
     python_requires='>=3.5',
     install_requires=[
-        'bugzoo>=2.1.15',
+        'bugzoo>=2.1.16',
         'rooibos>=0.3.0',
-        'boggart>=0.1.12',
-        'kaskara>=0.0.3',
+        'boggart>=0.1.14',
+        'kaskara>=0.0.4',
         'attrs>=17.2.0',
         'requests',
         'flask'
