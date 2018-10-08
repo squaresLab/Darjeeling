@@ -83,16 +83,31 @@ metrics via its `metric` property:
 
 ### `algorithm`
 
+### `transformations`
+
 ### `optimizations`
 
-The `optimizations` section is used to toggle various optimizations to the
-repair process.
+The `optimizations` section is used to toggle various optimizations available
+to the repair process. By default, all optimizations are enabled. Below is a
+list of optimizations that can be toggled by the configuration file.
 
-* `use-scope-checking`:
-* `use-syntax-scope-checking`:
-* `ignore-dead-code`:
-* `ignore-equivalent-prepends`:
-* `ignore-untyped-returns`:
-* `ignore-string-equivalent-snippets`:
-* `ignore-decls`:
-* `only-insert-executed-code`:
+* `use-scope-checking`: ensures that all variable and function references
+  that occur in a given transformation are visible from the scope into
+  which they are being inserted.
+* `use-syntax-scope-checking`: ensures that any keywords introduced by a
+  transformation (e.g., `break` and `continue`) are permitted by their
+  surrounding context.
+* `ignore-dead-code`: prevents the insertion of code that exclusively
+  writes to dead variables.
+* `ignore-equivalent-prepends`: uses an approach inspired by
+  instruction scheduling to prevent equivalent insertions of code.
+* `ignore-untyped-returns`: prevents insertion of a `return` statement into
+  a context where the type of the retval is incompatible with the return type
+  of the enclosing method or function.
+* `ignore-string-equivalent-snippets`: transforms donor code snippets into
+  their canonical form, thus preventing the insertion of string-equivalent
+  snippets.
+* `ignore-decls`: prevents transformations that are either applied to declaration
+  statements, or else solely introduce a declaration statement.
+* `only-insert-executed-code`: prevents the insertion of code that has not been
+  executed by at least one test case.
