@@ -39,6 +39,7 @@ Provide a "Hello World" example.
 version: '1.0'
 snapshot: 'manybugs:python:69223-69224'
 seed: 0
+threads: 16
 localization:
   metric: tarantula
 algorithm:
@@ -55,3 +56,6 @@ Below, we describe the top-level options exposed by the configuration file:
   that was used to write the file.
 * `snapshot`: the name of the [BugZoo](https://github.com/squaresLab/BugZoo)
   snapshot that should be used to provide the bug as a Docker container.
+* `seed`: a seed for the random number generator.
+* `threads`: number of threads over which the repair workload should be
+  distributed.
