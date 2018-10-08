@@ -10,6 +10,7 @@ other services are also language independent.)
 Once those auxillary concerns are removed, what is left is a lightweight
 framework for composing and executing repair algorithms: Darjeeling.
 
+
 ## Features
 
 * Multi-threaded asynchronous patch evaluation: maximises throughput by
@@ -17,6 +18,7 @@ framework for composing and executing repair algorithms: Darjeeling.
   queue.
 * Test case reduction: test outcomes that can't be affected by a given patch,
   as determined by coverage information, are skipped during patch evaluation.
+
 
 ## Installation
 
@@ -29,9 +31,11 @@ $ pipenv install darjeeling
 
 Darjeeling supports Python >= 3.5.
 
+
 ## Usage
 
 Provide a "Hello World" example.
+
 
 ## Configuration File Format (v1.0)
 
@@ -41,6 +45,7 @@ snapshot: 'manybugs:python:69223-69224'
 seed: 0
 threads: 16
 localization:
+  type: spectrum
   metric: tarantula
 algorithm:
   type: random
@@ -61,6 +66,20 @@ Below, we describe the top-level options exposed by the configuration file:
   distributed.
 
 ### `localization`
+
+The `localization` section provides instructions for localizing the fault
+inside the program under repair. Currently, the configuration file
+format supports a single `type` of fault localization: spectrum-based fault
+localization, which assigns a suspiciousness value to each line in
+the program under repair based on the number of passing and failing tests
+that touch that line. A *suspiciousness metric* is used to compute
+individual suspiciousness values. The configuration file exposes a number of
+metrics via its `metric` property:
+
+* `tarantula`
+* `genprog`
+* `jaccard`
+* `ochiai`
 
 ### `algorithm`
 
