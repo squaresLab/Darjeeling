@@ -88,9 +88,15 @@ metrics via its `metric` property:
 
 ### `algorithm`
 
+The `algorithm` section outlines the search algorithm that should be used
+to search the space of candidate repairs. A description of the types of
+search algorithm exposed by the configuration file format is given below.
+
+* `random`
+
 ### `transformations`
 
-The `transformations` process describes the space of program transformations
+The `transformations` section describes the space of program transformations
 from which candidate patches should be composed. The `schemas` property of
 this section specifies which program transformation schemas may be used to
 construct the program transformations. The configuration format currently
