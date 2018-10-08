@@ -84,3 +84,15 @@ metrics via its `metric` property:
 ### `algorithm`
 
 ### `optimizations`
+
+The `optimizations` section is used to toggle various optimizations to the
+repair process.
+
+* `use-scope-checking`:
+* `use-syntax-scope-checking`:
+* `ignore-dead-code`:
+* `ignore-equivalent-prepends`:
+* `ignore-untyped-returns`:
+* `ignore-string-equivalent-snippets`:
+* `ignore-decls`:
+* `only-insert-executed-code`:
