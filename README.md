@@ -32,3 +32,24 @@ Darjeeling supports Python >= 3.5.
 ## Usage
 
 Provide a "Hello World" example.
+
+## Configuration File Format
+
+```
+version: '1.0'
+snapshot: 'manybugs:python:69223-69224'
+seed: 0
+localization:
+  metric: tarantula
+algorithm:
+  type: random
+optimizations:
+  ignore-equivalent-prepends: yes
+  ignore-dead-code: yes
+  ignore-string-equivalent-snippets: yes
+```
+
+Below, we describe the top-level options exposed by the configuration file:
+
+* :code:`version`: the version of the Darjeeling configuration file format
+  that was used to write the file.
