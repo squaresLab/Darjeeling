@@ -33,7 +33,7 @@ Darjeeling supports Python >= 3.5.
 
 Provide a "Hello World" example.
 
-## Configuration File Format
+## Configuration File Format (v1.0)
 
 ```
 version: '1.0'
@@ -51,5 +51,7 @@ optimizations:
 
 Below, we describe the top-level options exposed by the configuration file:
 
-* :code:`version`: the version of the Darjeeling configuration file format
+* `version`: the version of the Darjeeling configuration file format
   that was used to write the file.
+* `snapshot`: the name of the [BugZoo](https://github.com/squaresLab/BugZoo)
+  snapshot that should be used to provide the bug as a Docker container.
