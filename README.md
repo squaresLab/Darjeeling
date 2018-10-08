@@ -49,6 +49,11 @@ localization:
   metric: tarantula
 algorithm:
   type: random
+transformations:
+  schemas:
+    - type: delete-statement
+    - type: replace-statement
+    - type: prepend-statement
 optimizations:
   ignore-equivalent-prepends: yes
   ignore-dead-code: yes
@@ -84,6 +89,13 @@ metrics via its `metric` property:
 ### `algorithm`
 
 ### `transformations`
+
+The `transformations` process describes the space of program transformations
+from which candidate patches should be composed. The `schemas` property of
+this section specifies which program transformation schemas may be used to
+construct the program transformations. The configuration format currently
+supports three transformation schemas: `delete-statement`,
+`replace-statement`, and `prepend-statement`.
 
 ### `optimizations`
 
