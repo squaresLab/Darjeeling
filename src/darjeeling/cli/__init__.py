@@ -1,6 +1,8 @@
 import logging
 import datetime
+import sys
 
+import bugzoo
 import cement
 import yaml
 
@@ -42,6 +44,9 @@ class BaseController(cement.Controller):
         with open(filename, 'r') as f:
             yml = yaml.load(f)
 
+        # connect to BugZoo
+
+
         # seed override
         if seed is not None:
             logger.info("using random number generator seed override: %d",
@@ -51,10 +56,10 @@ class BaseController(cement.Controller):
         elif 'seed' in yml:
             if not isinstance(yml['seed'], int):
                 m = "'seed' property should be an int."
-                raise BadConfigurationFailure(m)
+                raise BadConfigurationException(m)
             elif yml['seed'] < 0:
                 m = "'seed' property should be greater than or equal to zero."
-                raise BadConfigurationFailure(m)
+                raise BadConfigurationException(m)
             seed = yml['seed']
             logger.info("using random number generator seed provided by configuration: %d",  # noqa: pycodestyle
                         seed)
@@ -65,6 +70,30 @@ class BaseController(cement.Controller):
             seed = int(datetime.now())
             logger.info("using random number generator seed based on current date and time: %d",  # noqa: pycodestyle
                         seed)
+
+        # fetch the bugzoo snapshot
+        if 'snapshot' not in yml:
+            raise BadConfigurationException("'snapshot' property is missing")
+        if not isinstance(yml['snapshot'], str):
+            m = "'snapshot' property should be a string."
+            raise BadConfigurationException(m)
+        name_snapshot = yml['snapshot']
+
+        # connect to BugZoo
+        logger.info("connecting to BugZoo server")
+        with bugzoo.server.ephemeral() as client_bugzoo:
+            logger.info("connected to BugZoo server")
+            try:
+                snapshot = client_bugzoo.bugs[name_snapshot]
+            except bugzoo.exceptions.BugZooException:
+                logger.error("failed to fetch BugZoo snapshot: %s",
+                             name_snapshot)
+                sys.exit(1)
+
+            if not client_bugzoo.bugs.is_installed(snapshot):
+                logger.error("BugZoo snapshot is not installed: %s",
+                             name_snapshot)
+                sys.exit(1)
 
 
 class CLI(cement.App):
