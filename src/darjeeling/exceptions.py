@@ -38,3 +38,12 @@ class UnknownTransformationSchemaException(DarjeelingError):
     def __init__(self, name: str) -> None:
         msg = "unknown transformation schema: {}".format(name)
         super().__init__(msg)
+
+
+class BadConfigurationException(DarjeelingError):
+    """
+    An illegal configuration file was provided to Darjeeling.
+    """
+    def __init__(self, reason: str) -> None:
+        msg = "bad configuration file: {}".format(reason)
+        super().__init__(msg)
