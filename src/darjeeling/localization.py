@@ -1,4 +1,8 @@
-__all__ = ['Metric', 'Localization']
+__all__ = [
+    'Metric',
+    'Localization',
+    'genprog'
+]
 
 from typing import Dict, Callable, List, Iterator, FrozenSet, Sequence
 import json
@@ -17,6 +21,15 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 Metric = Callable[[int, int, int, int], float]
+
+
+def genprog(ep: int, np: int, ef: int, nf: int) -> float:
+    if nf == 0:
+        return 0
+    if ep == 0:
+        return 1.0
+    else:
+        return 0.0
 
 
 class Localization(object):
