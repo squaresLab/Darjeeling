@@ -4,7 +4,8 @@ __all__ = [
     'genprog',
     'ochiai',
     'ample',
-    'tarantula'
+    'tarantula',
+    'jaccard'
 ]
 
 from typing import Dict, Callable, List, Iterator, FrozenSet, Sequence
@@ -42,6 +43,10 @@ def ochiai(ep: int, np: int, ef: int, nf: int) -> float:
 
 def ample(ep: int, np: int, ef: int, nf: int) -> float:
     return abs((ef / (ef + nf)) - (ep / (ep + np)))
+
+
+def jaccard(ep: int, np: int, ef: int, nf: int) -> float:
+    return ef / (ef + nf + ep)
 
 
 def tarantula(ep: int, np: int, ef: int, nf: int) -> float:
