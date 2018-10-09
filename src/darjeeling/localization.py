@@ -1,10 +1,12 @@
 __all__ = [
     'Metric',
     'Localization',
-    'genprog'
+    'genprog',
+    'ochiai'
 ]
 
 from typing import Dict, Callable, List, Iterator, FrozenSet, Sequence
+import math
 import json
 import random
 import bisect
@@ -30,6 +32,10 @@ def genprog(ep: int, np: int, ef: int, nf: int) -> float:
         return 1.0
     else:
         return 0.0
+
+
+def ochiai(ep: int, np: int, ef: int, nf: int) -> float:
+    return ef / math.sqrt((ef + ep) * (ef + nf))
 
 
 class Localization(object):
