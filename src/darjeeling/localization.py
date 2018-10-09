@@ -2,7 +2,8 @@ __all__ = [
     'Metric',
     'Localization',
     'genprog',
-    'ochiai'
+    'ochiai',
+    'ample'
 ]
 
 from typing import Dict, Callable, List, Iterator, FrozenSet, Sequence
@@ -36,6 +37,10 @@ def genprog(ep: int, np: int, ef: int, nf: int) -> float:
 
 def ochiai(ep: int, np: int, ef: int, nf: int) -> float:
     return ef / math.sqrt((ef + ep) * (ef + nf))
+
+
+def ample(ep: int, np: int, ef: int, nf: int) -> float:
+    return abs((ef / (ef + nf)) - (ep / (ep + np)))
 
 
 class Localization(object):
