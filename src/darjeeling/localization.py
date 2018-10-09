@@ -3,7 +3,8 @@ __all__ = [
     'Localization',
     'genprog',
     'ochiai',
-    'ample'
+    'ample',
+    'tarantula'
 ]
 
 from typing import Dict, Callable, List, Iterator, FrozenSet, Sequence
@@ -41,6 +42,13 @@ def ochiai(ep: int, np: int, ef: int, nf: int) -> float:
 
 def ample(ep: int, np: int, ef: int, nf: int) -> float:
     return abs((ef / (ef + nf)) - (ep / (ep + np)))
+
+
+def tarantula(ep: int, np: int, ef: int, nf: int) -> float:
+    top = ef / (ef + nf)
+    br = ep / (ep + np)
+    bottom = top + br
+    return top / bottom
 
 
 class Localization(object):
