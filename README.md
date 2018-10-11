@@ -33,16 +33,30 @@ must also be installed; Darjeeling will not work with older versions of Python
 
 ### Optional Extras
 
+We strongly recommend that you install either
+[virtualenv](https://virtualenv.pypa.io/en/stable/) or
+[pipenv](https://pipenv.readthedocs.io/en/latest/) to contain your installation
+of Darjeeling and to avoid conflicting with system packages. Both of packages
+can be installed via `pip` as follows:
+
+```
+$ pip install virtualenv
+$ pip install pipenv
+```
+
 ### Darjeeling
 
-We recommend that you use `pipenv` to install Darjeeling, although `pip3` or
-`easy_install` may be used instead:
-
 ```
-$ pipenv install darjeeling
+$ venv .
+(venv) $ pipenv install darjeeling
 ```
 
-Darjeeling supports Python >= 3.5.
+Alternatively, to install from source, execute the following inside the virtual
+environment:
+
+```
+(venv) $ pip install .
+```
 
 ## Usage
 
