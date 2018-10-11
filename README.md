@@ -31,6 +31,10 @@ Python 3.5 or greater and [pip3](https://pip.pypa.io/en/stable/installing/)
 must also be installed; Darjeeling will not work with older versions of Python
 3 nor will it work with any versions of Python 2.
 
+To unlock all of Darjeeling's features, including template-based repair,
+[Rooibos](https://github.com/squaresLab/Rooibos) and
+[Rooibosd](https://github.com/squaresLab/rooibosd) must be installed.
+
 ### Optional Extras
 
 We strongly recommend that you install either
