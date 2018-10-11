@@ -23,9 +23,9 @@ framework for composing and executing repair algorithms: Darjeeling.
 ### Prerequisites
 
 To use Darjeeling, 
-`Docker <https://docs.docker.com/install/linux/docker-ce/ubuntu/>`_ must be
+[Docker](https://docs.docker.com/install/linux/docker-ce/ubuntu) must be
 installed, and your user account must be a member of the `docker` group in
-order `to avoid problems related to insufficient privileges <https://docs.docker.com/install/linux/linux-postinstall>`_
+order [to avoid problems related to insufficient privileges](https://docs.docker.com/install/linux/linux-postinstall)
 .
 
 ### Optional Extras
