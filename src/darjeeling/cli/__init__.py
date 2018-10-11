@@ -61,13 +61,19 @@ class BaseController(cement.Controller):
              {'dest': 'terminate_early',
               'action': 'store_false',
               'help': ('continue to search for patches after an acceptable '
-                       ' patch has been discovered.')})
+                       ' patch has been discovered.')}),
+            (['--threads'],
+             {'dest': 'threads',
+              'type': int,
+              'help': ('number of threads over which the repair workload '
+                       'should be distributed')})
         ]
     )
     def repair(self) -> None:
         filename = self.app.pargs.filename  # type: str
         seed = self.app.pargs.seed  # type: Optional[int]
         terminate_early = self.app.pargs.terminate_early  # type: bool
+        threads = self.app.pargs.threads  # type: Optional[int]
         limit_candidates = \
             self.app.pargs.limit_candidates  # type: Optional[int]
 
@@ -79,6 +85,23 @@ class BaseController(cement.Controller):
             logger.info("search will continue after an acceptable patch has been discovered")
         else:
             logger.info("search will terminate when an acceptable patch has been discovered")
+
+        # how many threads should we use?
+        if threads is not None:
+            logger.info("using threads override: %d threads", threads)
+        elif 'threads' in yml:
+            if not isinstance(yml['threads'], int):
+                m = "'threads' property should be an int"
+                raise BadConfigurationException(m)
+            threads = yml['threads']
+            logger.info("using threads specified by configuration: %d threads",
+                        threads)
+        else:
+            threads = 1
+            logger.info("using default number of threads: %d", threads)
+        if threads < 1:
+            m = "number of threads must be greater than or equal to 1."
+            raise BadConfigurationException(m)
 
         # determine the limit on the number of candidate repairs
         if limit_candidates is not None:
