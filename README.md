@@ -20,14 +20,70 @@ framework for composing and executing repair algorithms: Darjeeling.
 
 ## Installation
 
-We recommend that you use `pipenv` to install Darjeeling, although `pip3` or
-`easy_install` may be used instead:
+### Prerequisites
+
+To use Darjeeling, 
+[Docker](https://docs.docker.com/install/linux/docker-ce/ubuntu) must be
+installed on your machine, and your user account must be a member of the
+`docker` group in order [to avoid problems related to insufficient privileges](https://docs.docker.com/install/linux/linux-postinstall)
+.
+Python 3.5 or greater and [pip3](https://pip.pypa.io/en/stable/installing/)
+must also be installed; Darjeeling will not work with older versions of Python
+3 nor will it work with any versions of Python 2.
+
+To unlock all of Darjeeling's features, including template-based repair,
+[Rooibos](https://github.com/squaresLab/Rooibos) and
+[Rooibosd](https://github.com/squaresLab/rooibosd) must be installed.
+
+### Optional Extras
+
+We strongly recommend that you install either
+[virtualenv](https://virtualenv.pypa.io/en/stable/) or
+[pipenv](https://pipenv.readthedocs.io/en/latest/) to contain your installation
+of Darjeeling and to avoid conflicting with system packages. Both of packages
+can be installed via `pip` as follows:
 
 ```
-$ pipenv install darjeeling
+$ pip install virtualenv
+$ pip install pipenv
 ```
 
-Darjeeling supports Python >= 3.5.
+Using `virtualenv`, you should create a virtual environment for Darjeeling
+either in a new directory or at the root of your clone of this repository:
+
+```
+$ virtualenv name_of_directory
+```
+
+To enter the virtual environment:
+
+```
+$ cd name_of_directory
+$ source activate
+(venv) $ ...
+```
+
+To exit the virtual environment:
+
+```
+(venv) $ deactivate
+```
+
+### Darjeeling
+
+To install the latest stable release of Darjeeling from PyPI from inside the
+virtual environment:
+
+```
+(venv) $ pipenv install darjeeling
+```
+
+Alternatively, to install from source, execute the following inside the virtual
+environment:
+
+```
+(venv) $ pip install .
+```
 
 ## Usage
 
