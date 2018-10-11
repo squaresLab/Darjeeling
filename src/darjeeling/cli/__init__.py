@@ -7,11 +7,13 @@ import cement
 import yaml
 import kaskara
 
+from ..candidate import all_single_edit_patches
 from ..transformation import find_all as find_all_transformations
 from ..transformation.classic import DeleteStatement, \
                                      ReplaceStatement, \
                                      PrependStatement
 from ..exceptions import BadConfigurationException
+from ..searcher import Searcher
 from ..problem import Problem
 from ..localization import Localization, \
                            ample, \
@@ -54,17 +56,29 @@ class BaseController(cement.Controller):
              {'dest': 'limit_candidates',
               'type': int,
               'help': ('the maximum number of candidate patches that may be '
-                       'considered by the search.')})
+                       'considered by the search.')}),
+            (['--continue'],
+             {'dest': 'terminate_early',
+              'action': 'store_false',
+              'help': ('continue to search for patches after an acceptable '
+                       ' patch has been discovered.')})
         ]
     )
     def repair(self) -> None:
         filename = self.app.pargs.filename  # type: str
         seed = self.app.pargs.seed  # type: Optional[int]
+        terminate_early = self.app.pargs.terminate_early  # type: bool
         limit_candidates = \
             self.app.pargs.limit_candidates  # type: Optional[int]
 
         with open(filename, 'r') as f:
             yml = yaml.load(f)
+
+        # should we continue to search for repairs?
+        if not terminate_early:
+            logger.info("search will continue after an acceptable patch has been discovered")
+        else:
+            logger.info("search will terminate when an acceptable patch has been discovered")
 
         # determine the limit on the number of candidate repairs
         if limit_candidates is not None:
@@ -219,17 +233,20 @@ class BaseController(cement.Controller):
             logger.info("constructed transformation database: %d transformations",  # noqa: pycodestyle
                         len(tx))
 
-            # transformations = index_by_line_and_type()
-            # transformations = list(sample(localization, grouped))
-
             # find all single-edit patches
-            # candidates = all_single_edit_patches(transformations)
+            logger.info("constructing all single-edit patches...")
+            candidates = list(all_single_edit_patches(tx))
+            logger.info("constructed %d single-edit patches", len(candidates))
 
             # build the search strategy
-            #search = Searcher(bugzoo=problem.bugzoo,
-            #                  problem=problem,
-            #                  candidates=candidates,
-            #                  threads=threads,
+            search = Searcher(bugzoo=problem.bugzoo,
+                              problem=problem,
+                              candidates=candidates,
+                              threads=threads)
+            # TODO all patches or first?
+            # for patch in search:
+            #     pass
+
             #                  # candidate_limit=candidate_limit,
             #                  # time_limit=time_limit)
 
