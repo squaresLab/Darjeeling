@@ -24,6 +24,7 @@ setup(
         'boggart>=0.1.14',
         'kaskara>=0.0.4',
         'attrs>=17.2.0',
+        'cement>=3.0.0',
         'requests',
         'flask'
     ],
@@ -31,4 +32,17 @@ setup(
     packages=find_packages('src'),
     package_dir={'': 'src'},
     py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
+    classifiers=[
+        'Natural Language :: English',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7'
+    ],
+    entry_points = {
+        'console_scripts': [
+            'darjeeling = darjeeling.cli:main',
+        ]
+    }
 )

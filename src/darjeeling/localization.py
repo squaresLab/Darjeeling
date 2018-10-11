@@ -1,6 +1,15 @@
-__all__ = ['Metric', 'Localization']
+__all__ = [
+    'Metric',
+    'Localization',
+    'genprog',
+    'ochiai',
+    'ample',
+    'tarantula',
+    'jaccard'
+]
 
 from typing import Dict, Callable, List, Iterator, FrozenSet, Sequence
+import math
 import json
 import random
 import bisect
@@ -17,6 +26,34 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 Metric = Callable[[int, int, int, int], float]
+
+
+def genprog(ep: int, np: int, ef: int, nf: int) -> float:
+    if nf == 0:
+        return 0
+    if ep == 0:
+        return 1.0
+    else:
+        return 0.0
+
+
+def ochiai(ep: int, np: int, ef: int, nf: int) -> float:
+    return ef / math.sqrt((ef + ep) * (ef + nf))
+
+
+def ample(ep: int, np: int, ef: int, nf: int) -> float:
+    return abs((ef / (ef + nf)) - (ep / (ep + np)))
+
+
+def jaccard(ep: int, np: int, ef: int, nf: int) -> float:
+    return ef / (ef + nf + ep)
+
+
+def tarantula(ep: int, np: int, ef: int, nf: int) -> float:
+    top = ef / (ef + nf)
+    br = ep / (ep + np)
+    bottom = top + br
+    return top / bottom
 
 
 class Localization(object):
