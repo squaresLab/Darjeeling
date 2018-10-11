@@ -19,6 +19,7 @@ from ..localization import Localization, \
                            jaccard, \
                            ochiai, \
                            tarantula
+from ..snippet import SnippetDatabase
 from ..settings import Settings
 from .. import localization
 
@@ -204,10 +205,13 @@ class BaseController(cement.Controller):
                               analysis=analysis,
                               settings=settings)
 
-            # TODO build snippet database
-            logger.info("constructing database of donor snippets")
-
-            logger.info("constructed database of donor snippets")
+            # build snippet database
+            logger.info("constructing database of donor snippets...")
+            snippets = SnippetDatabase.from_statements(
+                analysis.statements,
+                use_canonical_form=settings.ignore_string_equivalent_snippets)
+            logger.info("constructed database of donor snippets: %d snippets",
+                        len(snippets))
 
             # FIXME index
             # build and index transformations
