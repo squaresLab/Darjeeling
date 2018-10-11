@@ -44,9 +44,31 @@ $ pip install virtualenv
 $ pip install pipenv
 ```
 
+Using `virtualenv`, you should create a virtual environment for Darjeeling
+either in a new directory or at the root of your clone of this repository:
+
+```
+$ virtualenv name_of_directory
+```
+
+To enter the virtual environment:
+
+```
+$ cd name_of_directory
+$ source activate
+(venv) $ ...
+```
+
+To exit the virtual environment:
+
+```
+(venv) $ deactivate
+```
+
 ### Darjeeling
 
-To install the latest stable release of Darjeeling from PyPI:
+To install the latest stable release of Darjeeling from PyPI from inside the
+virtual environment:
 
 ```
 (venv) $ pipenv install darjeeling
