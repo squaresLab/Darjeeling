@@ -46,8 +46,9 @@ $ pip install pipenv
 
 ### Darjeeling
 
+To install the latest stable release of Darjeeling from PyPI:
+
 ```
-$ venv .
 (venv) $ pipenv install darjeeling
 ```
 
