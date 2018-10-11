@@ -6,9 +6,11 @@ import sys
 import bugzoo
 import cement
 import yaml
-import kaskara
+import kaskaraa
+from bugzoo.core import FileLine
 
 from ..candidate import all_single_edit_patches
+from ..candidate import Candidate
 from ..transformation import find_all as find_all_transformations
 from ..transformation.classic import DeleteStatement, \
                                      ReplaceStatement, \
