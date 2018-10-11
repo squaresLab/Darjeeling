@@ -87,7 +87,6 @@ environment:
 (venv) $ pip install .
 ```
 
-
 ## Usage
 
 Provide a "Hello World" example.
