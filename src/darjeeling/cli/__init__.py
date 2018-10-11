@@ -213,9 +213,12 @@ class BaseController(cement.Controller):
             logger.info("constructed database of donor snippets: %d snippets",
                         len(snippets))
 
-            # FIXME index
-            # build and index transformations
-            # tx = find_all_transformations(problem, lines, snippets, schemas)
+            # FIXME build and index transformations
+            logger.info("constructing transformation database...")
+            tx = list(find_all_transformations(problem, lines, snippets, schemas))
+            logger.info("constructed transformation database: %d transformations",  # noqa: pycodestyle
+                        len(tx))
+
             # transformations = index_by_line_and_type()
             # transformations = list(sample(localization, grouped))
 
