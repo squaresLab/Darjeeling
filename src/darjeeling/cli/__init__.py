@@ -2,11 +2,12 @@ from typing import List, Optional
 import logging
 from datetime import datetime
 import sys
+import random
 
 import bugzoo
 import cement
 import yaml
-import kaskaraa
+import kaskara
 from bugzoo.core import FileLine
 
 from ..candidate import all_single_edit_patches
@@ -138,9 +139,13 @@ class BaseController(cement.Controller):
         # no seed override or provided in provided
         # use current date/time
         elif seed is None:
-            seed = int(datetime.now())
+            random.seed(datetime.now())
+            seed = random.randint(0, sys.maxsize)
             logger.info("using random number generator seed based on current date and time: %d",  # noqa: pycodestyle
                         seed)
+
+        # seed the RNG
+        random.seed(seed)
 
         # build the settings
         opts = yml.get('optimizations', {})
