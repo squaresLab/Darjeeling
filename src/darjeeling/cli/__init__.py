@@ -5,7 +5,9 @@ import sys
 import bugzoo
 import cement
 import yaml
+import kaskara
 
+from ..transformation import find_all as find_all_transformations
 from ..transformation.classic import DeleteStatement, \
                                      ReplaceStatement, \
                                      PrependStatement
@@ -46,15 +48,34 @@ class BaseController(cement.Controller):
                        'program and how it should be repaired.') }),
             (['--seed'],
              {'help': 'random number generator seed',
-              'type': int})
+              'type': int}),
+            (['--max-candidates'],
+             {'dest': 'limit_candidates',
+              'type': int,
+              'help': ('the maximum number of candidate patches that may be '
+                       'considered by the search.')})
         ]
     )
     def repair(self) -> None:
-        filename = self.app.pargs.filename
-        seed = self.app.pargs.seed
+        filename = self.app.pargs.filename  # type: str
+        seed = self.app.pargs.seed  # type: Optional[int]
+        limit_candidates = \
+            self.app.pargs.limit_candidates  # type: Optional[int]
 
         with open(filename, 'r') as f:
             yml = yaml.load(f)
+
+        # determine the limit on the number of candidate repairs
+        if limit_candidates is not None:
+            logger.info("using candidate limit override: %d candidates",
+                        limit_candidates)
+        elif 'limits' in yml and 'candidates' in yml['limits']:
+            if not isinstance(yml['limits']['candidates'], int):
+                m = "'candidates' property in 'limits' section should be an int"
+                raise BadConfigurationException(m)
+            limit_candidates = yml['limits']['candidates']
+            logger.info("using candidate limit specified by configuration: %d candidates",  # noqa: pycodestyle
+                        limit_candidates)
 
         # seed override
         if seed is not None:
@@ -167,17 +188,43 @@ class BaseController(cement.Controller):
             localization = Localization.from_coverage(coverage, metric)
             logger.info("computed fault localization:\n%s", localization)
 
-            # TODO compute analysis
-            analysis = None
+            # determine implicated files and lines
+            files = localization.files
+            lines = list(localization)  # type: List[FileLine]
+
+            # compute analysis
+            analysis = kaskara.Analysis.build(client_bugzoo,
+                                              snapshot,
+                                              files)
 
             # build problem
             problem = Problem(client_bugzoo,
                               snapshot,
                               coverage,
-                              analysis,
+                              analysis=analysis,
                               settings=settings)
 
+            # TODO build snippet database
+            logger.info("constructing database of donor snippets")
 
+            logger.info("constructed database of donor snippets")
+
+            # FIXME index
+            # build and index transformations
+            # tx = find_all_transformations(problem, lines, snippets, schemas)
+            # transformations = index_by_line_and_type()
+            # transformations = list(sample(localization, grouped))
+
+            # find all single-edit patches
+            # candidates = all_single_edit_patches(transformations)
+
+            # build the search strategy
+            #search = Searcher(bugzoo=problem.bugzoo,
+            #                  problem=problem,
+            #                  candidates=candidates,
+            #                  threads=threads,
+            #                  # candidate_limit=candidate_limit,
+            #                  # time_limit=time_limit)
 
 
 class CLI(cement.App):
