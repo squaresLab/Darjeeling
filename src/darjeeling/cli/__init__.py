@@ -262,16 +262,34 @@ class BaseController(cement.Controller):
             logger.info("constructed %d single-edit patches", len(candidates))
 
             # build the search strategy
-            search = Searcher(bugzoo=problem.bugzoo,
-                              problem=problem,
-                              candidates=candidates,
-                              threads=threads)
-            # TODO all patches or first?
-            # for patch in search:
-            #     pass
+            # FIXME pass time limit
+            searcher = Searcher(bugzoo=problem.bugzoo,
+                                problem=problem,
+                                candidates=iter(candidates),
+                                threads=threads,
+                                candidate_limit=limit_candidates)
 
-            #                  # candidate_limit=candidate_limit,
-            #                  # time_limit=time_limit)
+            logger.info("beginning search process...")
+            patches = []  # type: List[Candidate]
+            if terminate_early:
+                try:
+                    patches.append(next(searcher))
+                except StopIteration:
+                    pass
+            else:
+                patches = list(searcher)
+            if not patches:
+                logger.info("failed to find a patch")
+
+            # report stats
+            num_test_evals = searcher.num_test_evals
+            num_candidate_evals = searcher.num_candidate_evals
+            time_running_mins = searcher.time_running.seconds / 60
+
+            logger.info("found %d plausible patches", len(patches))
+            logger.info("time taken: %.2f minutes", time_running_mins)
+            logger.info("# test evaluations: %d", searcher.num_test_evals)
+            logger.info("# candidate evaluations: %d", searcher.num_candidate_evals)
 
 
 class CLI(cement.App):
@@ -283,7 +301,8 @@ class CLI(cement.App):
 def main():
     log_to_stdout = logging.StreamHandler()
     log_to_stdout.setLevel(logging.DEBUG)
-    logger.addHandler(log_to_stdout)
+    # logger.addHandler(log_to_stdout)
+    logging.getLogger('darjeeling').addHandler(log_to_stdout)
 
     with CLI() as app:
         app.run()
