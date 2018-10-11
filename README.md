@@ -24,9 +24,12 @@ framework for composing and executing repair algorithms: Darjeeling.
 
 To use Darjeeling, 
 [Docker](https://docs.docker.com/install/linux/docker-ce/ubuntu) must be
-installed, and your user account must be a member of the `docker` group in
-order [to avoid problems related to insufficient privileges](https://docs.docker.com/install/linux/linux-postinstall)
+installed on your machine, and your user account must be a member of the
+`docker` group in order [to avoid problems related to insufficient privileges](https://docs.docker.com/install/linux/linux-postinstall)
 .
+Python 3.5 or greater and [pip3](https://pip.pypa.io/en/stable/installing/)
+must also be installed; Darjeeling will not work with older versions of Python
+3 nor will it work with any versions of Python 2.
 
 ### Optional Extras
 
