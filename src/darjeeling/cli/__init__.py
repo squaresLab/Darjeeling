@@ -1,5 +1,6 @@
+from typing import List, Optional
 import logging
-import datetime
+from datetime import datetime
 import sys
 
 import bugzoo
