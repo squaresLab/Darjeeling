@@ -159,7 +159,39 @@ class Searcher(object):
         self.__error_occurred = True
 
     def __iter__(self) -> Iterator[Candidate]:
-        return self
+        # time at which the last repair was found or the search was started
+        self.__time_last_repair = timer()
+        self.__paused_timer = False
+        self.__offset_timer = 0.0
+
+        for _ in self.__num_threads:
+            try:
+                self.evaluate(next(self.__candidates))
+            except StopIteration:
+                logger.info("all candidate patches have been exhausted")
+                self.__exhausted = True
+                break
+
+        for candidate, outcome in evaluator.as_completed():
+            if outcome.is_repair:
+                # increment time_offset
+                time_now = timer()
+                self.__time_offset += time_now - self.__time_last_repair
+                self.__time_last_repair = time_now
+                self.__timer_is_paused = True
+
+                yield candidate
+
+                time_since_last_repair = timer()
+                self.__paused = False
+
+            if not self.__exhausted:
+                try:
+                    self.evaluate(next(self.__candidates))
+                except StopIteration:
+                    logger.info("all candidate patches have been exhausted")
+                    self.__exhausted = True
+                    break
 
     def __next__(self) -> Candidate:
         """
@@ -173,6 +205,7 @@ class Searcher(object):
                 been exhausted.
         """
         self.__time_iteration_begun = timer()  # type: ignore
+        for candidate, outcome:
 
         duration_iteration = timer() - self.__time_iteration_begun  # type: ignore
         self.__time_running += datetime.timedelta(seconds=duration_iteration)
