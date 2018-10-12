@@ -18,6 +18,7 @@ class GenProgStrategy(Strategy):
     population_size = attr.ib(type=int)
     num_generations = attr.ib(type=int)
     rate_crossover = attr.ib(type=float)
+    rate_mutation = attr.ib(type=float)
     tournament_size = attr.ib(type=int)
 
     def initial(self) -> Population:
@@ -52,8 +53,11 @@ class GenProgStrategy(Strategy):
     def mutate(self, population: Population) -> Population:
         offspring = Population()
         for ind in offspring:
-            t = self.choose_transformation()
-            child = frozenset(ind.transformations | {t})
+            child = ind
+            if random.random() <= self.rate_mutation:
+                mutation = self.choose_transformation()
+                tx = frozenset(child.transformations | {mutation})
+                child = Individual(tx)
             offspring.append(child)
         return offspring
 
