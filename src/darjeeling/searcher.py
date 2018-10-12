@@ -21,10 +21,6 @@ logger.setLevel(logging.DEBUG)
 __all__ = ['Searcher']
 
 
-class Shutdown(Exception):
-    pass
-
-
 class Searcher(object):
     def __init__(self,
                  bugzoo: bugzoo.BugZoo,
