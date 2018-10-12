@@ -156,7 +156,7 @@ class Searcher(object):
         self.__stopwatch.reset()
         self.__stopwatch.start()
 
-        for _ in self.__evaluator.num_workers:
+        for _ in range(self.__evaluator.num_workers):
             try:
                 evaluate(next(self.__candidates))
             except StopIteration:
