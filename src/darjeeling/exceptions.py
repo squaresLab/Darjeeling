@@ -4,6 +4,12 @@ class DarjeelingError(Exception):
     """
 
 
+class SearchAlreadyStarted(DarjeelingError):
+    """
+    The searcher has already begun searching for patches.
+    """
+
+
 class NoFailingTests(DarjeelingError):
     """
     The program under repair has no failing tests and therefore does not

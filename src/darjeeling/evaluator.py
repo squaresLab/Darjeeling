@@ -1,6 +1,6 @@
 __all__ = ['Evaluator']
 
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 from timeit import default_timer as timer
 from concurrent.futures import Future
 import logging
@@ -19,24 +19,30 @@ logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
 
-# TODO throw exception when resources are exhausted
-
-
 @attr.s(frozen=True)
 class Evaluator(object):
     def __init__(self,
                  client_bugzoo: BugZooClient,
                  problem: Problem,
-                 num_workers: int = 1
+                 *,
+                 num_workers: int = 1,
+                 outcomes: Optional[OutcomeManager] = None
                  ) -> None:
         self.__bugzoo = client_bugzoo
         self.__problem = problem
         self.__executor = \
             concurrent.futures.ThreadPoolExecutor(max_workers=num_workers)
         self.__num_workers = num_workers
-        self.outcomes = OutcomeManager()
+        if outcomes:
+            self.__outcomes = outcomes
+        else:
+            self.__outcomes = OutcomeManager()
 
         self.__counter_tests = 0
+
+    @property
+    def outcomes(self) -> OutcomeManager:
+        return self.__outcomes
 
     @property
     def num_workers(self) -> int:
