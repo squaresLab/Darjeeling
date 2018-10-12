@@ -6,7 +6,6 @@ from concurrent.futures import Future
 import logging
 import concurrent.futures
 
-import attr
 from bugzoo import Client as BugZooClient
 from bugzoo.core import FileLine
 
@@ -19,7 +18,6 @@ logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
 
-@attr.s(frozen=True)
 class Evaluator(object):
     def __init__(self,
                  client_bugzoo: BugZooClient,
@@ -125,5 +123,5 @@ class Evaluator(object):
 
     def submit(self,
                candidate: Candidate
-               ) -> Future[Tuple[Candidate, CandidateOutcome]]:
+               ) -> 'Future[Tuple[Candidate, CandidateOutcome]]':
         return self.__executor.submit(self.evaluate, candidate)
