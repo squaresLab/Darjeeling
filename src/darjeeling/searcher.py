@@ -12,7 +12,8 @@ from .core import FileLine
 from .candidate import Candidate
 from .problem import Problem
 from .outcome import OutcomeManager
-from .exceptions import BuildFailure
+from .evaluator import Evaluator
+from .exceptions import BuildFailure, SearchAlreadyStarted
 from .util import Stopwatch
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
@@ -46,7 +47,7 @@ class Searcher(object):
             candidate_limit: an optional limit on the number of candidate
                 patches that may be generated.
         """
-        logger.debug("constructed searcher")
+        logger.debug("constructing searcher")
         assert time_limit is None or time_limit > datetime.timedelta(), \
             "if specified, time limit should be greater than zero."
 
@@ -55,10 +56,14 @@ class Searcher(object):
         self.__candidates = candidates
         self.__time_limit = time_limit
         self.__candidate_limit = candidate_limit
-        self.__num_threads = threads
         self.__outcomes = OutcomeManager()
+        self.__evaluator = Evaluator(bugzoo,
+                                     problem,
+                                     num_workers=threads,
+                                     outcomes=self.__outcomes)
 
         self.__stopwatch = Stopwatch()
+        self.__started = False
         self.__stopped = False
         self.__exhausted = False
         self.__counter_candidates = 0
@@ -103,7 +108,7 @@ class Searcher(object):
         The number of test case evaluations that have been performed during
         this search process.
         """
-        return self.__counter_tests
+        return self.__evaluator.num_test_evals
 
     @property
     def num_candidate_evals(self) -> int:
@@ -111,7 +116,7 @@ class Searcher(object):
         The number of candidate patches that have been evaluated over the
         course of this search process.
         """
-        return self.__counter_candidates
+        return self.__evaluator.num_candidate_evals
 
     @property
     def time_limit(self) -> Optional[datetime.timedelta]:
@@ -133,9 +138,15 @@ class Searcher(object):
         Returns a lazy stream of acceptable patches.
 
         Raises:
+            SearchAlreadyStarted: if the search has already been initiated.
             StopIteration: if the search space or available resources have
                 been exhausted.
         """
+        if self.__started:
+            raise SearchAlreadyStarted
+        self.__started = True
+
+        evaluate = self.__evaluator.submit
         reached_time_limit = lambda: \
             self.time_limit and self.time_running > self.time_limit
         reached_candidate_limit = lambda: \
@@ -145,9 +156,9 @@ class Searcher(object):
         self.__stopwatch.reset()
         self.__stopwatch.start()
 
-        for _ in self.__num_threads:
+        for _ in self.__evaluator.num_workers:
             try:
-                self.evaluate(next(self.__candidates))
+                evaluate(next(self.__candidates))
             except StopIteration:
                 logger.info("all candidate patches have been exhausted")
                 self.__exhausted = True
@@ -172,7 +183,7 @@ class Searcher(object):
                 logger.info("candidate limit has been reached: stopping search.")  # noqa: pycodestyle
                 self.__stopped = True
             try:
-                self.evaluate(next(self.__candidates))
+                evaluate(next(self.__candidates))
             except StopIteration:
                 logger.info("all candidate patches have been exhausted")
                 self.__exhausted = self.__stopped = True
