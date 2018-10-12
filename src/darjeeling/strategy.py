@@ -15,6 +15,21 @@ class Strategy(object):
 class ExhaustiveStrategy(Strategy):
     pass
 
+    def run(self) -> Iterator[Candidate]:
+        candidates = self  # Iterable[Candidate]
+        for _ in self.num_workers:
+            self.evaluate(next(candidates))
+
+        for candidate, outcome in evaluator.as_completed():
+            if outcome.is_repair:
+                yield candidate
+
+            # request next candidate: read from stream?
+            try:
+                self.evaluate(next(candidates))
+            except StopIteration:
+                pass
+
 
 @attr.ib(frozen=True)
 class RSRepairStrategy(Strategy):
