@@ -59,11 +59,10 @@ class Searcher(object):
         self.__outcomes = OutcomeManager()
 
         self.__stopwatch = Stopwatch()
+        self.__stopped = False
+        self.__exhausted = False
         self.__counter_candidates = 0
         self.__counter_tests = 0
-        self.__exhausted_candidates = False
-        self.__error_occurred = False
-        self.__searching = False
         self.__history = []  # type: List[Candidate]
         logger.debug("constructed searcher")
 
@@ -86,10 +85,17 @@ class Searcher(object):
     @property
     def exhausted(self) -> bool:
         """
-        Indicates whether or not the resources available to this searcher have
-        been exhausted.
+        Indicates whether or not the space of all possible repairs has been
+        exhausted.
         """
         return self.__exhausted
+
+    @property
+    def stopped(self) -> bool:
+        """
+        Indicates whether or not the search has been terminated.
+        """
+        return self.__stopped
 
     @property
     def num_test_evals(self) -> int:
@@ -130,8 +136,15 @@ class Searcher(object):
             StopIteration: if the search space or available resources have
                 been exhausted.
         """
+        reached_time_limit = lambda: \
+            self.time_limit and self.time_running > self.time_limit
+        reached_candidate_limit = lambda: \
+            self.__candidate_limit and self.__counter_candidates > self.__candidate_limit
+        # TODO implement test eval limit
+
         self.__stopwatch.reset()
         self.__stopwatch.start()
+
         for _ in self.__num_threads:
             try:
                 self.evaluate(next(self.__candidates))
@@ -140,18 +153,28 @@ class Searcher(object):
                 self.__exhausted = True
                 break
 
+        # as one candidate is evaluated, begin evaluating another
         for candidate, outcome in evaluator.as_completed():
             if outcome.is_repair:
                 self.__stopwatch.stop()
                 yield candidate
                 self.__stopwatch.start()
 
-            if not self.__exhausted:
-                try:
-                    self.evaluate(next(self.__candidates))
-                except StopIteration:
-                    logger.info("all candidate patches have been exhausted")
-                    self.__exhausted = True
-                    break
+            # if the search has been stopped, don't evaluate another candidate
+            if self.__exhausted:
+                continue
+
+            # fetch the next candidate repair
+            if reached_time_limit():
+                logger.info("time limit has been reached: stopping search.")  # noqa: pycodestyle
+                self.__stopped = True
+            if reached_candidate_limit():
+                logger.info("candidate limit has been reached: stopping search.")  # noqa: pycodestyle
+                self.__stopped = True
+            try:
+                self.evaluate(next(self.__candidates))
+            except StopIteration:
+                logger.info("all candidate patches have been exhausted")
+                self.__exhausted = self.__stopped = True
 
         self.__stopwatch.stop()
