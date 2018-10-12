@@ -32,8 +32,9 @@ class Stopwatch(object):
         """
         Freezes the timer.
         """
-        self.__offset = timer() - self.__time_start
-        self.__paused = True
+        if not self.__paused:
+            self.__offset = timer() - self.__time_start
+            self.__paused = True
 
     def start(self) -> None:
         """
