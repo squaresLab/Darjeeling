@@ -18,3 +18,49 @@ def get_lines(fn: str) -> List[str]:
     Attempts to return a list of all the lines in a given source code file.
     """
     return [l.rstrip('\n') for l in get_file_contents(fn).splitlines()]
+
+
+class Stopwatch(object):
+    def __init__(self) -> None:
+        """
+        Constructs a new, paused timer.
+        """
+        self.reset()
+
+    def stop(self) -> None:
+        """
+        Freezes the timer.
+        """
+        self.__offset = timer() - self.__time_start
+        self.__paused = True
+
+    def start(self) -> None:
+        """
+        Resumes the timer.
+        """
+        self.__time_start = timer()
+        self.__paused = False
+
+    def reset(self) -> None:
+        """
+        Resets and freezes the timer.
+        """
+        self.__offset = 0.0
+        self.__paused = True
+
+    @property
+    def paused(self) -> bool:
+        """
+        Returns True if this stopwatch is paused, or False if not.
+        """
+        return self.__paused
+
+    @property
+    def duration(self) -> float:
+        """
+        The number of seconds that the stopwatch has been running.
+        """
+        d = self.__offset
+        if not self.paused:
+            d += timer() - self.__time_start
+        return d
