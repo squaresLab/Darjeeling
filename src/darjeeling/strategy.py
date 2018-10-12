@@ -62,6 +62,20 @@ class GenProgStrategy(Strategy):
         return offspring
 
     def crossover(self, pop: Population) -> Population:
+        def one_point_crossover(px: Individual, py: Individual) -> Individual:
+            tx = list(px.transformations)
+            ty = list(py.transformations)
+
+            # TODO generate loci
+            lx = None
+            ly = None
+
+            # FIXME
+            cx = None
+            cy = None
+
+            return [Individual(cx), Individual(cy)]
+
         offspring = Population()
         pop = random.shuffle(pop)
         size = len(pop)
@@ -69,8 +83,7 @@ class GenProgStrategy(Strategy):
             parents = pop[i:i+n]
             offspring += parents
             if len(parents) == 2 and random.random() <= self.rate_crossover:
-                child = self.one_point_crossover(px, py)
-                offspring.append(child)
+                offspring += one_point_crossover(*parents)
         return offspring
 
     def run(self) -> Iterator[Candidate]:
