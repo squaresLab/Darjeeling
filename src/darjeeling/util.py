@@ -1,4 +1,5 @@
 from typing import List
+from timeit import default_timer as timer
 
 
 def get_file_contents(fn: str) -> str:
