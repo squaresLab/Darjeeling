@@ -39,6 +39,7 @@ class Evaluator(object):
             self.__outcomes = OutcomeManager()
 
         self.__counter_tests = 0
+        self.__counter_candidates = 0
 
     @property
     def outcomes(self) -> OutcomeManager:
@@ -48,7 +49,23 @@ class Evaluator(object):
     def num_workers(self) -> int:
         return self.__num_workers
 
+    @property
+    def num_test_evals(self) -> int:
+        """
+        The number of test case evaluations performed by this evaluator.
+        """
+        return self.__counter_tests
+
+    @property
+    def num_candidate_evals(self) -> int:
+        """
+        The number of candidate evaluations performed by this evaluator.
+        """
+        return self.__counter_candidates
+
     def _evaluate(self, candidate: Candidate) -> None:
+        self.__counter_candidates += 1
+
         patch = candidate.to_diff(self.__problem)
         line_coverage_by_test = self.__problem.coverage
         lines_changed = \
