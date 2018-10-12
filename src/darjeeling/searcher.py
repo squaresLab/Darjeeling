@@ -16,6 +16,7 @@ from .exceptions import BuildFailure
 from .util import Stopwatch
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
+logger.setLevel(logging.DEBUG)
 
 __all__ = ['Searcher']
 
