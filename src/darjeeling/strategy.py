@@ -66,20 +66,18 @@ class GenProgStrategy(Strategy):
             tx = list(px.transformations)
             ty = list(py.transformations)
 
-            # TODO generate loci
-            lx = None
-            ly = None
+            lx = random.randint(0, len(tx))
+            ly = random.randint(0, len(ty))
 
-            # FIXME
-            cx = None
-            cy = None
+            a, b = tx[:lx], tx[lx:]
+            c, d = ty[:ly], ty[ly:]
 
-            return [Individual(cx), Individual(cy)]
+            return [Individual(a + d),
+                    Individual(c + b)]
 
         offspring = Population()
         pop = random.shuffle(pop)
-        size = len(pop)
-        for i in range(0, size, 2):
+        for i in range(0, len(pop), 2):
             parents = pop[i:i+n]
             offspring += parents
             if len(parents) == 2 and random.random() <= self.rate_crossover:
