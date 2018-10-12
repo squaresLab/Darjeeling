@@ -165,7 +165,7 @@ class Searcher(object):
                 break
 
         # as one candidate is evaluated, begin evaluating another
-        for candidate, outcome in evaluator.as_completed():
+        for candidate, outcome in self.__evaluator.as_completed():
             if outcome.is_repair:
                 self.__stopwatch.stop()
                 yield candidate
