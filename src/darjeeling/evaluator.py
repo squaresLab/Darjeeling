@@ -1,22 +1,28 @@
 __all__ = ['Evaluator']
 
-from typing import Tuple
+from typing import Tuple, List
+from timeit import default_timer as timer
 from concurrent.futures import Future
 import logging
 import concurrent.futures
 
 import attr
 from bugzoo import Client as BugZooClient
+from bugzoo.core import FileLine
 
 from .candidate import Candidate
 from .outcome import CandidateOutcome, OutcomeManager
 from .problem import Problem
+from .exceptions import BuildFailure
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
 
-@attr.ib(frozen=True)
+# TODO throw exception when resources are exhausted
+
+
+@attr.s(frozen=True)
 class Evaluator(object):
     def __init__(self,
                  client_bugzoo: BugZooClient,
@@ -38,6 +44,9 @@ class Evaluator(object):
 
     def _evaluate(self, candidate: Candidate) -> None:
         patch = candidate.to_diff(self.__problem)
+        line_coverage_by_test = self.__problem.coverage
+        lines_changed = \
+            candidate.lines_changed(self.__problem)  # type: List[FileLine]
         logger.info("evaluating candidate: %s\n%s\n", candidate, patch)
 
         bz = self.__bugzoo
@@ -46,7 +55,9 @@ class Evaluator(object):
         try:
             container = self.__problem.build_patch(patch)
             logger.debug("built candidate: %s", candidate)
-            self.outcomes.record_build(candidate, True, timer() - time_build_start)
+            self.outcomes.record_build(candidate,
+                                       True,
+                                       timer() - time_build_start)
 
             # TODO perform test ordering
             logger.debug("executing tests for candidate: %s", candidate)
@@ -66,25 +77,28 @@ class Evaluator(object):
                 self.outcomes.record_test(candidate, test.name, outcome)
                 if not outcome.passed:
                     logger.debug("* test failed: %s (%s)", test.name, candidate)
-                    return True
+                    # TODO early termination?
+                    return
                 logger.debug("* test passed: %s (%s)", test.name, candidate)
 
         except BuildFailure:
             logger.debug("failed to build candidate: %s", candidate)
-            self.outcomes.record_build(candidate, False, timer() - time_build_start)
-            return True
+            self.outcomes.record_build(candidate,
+                                       False,
+                                       timer() - time_build_start)
         finally:
             logger.info("evaluated candidate: %s", candidate)
             if container:
                 del bz.containers[container.uid]
                 logger.debug("destroyed container for candidate: %s", candidate)
 
-    def evaluate(self, candidate: Candidate) -> CandidateOutcome:
+    def evaluate(self,
+                 candidate: Candidate
+                 ) -> Tuple[Candidate, CandidateOutcome]:
         if candidate in self.outcomes:
-            return self.outcomes[candidate]
-
+            return (candidate, self.outcomes[candidate])
         self._evaluate(candidate)
-        return self.outcomes[candidate]
+        return (candidate, self.outcomes[candidate])
 
     def submit(self,
                candidate: Candidate
