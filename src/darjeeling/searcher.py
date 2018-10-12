@@ -1,6 +1,5 @@
 from typing import Iterable, Iterator, Optional, List
 from mypy_extensions import NoReturn
-from timeit import default_timer as timer
 import logging
 import datetime
 import threading
@@ -14,6 +13,7 @@ from .candidate import Candidate
 from .problem import Problem
 from .outcome import OutcomeManager
 from .exceptions import BuildFailure
+from .util import Stopwatch
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 
@@ -61,17 +61,12 @@ class Searcher(object):
         self.__num_threads = threads
         self.__outcomes = OutcomeManager()
 
-        # records the time at which the current iteration begun
-        self.__time_iteration_begun = None  # type: ignore
-
-        self.__lock_candidates = threading.Lock()  # type: threading.Lock
+        self.__stopwatch = Stopwatch()
         self.__counter_candidates = 0
         self.__counter_tests = 0
         self.__exhausted_candidates = False
-        self.__time_running = datetime.timedelta()
         self.__error_occurred = False
         self.__searching = False
-        self.__found_patches = []  # type: List[Candidate]
         self.__history = []  # type: List[Candidate]
         logger.debug("constructed searcher")
 
@@ -92,29 +87,12 @@ class Searcher(object):
         return self.__outcomes
 
     @property
-    def paused(self) -> bool:
-        """
-        Indicates whether this searcher is paused.
-        """
-        return (self.__found_patches != []) or self.exhausted
-
-    @property
     def exhausted(self) -> bool:
         """
         Indicates whether or not the resources available to this searcher have
         been exhausted.
         """
-        if self.__error_occurred:
-            return True
-        if self.__exhausted_candidates:
-            return True
-        if self.__time_limit is not None:
-            if self.time_running > self.__time_limit:  # type: ignore
-                return True
-        if self.__candidate_limit is not None:
-            if self.__counter_candidates > self.__candidate_limit:
-                return True
-        return False
+        return self.__exhausted
 
     @property
     def num_test_evals(self) -> int:
@@ -143,27 +121,20 @@ class Searcher(object):
     @property
     def time_running(self) -> datetime.timedelta:
         """
-        The amount of time that has been spent searching for patches.
+        The amount nof time that has been spent searching for patches.
         """
-        duration_delta = self.__time_running
-        if self.__searching:
-            time_now = timer()
-            iteration_secs = time_now - self.__time_iteration_begun  # type: ignore
-            iteration_delta = datetime.timedelta(seconds=iteration_secs)  # type: datetime.timedelta
-            duration_delta = duration_delta + iteration_delta
-        logger.debug("time running: %.2f minutes", duration_delta.seconds / 60)
-        return duration_delta
-
-    def stop(self) -> None:
-        # FIXME just use an event to communicate when to stop
-        self.__error_occurred = True
+        return datetime.timedelta(seconds=self.__stopwatch.duration)
 
     def __iter__(self) -> Iterator[Candidate]:
-        # time at which the last repair was found or the search was started
-        self.__time_last_repair = timer()
-        self.__paused_timer = False
-        self.__offset_timer = 0.0
+        """
+        Returns a lazy stream of acceptable patches.
 
+        Raises:
+            StopIteration: if the search space or available resources have
+                been exhausted.
+        """
+        self.__stopwatch.reset()
+        self.__stopwatch.start()
         for _ in self.__num_threads:
             try:
                 self.evaluate(next(self.__candidates))
@@ -174,16 +145,9 @@ class Searcher(object):
 
         for candidate, outcome in evaluator.as_completed():
             if outcome.is_repair:
-                # increment time_offset
-                time_now = timer()
-                self.__time_offset += time_now - self.__time_last_repair
-                self.__time_last_repair = time_now
-                self.__timer_is_paused = True
-
+                self.__stopwatch.stop()
                 yield candidate
-
-                time_since_last_repair = timer()
-                self.__paused = False
+                self.__stopwatch.start()
 
             if not self.__exhausted:
                 try:
@@ -193,21 +157,4 @@ class Searcher(object):
                     self.__exhausted = True
                     break
 
-    def __next__(self) -> Candidate:
-        """
-        Searches for the next acceptable patch.
-
-        Returns:
-            the next patch that passes all tests.
-
-        Raises:
-            StopIteration: if the search space or available resources have
-                been exhausted.
-        """
-        self.__time_iteration_begun = timer()  # type: ignore
-        for candidate, outcome:
-
-        duration_iteration = timer() - self.__time_iteration_begun  # type: ignore
-        self.__time_running += datetime.timedelta(seconds=duration_iteration)
-
-        raise StopIteration
+        self.__stopwatch.stop()
