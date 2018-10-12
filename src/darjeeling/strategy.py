@@ -18,6 +18,7 @@ class GenProgStrategy(Strategy):
     population_size = attr.ib(type=int)
     num_generations = attr.ib(type=int)
     rate_crossover = attr.ib(type=float)
+    tournament_size = attr.ib(type=int)
 
     def initial(self) -> Population:
         """
@@ -36,10 +37,17 @@ class GenProgStrategy(Strategy):
         raise NotImplementedError
 
     def select(self, population: Population) -> Population:
-        # compute a fitness score for each individuala
-
-        # perform tournament selection
-        pass
+        """
+        Selects N individuals from the population to survive into the
+        next generation.
+        """
+        survivors = Population()
+        ind_to_fitness = self.fitness(population)
+        for _ in self.population_size:
+            participants = random.sample(pop, self.tournament_size)
+            winner = max(participants, key=fitness.__getitem__)
+            survivors.append(winner)
+        return survivors
 
     def mutate(self, population: Population) -> Population:
         offspring = Population()
