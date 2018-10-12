@@ -27,7 +27,9 @@ class Stopwatch(object):
         """
         Constructs a new, paused timer.
         """
-        self.reset()
+        self.__offset = 0.0  # type: float
+        self.__paused = True  # type: bool
+        self.__time_start = 0.0  # type: float
 
     def stop(self) -> None:
         """
@@ -51,9 +53,8 @@ class Stopwatch(object):
         """
         Resets and freezes the timer.
         """
-        self.__offset = 0.0  # type: float
-        self.__paused = True  # type: bool
-        self.__time_start = 0.0  # type: float
+        self.__offset = 0.0
+        self.__paused = True
 
     @property
     def paused(self) -> bool:
