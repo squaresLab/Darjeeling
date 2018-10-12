@@ -11,6 +11,19 @@ class Strategy(object):
     pass
 
 
+@attr.ib(frozen=True)
+class ExhaustiveStrategy(Strategy):
+    pass
+
+
+@attr.ib(frozen=True)
+class RSRepairStrategy(Strategy):
+    pass
+
+
+@attr.ib(frozen=True)
+class GreedyStrategy(Strategy):
+    pass
 
 
 @attr.ib(frozen=True)
@@ -20,6 +33,14 @@ class GenProgStrategy(Strategy):
     rate_crossover = attr.ib(type=float)
     rate_mutation = attr.ib(type=float)
     tournament_size = attr.ib(type=int)
+
+    # sample strategy: [variant, generation, all]
+    # sample size
+    # best test rule: [test prioritisation / test selection]
+
+    # use futures? submit individual + tests?
+
+    # - compute test stats between generations?
 
     def initial(self) -> Population:
         """
@@ -35,6 +56,15 @@ class GenProgStrategy(Strategy):
         """
         Computes the fitness of each individual within a population.
         """
+        # what tests are in our sample?
+        f = {}  # type: Dict[Individual, float]
+        for ind in population:
+            built = False
+            if not built:
+                f[ind] = 0.0
+            else:
+                # maybe we don't need to execute the test?
+                pass
         raise NotImplementedError
 
     def select(self, population: Population) -> Population:
@@ -50,9 +80,9 @@ class GenProgStrategy(Strategy):
             survivors.append(winner)
         return survivors
 
-    def mutate(self, population: Population) -> Population:
+    def mutate(self, pop: Population) -> Population:
         offspring = Population()
-        for ind in offspring:
+        for ind in pop:
             child = ind
             if random.random() <= self.rate_mutation:
                 mutation = self.choose_transformation()
@@ -89,4 +119,7 @@ class GenProgStrategy(Strategy):
         for g in range(0, self.num_generations + 1):
             pop = self.crossover(pop)
             pop = self.mutate(pop)
+
+            # choose tests
+            evaluate(pop)  # TODO test sampling
             pop = self.select(pop)
