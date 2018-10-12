@@ -1,3 +1,4 @@
+import warnings
 from typing import List
 from timeit import default_timer as timer
 
@@ -40,8 +41,11 @@ class Stopwatch(object):
         """
         Resumes the timer.
         """
-        self.__time_start = timer()
-        self.__paused = False
+        if self.__paused:
+            self.__time_start = timer()
+            self.__paused = False
+        else:
+            warnings.warn("timer is already running")
 
     def reset(self) -> None:
         """
@@ -63,6 +67,6 @@ class Stopwatch(object):
         The number of seconds that the stopwatch has been running.
         """
         d = self.__offset
-        if not self.paused:
+        if not self.__paused:
             d += timer() - self.__time_start
         return d
