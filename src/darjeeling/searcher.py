@@ -158,7 +158,7 @@ class Searcher(object):
 
         for _ in range(self.__evaluator.num_workers):
             try:
-                evaluate(next(self.__candidates))
+                evaluate(next(self.__candidates))  # type: ignore
             except StopIteration:
                 logger.info("all candidate patches have been exhausted")
                 self.__exhausted = True
@@ -183,7 +183,7 @@ class Searcher(object):
                 logger.info("candidate limit has been reached: stopping search.")  # noqa: pycodestyle
                 self.__stopped = True
             try:
-                evaluate(next(self.__candidates))
+                evaluate(next(self.__candidates))  # type: ignore
             except StopIteration:
                 logger.info("all candidate patches have been exhausted")
                 self.__exhausted = self.__stopped = True
