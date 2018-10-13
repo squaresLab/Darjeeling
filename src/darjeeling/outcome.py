@@ -64,6 +64,10 @@ class CandidateOutcome(object):
     build = attr.ib(type=BuildOutcome)
     tests = attr.ib(type=TestOutcomeSet)
 
+    @property
+    def is_repair(self) -> bool:
+        return all(self.tests[t].successful for t in self.tests)
+
     def with_test_outcome(self,
                           test: str,
                           successful: bool,
