@@ -281,7 +281,7 @@ class BaseController(cement.Controller):
             patches = []  # type: List[Candidate]
             if terminate_early:
                 try:
-                    patches.append(next(searcher))
+                    patches.append(next(searcher.__iter__()))
                 except StopIteration:
                     pass
             else:

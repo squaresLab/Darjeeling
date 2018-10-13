@@ -1,6 +1,5 @@
 from typing import Iterable, Iterator, Optional, List
 from mypy_extensions import NoReturn
-from timeit import default_timer as timer
 import logging
 import datetime
 import threading
@@ -13,15 +12,14 @@ from .core import FileLine
 from .candidate import Candidate
 from .problem import Problem
 from .outcome import OutcomeManager
-from .exceptions import BuildFailure
+from .evaluator import Evaluator
+from .exceptions import BuildFailure, SearchAlreadyStarted
+from .util import Stopwatch
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
+logger.setLevel(logging.DEBUG)
 
 __all__ = ['Searcher']
-
-
-class Shutdown(Exception):
-    pass
 
 
 class Searcher(object):
@@ -49,7 +47,7 @@ class Searcher(object):
             candidate_limit: an optional limit on the number of candidate
                 patches that may be generated.
         """
-        logger.debug("constructed searcher")
+        logger.debug("constructing searcher")
         assert time_limit is None or time_limit > datetime.timedelta(), \
             "if specified, time limit should be greater than zero."
 
@@ -58,21 +56,18 @@ class Searcher(object):
         self.__candidates = candidates
         self.__time_limit = time_limit
         self.__candidate_limit = candidate_limit
-        self.__num_threads = threads
         self.__outcomes = OutcomeManager()
+        self.__evaluator = Evaluator(bugzoo,
+                                     problem,
+                                     num_workers=threads,
+                                     outcomes=self.__outcomes)
 
-
-        # records the time at which the current iteration begun
-        self.__time_iteration_begun = None  # type: ignore
-
-        self.__lock_candidates = threading.Lock()  # type: threading.Lock
+        self.__stopwatch = Stopwatch()
+        self.__started = False
+        self.__stopped = False
+        self.__exhausted = False
         self.__counter_candidates = 0
         self.__counter_tests = 0
-        self.__exhausted_candidates = False
-        self.__time_running = datetime.timedelta()
-        self.__error_occurred = False
-        self.__searching = False
-        self.__found_patches = []  # type: List[Candidate]
         self.__history = []  # type: List[Candidate]
         logger.debug("constructed searcher")
 
@@ -93,29 +88,19 @@ class Searcher(object):
         return self.__outcomes
 
     @property
-    def paused(self) -> bool:
-        """
-        Indicates whether this searcher is paused.
-        """
-        return (self.__found_patches != []) or self.exhausted
-
-    @property
     def exhausted(self) -> bool:
         """
-        Indicates whether or not the resources available to this searcher have
-        been exhausted.
+        Indicates whether or not the space of all possible repairs has been
+        exhausted.
         """
-        if self.__error_occurred:
-            return True
-        if self.__exhausted_candidates:
-            return True
-        if self.__time_limit is not None:
-            if self.time_running > self.__time_limit:  # type: ignore
-                return True
-        if self.__candidate_limit is not None:
-            if self.__counter_candidates > self.__candidate_limit:
-                return True
-        return False
+        return self.__exhausted
+
+    @property
+    def stopped(self) -> bool:
+        """
+        Indicates whether or not the search has been terminated.
+        """
+        return self.__stopped
 
     @property
     def num_test_evals(self) -> int:
@@ -123,7 +108,7 @@ class Searcher(object):
         The number of test case evaluations that have been performed during
         this search process.
         """
-        return self.__counter_tests
+        return self.__evaluator.num_test_evals
 
     @property
     def num_candidate_evals(self) -> int:
@@ -131,7 +116,7 @@ class Searcher(object):
         The number of candidate patches that have been evaluated over the
         course of this search process.
         """
-        return self.__counter_candidates
+        return self.__evaluator.num_candidate_evals
 
     @property
     def time_limit(self) -> Optional[datetime.timedelta]:
@@ -144,171 +129,63 @@ class Searcher(object):
     @property
     def time_running(self) -> datetime.timedelta:
         """
-        The amount of time that has been spent searching for patches.
+        The amount nof time that has been spent searching for patches.
         """
-        duration_delta = self.__time_running
-        if self.__searching:
-            time_now = timer()
-            iteration_secs = time_now - self.__time_iteration_begun  # type: ignore
-            iteration_delta = datetime.timedelta(seconds=iteration_secs)  # type: datetime.timedelta
-            duration_delta = duration_delta + iteration_delta
-        logger.debug("time running: %.2f minutes", duration_delta.seconds / 60)
-        return duration_delta
-
-    def stop(self) -> None:
-        # FIXME just use an event to communicate when to stop
-        self.__error_occurred = True
+        return datetime.timedelta(seconds=self.__stopwatch.duration)
 
     def __iter__(self) -> Iterator[Candidate]:
-        return self
-
-    def __next__(self) -> Candidate:
         """
-        Searches for the next acceptable patch.
-
-        Returns:
-            the next patch that passes all tests.
+        Returns a lazy stream of acceptable patches.
 
         Raises:
+            SearchAlreadyStarted: if the search has already been initiated.
             StopIteration: if the search space or available resources have
                 been exhausted.
         """
-        # if we have patches in the buffer, return those.
-        if self.__found_patches:
-            return self.__found_patches.pop()
+        if self.__started:
+            raise SearchAlreadyStarted
+        self.__started = True
 
-        threads = [] # type: List[threading.Thread]
+        evaluate = self.__evaluator.submit
+        reached_time_limit = lambda: \
+            self.time_limit and self.time_running > self.time_limit
+        reached_candidate_limit = lambda: \
+            self.__candidate_limit and self.__counter_candidates > self.__candidate_limit
+        # TODO implement test eval limit
 
-        # setup signal handlers to ensure that threads are cleanly killed
-        # causes a Shutdown exception to be thrown in the search loop below
-        if threading.current_thread() is threading.main_thread():
-            logger.debug("attaching signal handlers")
-            original_handler_sigint = signal.getsignal(signal.SIGINT)
-            original_handler_sigterm = signal.getsignal(signal.SIGTERM)
-            signal.signal(signal.SIGINT, lambda signum, frame: self.stop())
-            signal.signal(signal.SIGTERM, lambda signum, frame: self.stop())
-            logger.debug("attached signal handlers")
-        else:
-            logger.debug("not attaching signal handlers -- not inside main thread.")  # noqa: pycodestyle
+        self.__stopwatch.reset()
+        self.__stopwatch.start()
 
-        self.__time_iteration_begun = timer()  # type: ignore
+        for _ in range(self.__evaluator.num_workers):
+            try:
+                evaluate(next(self.__candidates))  # type: ignore
+            except StopIteration:
+                logger.info("all candidate patches have been exhausted")
+                self.__exhausted = True
+                break
 
-        # TODO there's a bit of a bug: any patches that were read from the
-        #   generator by the worker and were still stored in its
-        #   `candidate` variable will be discarded. fixable by adding a
-        #   buffer to `_try_next`.
-        try:
-            def worker(searcher: 'Searcher') -> None:
-                while True:
-                    if not searcher._try_next():
-                        break
+        # as one candidate is evaluated, begin evaluating another
+        for candidate, outcome in self.__evaluator.as_completed():
+            if outcome.is_repair:
+                self.__stopwatch.stop()
+                yield candidate
+                self.__stopwatch.start()
 
-            self.__searching = True
-            for _ in range(self.__num_threads):
-                t = threading.Thread(target=worker, args=(self,))
-                threads.append(t)
-                t.start()
+            # if the search has been stopped, don't evaluate another candidate
+            if self.__exhausted:
+                continue
 
-            for t in threads:
-                t.join()
-        except Shutdown:
-            logger.info("Reached time limit without finding repair. Terminating search.")
-            self.__error_occurred = True
-        except Exception as e:
-            self.__error_occurred = True
-        finally:
-            for t in threads:
-                t.join()
-            self.__searching = False
-            if threading.current_thread() is threading.main_thread():
-                logger.debug("restoring original signal handlers")
-                signal.signal(signal.SIGINT, original_handler_sigint)
-                signal.signal(signal.SIGTERM, original_handler_sigterm)
-                logger.debug("restored original signal handlers")
+            # fetch the next candidate repair
+            if reached_time_limit():
+                logger.info("time limit has been reached: stopping search.")  # noqa: pycodestyle
+                self.__stopped = True
+            if reached_candidate_limit():
+                logger.info("candidate limit has been reached: stopping search.")  # noqa: pycodestyle
+                self.__stopped = True
+            try:
+                evaluate(next(self.__candidates))  # type: ignore
+            except StopIteration:
+                logger.info("all candidate patches have been exhausted")
+                self.__exhausted = self.__stopped = True
 
-        duration_iteration = timer() - self.__time_iteration_begun  # type: ignore
-        self.__time_running += datetime.timedelta(seconds=duration_iteration)
-
-        if self.__found_patches:
-            return self.__found_patches.pop()
-        raise StopIteration
-
-    def _try_next(self) -> bool:
-        """
-        Evaluates the next candidate patch.
-
-        Returns:
-            a boolean indicating whether the calling thread should continue to
-            evaluate candidate patches.
-        """
-        if self.paused:
-            return False
-
-        self.__lock_candidates.acquire()
-        try:
-            candidate = next(self.__candidates) # type: ignore
-            self.__history.append(candidate)
-            self.__counter_candidates += 1
-        except StopIteration:
-            logger.info("All candidate patches have been exhausted.")
-            self.__exhausted_candidates = True
-            return False
-        finally:
-            self.__lock_candidates.release()
-
-        bz = self.__bugzoo
-        mgr_src = self.__problem.sources
-
-        patch = candidate.to_diff(self.__problem)
-        lines_changed = candidate.lines_changed(self.__problem)  # type: List[FileLine]
-        line_coverage_by_test = self.__problem.coverage
-        logger.info("evaluating candidate: %s\n%s\n", candidate, patch)
-        logger.debug("building candidate: %s", candidate)
-        container = None
-        time_build_start = timer()
-        try:
-            container = self.__problem.build_patch(patch)
-            logger.debug("built candidate: %s", candidate)
-            self.outcomes.record_build(candidate, True, timer() - time_build_start)
-
-            # for now, execute all tests in no particular order
-            # TODO perform test ordering
-            logger_c = logger.getChild(container.uid)
-            logger_c.debug("executing tests")
-            for test in self.__problem.tests:
-                test_line_coverage = line_coverage_by_test[test.name]
-                if not any(line in test_line_coverage for line in lines_changed):
-                    logger_c.debug("skipping test: %s (%s)",
-                                   test.name, candidate)
-                    continue
-
-                logger_c.debug("executing test: %s (%s)", test.name, candidate)
-                self.__counter_tests += 1
-                outcome = bz.containers.test(container, test)
-                #logger_c.debug("* test outcome: %s (%s) [retcode=%d]\n$ %s\n%s",
-                #               test.name,
-                #               candidate,
-                #               outcome.response.code,
-                #               test.command,
-                #               outcome.response.output)
-                self.outcomes.record_test(candidate, test.name, outcome)
-                if not outcome.passed:
-                    logger_c.debug("* test failed: %s (%s)", test.name, candidate)
-                    return True
-                logger_c.debug("* test passed: %s (%s)", test.name, candidate)
-
-            # if we've found a repair, pause the search
-            self.__found_patches.append(candidate)
-            logger_c.info("found a repair after %.2f minutes: %s",
-                          (self.time_running.seconds / 60),
-                          candidate)
-            return True
-
-        except BuildFailure:
-            logger.debug("failed to build candidate: %s", candidate)
-            self.outcomes.record_build(candidate, False, timer() - time_build_start)
-            return True
-        finally:
-            logger.info("evaluated candidate: %s", candidate)
-            if container is not None:
-                del bz.containers[container.uid]
+        self.__stopwatch.stop()
