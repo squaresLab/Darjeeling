@@ -1,12 +1,13 @@
 __all__ = ['Evaluator']
 
-from typing import Tuple, List
+from typing import Tuple, List, Optional, Iterator
 from timeit import default_timer as timer
 from concurrent.futures import Future
 import logging
+import queue
+import threading
 import concurrent.futures
 
-import attr
 from bugzoo import Client as BugZooClient
 from bugzoo.core import FileLine
 
@@ -19,30 +20,55 @@ logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
 
-# TODO throw exception when resources are exhausted
-
-
-@attr.s(frozen=True)
 class Evaluator(object):
     def __init__(self,
                  client_bugzoo: BugZooClient,
                  problem: Problem,
-                 num_workers: int = 1
+                 *,
+                 num_workers: int = 1,
+                 outcomes: Optional[OutcomeManager] = None
                  ) -> None:
         self.__bugzoo = client_bugzoo
         self.__problem = problem
         self.__executor = \
             concurrent.futures.ThreadPoolExecutor(max_workers=num_workers)
         self.__num_workers = num_workers
-        self.outcomes = OutcomeManager()
+        if outcomes:
+            self.__outcomes = outcomes
+        else:
+            self.__outcomes = OutcomeManager()
 
+        self.__lock = threading.Lock()
+        self.__queue_evaluated = queue.Queue()  # type: queue.Queue
+        self.__num_running = 0
         self.__counter_tests = 0
+        self.__counter_candidates = 0
+
+    @property
+    def outcomes(self) -> OutcomeManager:
+        return self.__outcomes
 
     @property
     def num_workers(self) -> int:
         return self.__num_workers
 
+    @property
+    def num_test_evals(self) -> int:
+        """
+        The number of test case evaluations performed by this evaluator.
+        """
+        return self.__counter_tests
+
+    @property
+    def num_candidate_evals(self) -> int:
+        """
+        The number of candidate evaluations performed by this evaluator.
+        """
+        return self.__counter_candidates
+
     def _evaluate(self, candidate: Candidate) -> None:
+        self.__counter_candidates += 1
+
         patch = candidate.to_diff(self.__problem)
         line_coverage_by_test = self.__problem.coverage
         lines_changed = \
@@ -98,9 +124,26 @@ class Evaluator(object):
         if candidate in self.outcomes:
             return (candidate, self.outcomes[candidate])
         self._evaluate(candidate)
-        return (candidate, self.outcomes[candidate])
+        result = (candidate, self.outcomes[candidate])
+
+        # FIXME race condition?
+        with self.__lock:
+            self.__queue_evaluated.put(result)
+            self.__num_running -= 1
+
+        return result
 
     def submit(self,
                candidate: Candidate
-               ) -> Future[Tuple[Candidate, CandidateOutcome]]:
-        return self.__executor.submit(self.evaluate, candidate)
+               ) -> 'Future[Tuple[Candidate, CandidateOutcome]]':
+        self.__num_running += 1
+        future = self.__executor.submit(self.evaluate, candidate)
+        return future
+
+    def as_completed(self) -> Iterator[Tuple[Candidate, CandidateOutcome]]:
+        q = self.__queue_evaluated  # type: queue.Queue
+        while True:
+            with self.__lock:
+                if q.empty() and self.__num_running == 0:
+                    break
+            yield q.get()
