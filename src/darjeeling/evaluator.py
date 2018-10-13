@@ -39,7 +39,7 @@ class Evaluator(object):
             self.__outcomes = OutcomeManager()
 
         self.__lock = threading.Lock()
-        self.__queue_evaluated = queue.Queue()
+        self.__queue_evaluated = queue.Queue()  # type: queue.Queue
         self.__num_running = 0
         self.__counter_tests = 0
         self.__counter_candidates = 0
@@ -141,7 +141,7 @@ class Evaluator(object):
         return future
 
     def as_completed(self) -> Iterator[Tuple[Candidate, CandidateOutcome]]:
-        q = self.__queue_evaluated
+        q = self.__queue_evaluated  # type: queue.Queue
         while True:
             with self.__lock:
                 if q.empty() and self.__num_running == 0:
