@@ -1,9 +1,11 @@
 __all__ = ['Evaluator']
 
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Iterator
 from timeit import default_timer as timer
 from concurrent.futures import Future
 import logging
+import queue
+import threading
 import concurrent.futures
 
 from bugzoo import Client as BugZooClient
@@ -36,6 +38,9 @@ class Evaluator(object):
         else:
             self.__outcomes = OutcomeManager()
 
+        self.__lock = threading.Lock()
+        self.__queue_evaluated = queue.Queue()
+        self.__num_running = 0
         self.__counter_tests = 0
         self.__counter_candidates = 0
 
@@ -119,9 +124,26 @@ class Evaluator(object):
         if candidate in self.outcomes:
             return (candidate, self.outcomes[candidate])
         self._evaluate(candidate)
-        return (candidate, self.outcomes[candidate])
+        result = (candidate, self.outcomes[candidate])
+
+        # FIXME race condition?
+        with self.__lock:
+            self.__queue_evaluated.put(result)
+            self.__num_running -= 1
+
+        return result
 
     def submit(self,
                candidate: Candidate
                ) -> 'Future[Tuple[Candidate, CandidateOutcome]]':
-        return self.__executor.submit(self.evaluate, candidate)
+        self.__num_running += 1
+        future = self.__executor.submit(self.evaluate, candidate)
+        return future
+
+    def as_completed(self) -> Iterator[Tuple[Candidate, CandidateOutcome]]:
+        q = self.__queue_evaluated
+        while True:
+            with self.__lock:
+                if q.empty() and self.__num_running == 0:
+                    break
+            yield q.get()
