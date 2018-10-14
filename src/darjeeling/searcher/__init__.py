@@ -1,3 +1,5 @@
+__all__ = ['Searcher']
+
 from typing import Iterable, Iterator, Optional, List
 from mypy_extensions import NoReturn
 import logging
@@ -8,18 +10,16 @@ import signal
 
 import bugzoo
 
-from .core import FileLine
-from .candidate import Candidate
-from .problem import Problem
-from .outcome import OutcomeManager
-from .evaluator import Evaluator
-from .exceptions import BuildFailure, SearchAlreadyStarted
-from .util import Stopwatch
+from ..core import FileLine
+from ..candidate import Candidate
+from ..problem import Problem
+from ..outcome import OutcomeManager
+from ..evaluator import Evaluator
+from ..exceptions import BuildFailure, SearchAlreadyStarted
+from ..util import Stopwatch
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
-
-__all__ = ['Searcher']
 
 
 class Searcher(object):
@@ -132,6 +132,9 @@ class Searcher(object):
         The amount nof time that has been spent searching for patches.
         """
         return datetime.timedelta(seconds=self.__stopwatch.duration)
+
+    def _run(self) -> Iterator[Candidate]:
+        raise NotImplementedError
 
     def __iter__(self) -> Iterator[Candidate]:
         """
