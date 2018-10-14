@@ -3,20 +3,23 @@ __all__ = ['GeneticSearcher']
 from typing import Iterator
 import concurrent.futures
 import logging
+import random
 
 from .base import Searcher
 from ..candidate import Candidate
+from ..transformation import Transformation
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
-Population = List[Individual]
+Population = List[Candidate]
 
 
 class GeneticSearcher(Searcher):
     def __init__(self,
                  bugzoo: bugzoo.BugZoo,
                  problem: Problem,
+                 transformations: List[Transformation],
                  *,
                  population_size: int = 40,
                  num_generations: int = 10,
@@ -32,6 +35,8 @@ class GeneticSearcher(Searcher):
         self.__rate_crossover = rate_crossover
         self.__rate_mutation = rate_mutation
         self.__tournament_size = tournament_size
+        self.__transformations = transformations
+
         super().__init__(bugzoo,
                          problem,
                          threads=threads,
@@ -66,7 +71,8 @@ class GeneticSearcher(Searcher):
         return self.mutate(pop)
 
     def choose_transformation(self) -> Transformation:
-        raise NotImplementedError
+        # FIXME for now, just pick one at random
+        return random.choice(self.__transformations)
 
     def evaluate(self, pop: Population) -> Iterator[Candidate]:
         for candidate in pop:
