@@ -1,3 +1,2 @@
-__all__ = ['Searcher']
-
 from .base import Searcher
+from .exhaustive import ExhaustiveSearcher
