@@ -171,8 +171,8 @@ class Searcher(object):
             if outcome.is_repair:
                 yield candidate
             if i < size:
-                i += 1
                 self.evaluate(candidates[i])
+                i += 1
 
     def as_evaluated(self) -> Iterator[Tuple[Candidate, CandidateOutcome]]:
         yield from self.__evaluator.as_completed()
