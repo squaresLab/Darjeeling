@@ -10,6 +10,18 @@ class SearchAlreadyStarted(DarjeelingError):
     """
 
 
+class TimeLimitReached(DarjeelingError):
+    """
+    The search has halted after reaching its time limit.
+    """
+
+
+class CandidateLimitReached(DarjeelingError):
+    """
+    The search has halted after reaching its candidate limit.
+    """
+
+
 class NoFailingTests(DarjeelingError):
     """
     The program under repair has no failing tests and therefore does not
