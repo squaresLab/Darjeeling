@@ -17,7 +17,7 @@ from ..transformation.classic import DeleteStatement, \
                                      ReplaceStatement, \
                                      PrependStatement
 from ..exceptions import BadConfigurationException
-from ..searcher import Searcher
+from ..searcher.exhaustive import ExhaustiveSearcher
 from ..problem import Problem
 from ..localization import Localization, \
                            ample, \
@@ -271,7 +271,8 @@ class BaseController(cement.Controller):
 
             # build the search strategy
             # FIXME pass time limit
-            searcher = Searcher(bugzoo=problem.bugzoo,
+            searcher = ExhaustiveSearcher(
+                                bugzoo=problem.bugzoo,
                                 problem=problem,
                                 candidates=iter(candidates),
                                 threads=threads,
