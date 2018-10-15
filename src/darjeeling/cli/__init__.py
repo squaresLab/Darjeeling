@@ -210,7 +210,7 @@ class BaseController(cement.Controller):
 
         # connect to BugZoo
         logger.info("connecting to BugZoo server")
-        with bugzoo.server.ephemeral() as client_bugzoo:
+        with bugzoo.server.ephemeral(timeout_connection=120) as client_bugzoo:
             logger.info("connected to BugZoo server")
             try:
                 snapshot = client_bugzoo.bugs[name_snapshot]
