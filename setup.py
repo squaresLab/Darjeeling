@@ -19,7 +19,7 @@ setup(
     license='mit',
     python_requires='>=3.5',
     install_requires=[
-        'bugzoo>=2.1.16',
+        'bugzoo>=2.1.18',
         'rooibos>=0.3.0',
         'boggart>=0.1.14',
         'kaskara>=0.0.4',
