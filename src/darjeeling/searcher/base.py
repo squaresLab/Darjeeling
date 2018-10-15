@@ -168,11 +168,11 @@ class Searcher(object):
         for i in range(min(size, self.__evaluator.num_workers)):
             self.evaluate(candidates[i])
         for candidate, outcome in self.as_evaluated():
+            i += 1
             if outcome.is_repair:
                 yield candidate
             if i < size:
                 self.evaluate(candidates[i])
-                i += 1
 
     def as_evaluated(self) -> Iterator[Tuple[Candidate, CandidateOutcome]]:
         yield from self.__evaluator.as_completed()
