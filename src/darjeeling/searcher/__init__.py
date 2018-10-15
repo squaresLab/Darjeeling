@@ -8,13 +8,13 @@ import signal
 
 import bugzoo
 
-from .core import FileLine
-from .candidate import Candidate
-from .problem import Problem
-from .outcome import OutcomeManager
-from .evaluator import Evaluator
-from .exceptions import BuildFailure, SearchAlreadyStarted
-from .util import Stopwatch
+from ..core import FileLine
+from ..candidate import Candidate
+from ..problem import Problem
+from ..outcome import OutcomeManager
+from ..evaluator import Evaluator
+from ..exceptions import BuildFailure, SearchAlreadyStarted
+from ..util import Stopwatch
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
