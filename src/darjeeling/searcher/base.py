@@ -1,4 +1,4 @@
-from typing import Iterable, Iterator, Optional, List
+from typing import Iterable, Iterator, Optional, List, Tuple
 from mypy_extensions import NoReturn
 import logging
 import datetime
@@ -8,13 +8,17 @@ import signal
 
 import bugzoo
 
-from .core import FileLine
-from .candidate import Candidate
-from .problem import Problem
-from .outcome import OutcomeManager
-from .evaluator import Evaluator
-from .exceptions import BuildFailure, SearchAlreadyStarted
-from .util import Stopwatch
+from ..core import FileLine
+from ..candidate import Candidate
+from ..problem import Problem
+from ..outcome import OutcomeManager, CandidateOutcome
+from ..evaluator import Evaluator
+from ..exceptions import BuildFailure, \
+    SearchAlreadyStarted, \
+    SearchExhausted, \
+    TimeLimitReached, \
+    CandidateLimitReached
+from ..util import Stopwatch
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
@@ -26,20 +30,18 @@ class Searcher(object):
     def __init__(self,
                  bugzoo: bugzoo.BugZoo,
                  problem: Problem,
-                 candidates: Iterable[Candidate],
                  *,
                  threads: int = 1,
                  time_limit: Optional[datetime.timedelta] = None,
                  candidate_limit: Optional[int] = None
                  ) -> None:
         """
-        Constructs a new searcher for a given source of candidate patches.
+        Constructs a new searcher.
 
         Parameters:
             bugzoo: a connection to the BugZoo server that should be used to
                 evaluate candidate patches.
             problem: a description of the problem.
-            candidates: a source of candidate patches.
             threads: the number of threads that should be made available to
                 the search process.
             time_limit: an optional limit on the amount of time given to the
@@ -53,7 +55,6 @@ class Searcher(object):
 
         self.__bugzoo = bugzoo
         self.__problem = problem
-        self.__candidates = candidates
         self.__time_limit = time_limit
         self.__candidate_limit = candidate_limit
         self.__outcomes = OutcomeManager()
@@ -68,8 +69,13 @@ class Searcher(object):
         self.__exhausted = False
         self.__counter_candidates = 0
         self.__counter_tests = 0
+        # FIXME this isn't being maintained
         self.__history = []  # type: List[Candidate]
         logger.debug("constructed searcher")
+
+    @property
+    def num_workers(self) -> int:
+        return self.__evaluator.num_workers
 
     @property
     def history(self) -> List[Candidate]:
@@ -127,11 +133,29 @@ class Searcher(object):
         return self.__time_limit
 
     @property
+    def candidate_limit(self) -> Optional[int]:
+        return self.__candidate_limit
+
+    @property
     def time_running(self) -> datetime.timedelta:
         """
         The amount nof time that has been spent searching for patches.
         """
         return datetime.timedelta(seconds=self.__stopwatch.duration)
+
+    def run(self) -> Iterator[Candidate]:
+        raise NotImplementedError
+
+    def evaluate(self, candidate: Candidate) -> None:
+        if self.time_limit and self.time_running > self.time_limit:
+            raise TimeLimitReached
+        if self.candidate_limit and self.num_candidate_evals > self.candidate_limit:
+            raise CandidateLimitReached
+        # FIXME test limit
+        self.__evaluator.submit(candidate)
+
+    def as_evaluated(self) -> Iterator[Tuple[Candidate, CandidateOutcome]]:
+        yield from self.__evaluator.as_completed()
 
     def __iter__(self) -> Iterator[Candidate]:
         """
@@ -146,46 +170,28 @@ class Searcher(object):
             raise SearchAlreadyStarted
         self.__started = True
 
-        evaluate = self.__evaluator.submit
-        reached_time_limit = lambda: \
-            self.time_limit and self.time_running > self.time_limit
-        reached_candidate_limit = lambda: \
-            self.__candidate_limit and self.__counter_candidates > self.__candidate_limit
-        # TODO implement test eval limit
-
         self.__stopwatch.reset()
         self.__stopwatch.start()
 
-        for _ in range(self.__evaluator.num_workers):
-            try:
-                evaluate(next(self.__candidates))  # type: ignore
-            except StopIteration:
-                logger.info("all candidate patches have been exhausted")
-                self.__exhausted = True
-                break
+        try:
+            for repair in self.run():
+                self.__stopwatch.stop()
+                # TODO REPORT THE REPAIR?
+                yield repair
+                self.__stopwatch.start()
+        except SearchExhausted:
+            logger.info("all candidate patches have been exhausted")
+        # FIXME this one is trickier -- needs to be enforced before the job is started
+        except TimeLimitReached:
+            logger.info("time limit has been reached: stopping search.")
+        except CandidateLimitReached:
+            logger.info("candidate limit has been reached: stopping search.")
 
-        # as one candidate is evaluated, begin evaluating another
-        for candidate, outcome in self.__evaluator.as_completed():
+        # wait for remaining evaluations
+        for candidate, outcome in self.as_evaluated():
             if outcome.is_repair:
                 self.__stopwatch.stop()
                 yield candidate
                 self.__stopwatch.start()
-
-            # if the search has been stopped, don't evaluate another candidate
-            if self.__exhausted:
-                continue
-
-            # fetch the next candidate repair
-            if reached_time_limit():
-                logger.info("time limit has been reached: stopping search.")  # noqa: pycodestyle
-                self.__stopped = True
-            if reached_candidate_limit():
-                logger.info("candidate limit has been reached: stopping search.")  # noqa: pycodestyle
-                self.__stopped = True
-            try:
-                evaluate(next(self.__candidates))  # type: ignore
-            except StopIteration:
-                logger.info("all candidate patches have been exhausted")
-                self.__exhausted = self.__stopped = True
 
         self.__stopwatch.stop()
