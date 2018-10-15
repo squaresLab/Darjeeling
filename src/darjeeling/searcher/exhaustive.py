@@ -28,7 +28,7 @@ class ExhaustiveSearcher(Searcher):
 
     def _generate(self) -> Candidate:
         try:
-            return next(self.__candidates)
+            return next(self.__candidates)  # type: ignore
         except StopIteration:
             raise SearchExhausted
 
