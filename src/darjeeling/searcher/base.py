@@ -152,6 +152,28 @@ class Searcher(object):
         # FIXME test limit
         self.__evaluator.submit(candidate)
 
+    def evaluate_all(self,
+                     candidates: List[Candidate]
+                     ) -> Iterator[Candidate]:
+        """
+        Evaluates all given candidate patches and blocks until all have been
+        evaluated (or the search has been terminated).
+
+        Returns:
+            an iterator over the subset of candidates that are acceptable
+            repairs.
+        """
+        size = len(candidates)
+        i = 0
+        for i in range(min(size, self.__evaluator.num_workers)):
+            self.evaluate(candidates[i])
+        for candidate, outcome in self.as_evaluated():
+            if outcome.is_repair:
+                yield candidate
+            if i < size:
+                i += 1
+                self.evaluate(candidates[i])
+
     def as_evaluated(self) -> Iterator[Tuple[Candidate, CandidateOutcome]]:
         yield from self.__evaluator.as_completed()
 
