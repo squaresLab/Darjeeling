@@ -136,7 +136,8 @@ class Evaluator(object):
     def submit(self,
                candidate: Candidate
                ) -> 'Future[Tuple[Candidate, CandidateOutcome]]':
-        self.__num_running += 1
+        with self.__lock:
+            self.__num_running += 1
         future = self.__executor.submit(self.evaluate, candidate)
         return future
 
