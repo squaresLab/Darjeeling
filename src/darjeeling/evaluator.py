@@ -33,6 +33,7 @@ class Evaluator(object):
         self.__executor = \
             concurrent.futures.ThreadPoolExecutor(max_workers=num_workers)
         self.__num_workers = num_workers
+
         if outcomes:
             self.__outcomes = outcomes
         else:
@@ -122,21 +123,21 @@ class Evaluator(object):
                  candidate: Candidate
                  ) -> Tuple[Candidate, CandidateOutcome]:
         if candidate in self.outcomes:
-            return (candidate, self.outcomes[candidate])
-        self._evaluate(candidate)
-        result = (candidate, self.outcomes[candidate])
-
-        # FIXME race condition?
+            logger.debug("already evaluated candidate -- using cached result")
+            result = (candidate, self.outcomes[candidate])
+        else:
+            self._evaluate(candidate)
+            result = (candidate, self.outcomes[candidate])
         with self.__lock:
             self.__queue_evaluated.put(result)
             self.__num_running -= 1
-
         return result
 
     def submit(self,
                candidate: Candidate
                ) -> 'Future[Tuple[Candidate, CandidateOutcome]]':
-        self.__num_running += 1
+        with self.__lock:
+            self.__num_running += 1
         future = self.__executor.submit(self.evaluate, candidate)
         return future
 

@@ -1,6 +1,6 @@
 __all__ = ['Candidate', 'all_single_edit_patches']
 
-from typing import List, Iterator, Dict, FrozenSet, Iterable
+from typing import List, Iterator, Dict, FrozenSet, Iterable, Tuple
 
 import attr
 from bugzoo.core.patch import Patch
@@ -15,8 +15,8 @@ class Candidate(object):
     """
     Represents a candidate repair as a set of atomic program transformations.
     """
-    transformations = attr.ib(type=FrozenSet[Transformation],
-                              converter=frozenset)  # type: ignore  # bug in mypy (should be fixed in v0.610)  # noqa: pycodestyle
+    transformations = attr.ib(type=Tuple[Transformation],
+                              converter=tuple)  # type: ignore  # bug in mypy (should be fixed in v0.610)  # noqa: pycodestyle
 
     def to_diff(self, problem: Problem) -> Patch:
         """
