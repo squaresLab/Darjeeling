@@ -18,7 +18,8 @@ from ..exceptions import BuildFailure, \
     SearchAlreadyStarted, \
     SearchExhausted, \
     TimeLimitReached, \
-    CandidateLimitReached
+    CandidateLimitReached, \
+    BadConfigurationException
 from ..util import Stopwatch
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
