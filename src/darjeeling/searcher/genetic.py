@@ -85,7 +85,7 @@ class GeneticSearcher(Searcher):
         Computes the fitness of each individual within a population.
         """
         logger.debug("computing population fitness...")
-        f = {}  # type: Dict[Individual, float]
+        f = {}  # type: Dict[Candidate, float]
         for ind in population:
             outcome = self.outcomes[ind]
             if not outcome.build.successful:
@@ -122,7 +122,9 @@ class GeneticSearcher(Searcher):
         return offspring
 
     def crossover(self, pop: Population) -> Population:
-        def one_point_crossover(px: Candidate, py: Candidate) -> Candidate:
+        def one_point_crossover(px: Candidate,
+                                py: Candidate
+                                ) -> List[Candidate]:
             tx = list(px.transformations)
             ty = list(py.transformations)
 
@@ -135,7 +137,7 @@ class GeneticSearcher(Searcher):
             return [Candidate(a + d),
                     Candidate(c + b)]
 
-        offspring = []
+        offspring = []  # type: List[Candidate]
         random.shuffle(pop)
         k = 2
         for i in range(0, len(pop), k):
