@@ -1,4 +1,4 @@
-from typing import Iterable, Iterator, Optional, List, Tuple
+from typing import Iterable, Iterator, Optional, List, Tuple, Any, Dict
 from mypy_extensions import NoReturn
 import logging
 import datetime
@@ -12,6 +12,7 @@ from ..core import FileLine
 from ..candidate import Candidate
 from ..problem import Problem
 from ..outcome import OutcomeManager, CandidateOutcome
+from ..transformation import Transformation
 from ..evaluator import Evaluator
 from ..exceptions import BuildFailure, \
     SearchAlreadyStarted, \
@@ -25,6 +26,36 @@ logger.setLevel(logging.DEBUG)
 
 
 class Searcher(object):
+    @staticmethod
+    def from_dict(d: Dict[str, Any],
+                  problem: Problem,
+                  tx: List[Transformation],
+                  *,
+                  threads: int = 1,
+                  limit_candidates: Optional[int] = None
+                  ) -> 'Searcher':
+        # TODO fix via metaclass
+        from .exhaustive import ExhaustiveSearcher
+        from .genetic import GeneticSearcher
+        try:
+            typ = d['type']
+        except KeyError:
+            m = "'type' property missing from 'algorithm' section"
+            raise BadConfigurationException(m)
+
+        SEARCHERS = {'exhaustive': ExhaustiveSearcher,
+                     'genetic': GeneticSearcher}
+        try:
+            kls = SEARCHERS[typ]
+        except KeyError:
+            m = "'unsupported 'type' property used in 'algorithm' section: {}"
+            m.format(typ)
+            m += " [supported types: {}]".format(', '.join(SEARCHERS.keys()))
+            raise BadConfigurationException(m)
+
+        return kls.from_dict(d, problem, tx)
+
+
     def __init__(self,
                  bugzoo: bugzoo.BugZoo,
                  problem: Problem,
@@ -166,23 +197,23 @@ class Searcher(object):
             repairs.
         """
         size = len(candidates)
-        logger.debug("evaluating %d candidates", size)
+        # logger.debug("evaluating %d candidates", size)
         i = 0
         num_evaluated = 0
         for i in range(min(size, self.__evaluator.num_workers)):
-            logger.debug("evaluating candidate %d/%d", i + 1, size)
+            # logger.debug("evaluating candidate %d/%d", i + 1, size)
             self.evaluate(candidates[i])
         i = min(size, self.__evaluator.num_workers)
         for candidate, outcome in self.as_evaluated():
             num_evaluated += 1
-            logger.debug("evaluated candidate %d/%d", num_evaluated, size)
+            # logger.debug("evaluated candidate %d/%d", num_evaluated, size)
             if outcome.is_repair:
                 yield candidate
             if i < size:
-                logger.debug("evaluating candidate %d/%d", i + 1, size)
+                # logger.debug("evaluating candidate %d/%d", i + 1, size)
                 self.evaluate(candidates[i])
                 i += 1
-        logger.debug("evaluated all candidates")
+        # logger.debug("evaluated all candidates")
 
     def as_evaluated(self) -> Iterator[Tuple[Candidate, CandidateOutcome]]:
         yield from self.__evaluator.as_completed()
