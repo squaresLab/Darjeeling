@@ -1,13 +1,17 @@
 __all__ = ['GeneticSearcher']
 
-from typing import Iterator
+from typing import Iterator, List, Optional, Dict
 import concurrent.futures
 import logging
 import random
+import datetime
+
+import bugzoo
 
 from .base import Searcher
 from ..candidate import Candidate
 from ..transformation import Transformation
+from ..problem import Problem
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
@@ -21,7 +25,7 @@ class GeneticSearcher(Searcher):
                  problem: Problem,
                  transformations: List[Transformation],
                  *,
-                 population_size: int = 40,
+                 population_size: int = 5,
                  num_generations: int = 10,
                  rate_crossover: float = 1.0,
                  rate_mutation: float = 1.0,
@@ -67,24 +71,20 @@ class GeneticSearcher(Searcher):
         """
         Generates an initial population according to this strategy.
         """
-        pop = Population([Candidate() for _ in self.population_size])
+        pop = []
+        for _ in range(self.population_size):
+            pop.append(Candidate([]))
         return self.mutate(pop)
 
     def choose_transformation(self) -> Transformation:
         # FIXME for now, just pick one at random
         return random.choice(self.__transformations)
 
-    def evaluate(self, pop: Population) -> Iterator[Candidate]:
-        for candidate in pop:
-            self.evaluator.submit(candidate)
-        for candidate, outcome in self.evaluator.as_completed():
-            if outcome.is_repair:
-                yield candidate
-
     def fitness(self, population: Population) -> Dict[Candidate, float]:
         """
         Computes the fitness of each individual within a population.
         """
+        logger.debug("computing population fitness...")
         f = {}  # type: Dict[Individual, float]
         for ind in population:
             outcome = self.outcomes[ind]
@@ -92,24 +92,26 @@ class GeneticSearcher(Searcher):
                 f[ind] = 0.0
             else:
                 # FIXME maybe we don't need to execute the test?
-                raise NotImplementedError
+                f[ind] = sum(1.0 for n in outcome.tests if outcome.tests[n].successful)
+        logger.debug("computed fitness:\n%s",
+                     '\n'.join(['  {}: {}'.format(ind, f[ind]) for ind in f]))
         return f
 
-    def select(self, population: Population) -> Population:
+    def select(self, pop: Population) -> Population:
         """
         Selects N individuals from the population to survive into the
         next generation.
         """
-        survivors = Population()
-        ind_to_fitness = self.fitness(population)
-        for _ in self.population_size:
+        survivors = []
+        ind_to_fitness = self.fitness(pop)
+        for _ in range(self.population_size):
             participants = random.sample(pop, self.tournament_size)
-            winner = max(participants, key=fitness.__getitem__)
+            winner = max(participants, key=ind_to_fitness.__getitem__)
             survivors.append(winner)
         return survivors
 
     def mutate(self, pop: Population) -> Population:
-        offspring = Population()
+        offspring = []
         for ind in pop:
             child = ind
             if random.random() <= self.rate_mutation:
@@ -133,12 +135,13 @@ class GeneticSearcher(Searcher):
             return [Candidate(a + d),
                     Candidate(c + b)]
 
-        offspring = Population()
-        pop = random.shuffle(pop)
-        for i in range(0, len(pop), 2):
-            parents = pop[i:i+n]
+        offspring = []
+        random.shuffle(pop)
+        k = 2
+        for i in range(0, len(pop), k):
+            parents = pop[i:i+k]
             offspring += parents
-            if len(parents) == 2 and random.random() <= self.rate_crossover:
+            if len(parents) == k and random.random() <= self.rate_crossover:
                 offspring += one_point_crossover(*parents)
         return offspring
 
@@ -147,11 +150,18 @@ class GeneticSearcher(Searcher):
         pop = self.initial()
         logger.info("generated initial population")
 
-        yield from self.evaluate(pop)
+        logger.info("evaluating initial population...")
+        yield from self.evaluate_all(pop)
+        logger.info("evaluated initial population")
+        logger.info("selecting survivors...")
         pop = self.select(pop)  # should this happen at the start?
+        logger.info("selected survivors")
 
         for g in range(0, self.num_generations + 1):
+            logger.info("starting generation %d...", g)
             pop = self.crossover(pop)
             pop = self.mutate(pop)
-            yield from self.evaluate(pop)
+            logger.info("evaluating candidate patches...")
+            yield from self.evaluate_all(pop)
+            logger.info("evaluated candidate patches")
             pop = self.select(pop)
