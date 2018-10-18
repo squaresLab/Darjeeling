@@ -133,8 +133,8 @@ class GeneticSearcher(Searcher):
             a, b = tx[:lx], tx[lx:]
             c, d = ty[:ly], ty[ly:]
 
-            return [Candidate(a + d),
-                    Candidate(c + b)]
+            children = [Candidate(a + d), Candidate(c + b)]  # type: ignore
+            return children
 
         offspring = []  # type: List[Candidate]
         random.shuffle(pop)
