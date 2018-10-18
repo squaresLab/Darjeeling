@@ -168,8 +168,9 @@ class Searcher(object):
         i = 0
         num_evaluated = 0
         for i in range(min(size, self.__evaluator.num_workers)):
-            logger.debug("evaluating candidate %d", i + 1, size)
+            logger.debug("evaluating candidate %d/%d", i + 1, size)
             self.evaluate(candidates[i])
+        i = min(size, self.__evaluator.num_workers)
         for candidate, outcome in self.as_evaluated():
             num_evaluated += 1
             logger.debug("evaluated candidate %d/%d", num_evaluated, size)
@@ -178,7 +179,7 @@ class Searcher(object):
             if i < size:
                 logger.debug("evaluating candidate %d/%d", i + 1, size)
                 self.evaluate(candidates[i])
-            i += 1
+                i += 1
         logger.debug("evaluated all candidates")
 
     def as_evaluated(self) -> Iterator[Tuple[Candidate, CandidateOutcome]]:
