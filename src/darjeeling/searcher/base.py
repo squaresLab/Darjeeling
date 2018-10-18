@@ -1,4 +1,4 @@
-from typing import Iterable, Iterator, Optional, List, Tuple, Any, Dict
+from typing import Iterable, Iterator, Optional, List, Tuple, Any, Dict, Type
 from mypy_extensions import NoReturn
 import logging
 import datetime
@@ -45,10 +45,12 @@ class Searcher(object):
             m = "'type' property missing from 'algorithm' section"
             raise BadConfigurationException(m)
 
-        SEARCHERS = {'exhaustive': ExhaustiveSearcher,
-                     'genetic': GeneticSearcher}
+        SEARCHERS = {
+            'exhaustive': ExhaustiveSearcher,
+            'genetic': GeneticSearcher
+        }  # type: Dict[str, Type[Searcher]]
         try:
-            kls = SEARCHERS[typ]
+            kls = SEARCHERS[typ]  # type: Type[Searcher]
         except KeyError:
             m = "'unsupported 'type' property used in 'algorithm' section: {}"
             m.format(typ)

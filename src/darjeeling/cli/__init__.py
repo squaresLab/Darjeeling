@@ -1,6 +1,6 @@
 from typing import List, Optional
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 import sys
 import random
 
@@ -108,7 +108,7 @@ class BaseController(cement.Controller):
             raise BadConfigurationException(m)
 
         # FIXME determine time limit
-        limit_time = None  # type: Optional[datetime.timedelta]
+        limit_time = None  # type: Optional[timedelta]
 
         # determine the limit on the number of candidate repairs
         if limit_candidates is not None:
