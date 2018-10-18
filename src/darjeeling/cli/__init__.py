@@ -107,6 +107,9 @@ class BaseController(cement.Controller):
             m = "number of threads must be greater than or equal to 1."
             raise BadConfigurationException(m)
 
+        # FIXME determine time limit
+        limit_time = None  # type: Optional[datetime.timedelta]
+
         # determine the limit on the number of candidate repairs
         if limit_candidates is not None:
             logger.info("using candidate limit override: %d candidates",
@@ -268,8 +271,8 @@ class BaseController(cement.Controller):
             # FIXME pass limits!
             searcher = Searcher.from_dict(yml['algorithm'], problem, tx,
                                           threads=threads,
-                                          limit_candidates=limit_candidates)
-                                          # limit_time=limit_time)
+                                          candidate_limit=limit_candidates,
+                                          time_limit=limit_time)
 
             logger.info("beginning search process...")
             patches = []  # type: List[Candidate]

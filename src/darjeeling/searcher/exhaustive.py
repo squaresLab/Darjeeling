@@ -14,14 +14,18 @@ class ExhaustiveSearcher(Searcher):
     @staticmethod
     def from_dict(d: Dict[str, Any],
                   problem: Problem,
-                  transformations: List[Transformation]
+                  transformations: List[Transformation],
+                  *,
+                  threads: int = 1,
+                  candidate_limit: Optional[int] = None,
+                  time_limit: Optional[datetime.timedelta] = None
                   ) -> 'ExhaustiveSearcher':
         return ExhaustiveSearcher(problem.bugzoo,
                                   problem,
-                                  transformations)
-                                  # threads=threads,
-                                  # time_limit=time_limit,
-                                  # candidate_limit=candidate_limit)
+                                  transformations,
+                                  threads=threads,
+                                  candidate_limit=candidate_limit,
+                                  time_limit=time_limit)
 
     def __init__(self,
                  bugzoo: BugZooClient,

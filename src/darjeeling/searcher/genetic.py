@@ -24,11 +24,18 @@ class GeneticSearcher(Searcher):
     @staticmethod
     def from_dict(d: Dict[str, Any],
                   problem: Problem,
-                  transformations: List[Transformation]
-                  ) -> 'ExhaustiveSearcher':
+                  transformations: List[Transformation],
+                  *,
+                  threads: int = 1,
+                  candidate_limit: Optional[int] = None,
+                  time_limit: Optional[datetime.timedelta] = None
+                  ) -> 'GeneticSearcher':
         return GeneticSearcher(problem.bugzoo,
                                problem,
-                               transformations)
+                               transformations,
+                               threads=threads,
+                               candidate_limit=candidate_limit,
+                               time_limit=time_limit)
 
     def __init__(self,
                  bugzoo: bugzoo.BugZoo,

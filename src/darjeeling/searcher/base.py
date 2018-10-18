@@ -32,7 +32,8 @@ class Searcher(object):
                   tx: List[Transformation],
                   *,
                   threads: int = 1,
-                  limit_candidates: Optional[int] = None
+                  candidate_limit: Optional[int] = None,
+                  time_limit: Optional[datetime.timedelta] = None
                   ) -> 'Searcher':
         # TODO fix via metaclass
         from .exhaustive import ExhaustiveSearcher
@@ -53,7 +54,10 @@ class Searcher(object):
             m += " [supported types: {}]".format(', '.join(SEARCHERS.keys()))
             raise BadConfigurationException(m)
 
-        return kls.from_dict(d, problem, tx)
+        return kls.from_dict(d, problem, tx,
+                             threads=threads,
+                             candidate_limit=candidate_limit,
+                             time_limit=time_limit)
 
 
     def __init__(self,
