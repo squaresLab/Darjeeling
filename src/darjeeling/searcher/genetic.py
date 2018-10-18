@@ -45,7 +45,8 @@ class GeneticSearcher(Searcher):
                          problem,
                          threads=threads,
                          time_limit=time_limit,
-                         candidate_limit=candidate_limit)
+                         candidate_limit=candidate_limit,
+                         terminate_early=False)
 
     @property
     def population_size(self) -> int:
