@@ -31,7 +31,8 @@ class Searcher(object):
                  *,
                  threads: int = 1,
                  time_limit: Optional[datetime.timedelta] = None,
-                 candidate_limit: Optional[int] = None
+                 candidate_limit: Optional[int] = None,
+                 terminate_early: bool = True
                  ) -> None:
         """
         Constructs a new searcher.
@@ -59,6 +60,7 @@ class Searcher(object):
         self.__evaluator = Evaluator(bugzoo,
                                      problem,
                                      num_workers=threads,
+                                     terminate_early=terminate_early,
                                      outcomes=self.__outcomes)
 
         self.__stopwatch = Stopwatch()

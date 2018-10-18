@@ -26,6 +26,7 @@ class Evaluator(object):
                  problem: Problem,
                  *,
                  num_workers: int = 1,
+                 terminate_early: bool = True,
                  outcomes: Optional[OutcomeManager] = None
                  ) -> None:
         self.__bugzoo = client_bugzoo
@@ -33,6 +34,7 @@ class Evaluator(object):
         self.__executor = \
             concurrent.futures.ThreadPoolExecutor(max_workers=num_workers)
         self.__num_workers = num_workers
+        self.__terminate_early = terminate_early
 
         if outcomes:
             self.__outcomes = outcomes
@@ -104,8 +106,8 @@ class Evaluator(object):
                 self.outcomes.record_test(candidate, test.name, outcome)
                 if not outcome.passed:
                     logger.debug("* test failed: %s (%s)", test.name, candidate)
-                    # TODO early termination?
-                    return
+                    if self.__terminate_early:
+                        return
                 logger.debug("* test passed: %s (%s)", test.name, candidate)
 
         except BuildFailure:
