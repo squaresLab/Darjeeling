@@ -164,15 +164,22 @@ class Searcher(object):
             repairs.
         """
         size = len(candidates)
+        logger.debug("evaluating %d candidates", size)
         i = 0
+        num_evaluated = 0
         for i in range(min(size, self.__evaluator.num_workers)):
+            logger.debug("evaluating candidate %d", i + 1, size)
             self.evaluate(candidates[i])
         for candidate, outcome in self.as_evaluated():
-            i += 1
+            num_evaluated += 1
+            logger.debug("evaluated candidate %d/%d", num_evaluated, size)
             if outcome.is_repair:
                 yield candidate
             if i < size:
+                logger.debug("evaluating candidate %d/%d", i + 1, size)
                 self.evaluate(candidates[i])
+            i += 1
+        logger.debug("evaluated all candidates")
 
     def as_evaluated(self) -> Iterator[Tuple[Candidate, CandidateOutcome]]:
         yield from self.__evaluator.as_completed()
