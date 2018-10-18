@@ -123,14 +123,14 @@ class Evaluator(object):
                  candidate: Candidate
                  ) -> Tuple[Candidate, CandidateOutcome]:
         if candidate in self.outcomes:
-            return (candidate, self.outcomes[candidate])
-        self._evaluate(candidate)
-        result = (candidate, self.outcomes[candidate])
-
+            logger.debug("already evaluated candidate -- using cached result")
+            result = (candidate, self.outcomes[candidate])
+        else:
+            self._evaluate(candidate)
+            result = (candidate, self.outcomes[candidate])
         with self.__lock:
             self.__queue_evaluated.put(result)
             self.__num_running -= 1
-
         return result
 
     def submit(self,
