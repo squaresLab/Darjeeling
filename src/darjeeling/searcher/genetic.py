@@ -1,12 +1,13 @@
 __all__ = ['GeneticSearcher']
 
-from typing import Iterator, List, Optional, Dict
+from typing import Iterator, List, Optional, Dict, Any
 import concurrent.futures
 import logging
 import random
 import datetime
 
 import bugzoo
+from bugzoo.client import Client as BugZooClient
 
 from .base import Searcher
 from ..candidate import Candidate
@@ -20,6 +21,22 @@ Population = List[Candidate]
 
 
 class GeneticSearcher(Searcher):
+    @staticmethod
+    def from_dict(d: Dict[str, Any],
+                  problem: Problem,
+                  transformations: List[Transformation],
+                  *,
+                  threads: int = 1,
+                  candidate_limit: Optional[int] = None,
+                  time_limit: Optional[datetime.timedelta] = None
+                  ) -> 'GeneticSearcher':
+        return GeneticSearcher(problem.bugzoo,
+                               problem,
+                               transformations,
+                               threads=threads,
+                               candidate_limit=candidate_limit,
+                               time_limit=time_limit)
+
     def __init__(self,
                  bugzoo: bugzoo.BugZoo,
                  problem: Problem,

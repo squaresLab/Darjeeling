@@ -1,6 +1,6 @@
 from typing import List, Optional
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 import sys
 import random
 
@@ -17,7 +17,7 @@ from ..transformation.classic import DeleteStatement, \
                                      ReplaceStatement, \
                                      PrependStatement
 from ..exceptions import BadConfigurationException
-from ..searcher.exhaustive import ExhaustiveSearcher
+from ..searcher import Searcher
 from ..problem import Problem
 from ..localization import Localization, \
                            ample, \
@@ -106,6 +106,9 @@ class BaseController(cement.Controller):
         if threads < 1:
             m = "number of threads must be greater than or equal to 1."
             raise BadConfigurationException(m)
+
+        # FIXME determine time limit
+        limit_time = None  # type: Optional[timedelta]
 
         # determine the limit on the number of candidate repairs
         if limit_candidates is not None:
@@ -264,19 +267,12 @@ class BaseController(cement.Controller):
             logger.info("constructed transformation database: %d transformations",  # noqa: pycodestyle
                         len(tx))
 
-            # find all single-edit patches
-            logger.info("constructing all single-edit patches...")
-            candidates = list(all_single_edit_patches(tx))
-            logger.info("constructed %d single-edit patches", len(candidates))
-
             # build the search strategy
-            # FIXME pass time limit
-            searcher = ExhaustiveSearcher(
-                                bugzoo=problem.bugzoo,
-                                problem=problem,
-                                candidates=iter(candidates),
-                                threads=threads,
-                                candidate_limit=limit_candidates)
+            # FIXME pass limits!
+            searcher = Searcher.from_dict(yml['algorithm'], problem, tx,
+                                          threads=threads,
+                                          candidate_limit=limit_candidates,
+                                          time_limit=limit_time)
 
             logger.info("beginning search process...")
             patches = []  # type: List[Candidate]

@@ -1,25 +1,43 @@
-from typing import Iterable, Optional, Iterator
+from typing import Iterable, Optional, Iterator, Dict, Any, List
 import datetime
 
 from bugzoo import Client as BugZooClient
 
 from .base import Searcher
-from ..candidate import Candidate
+from ..candidate import Candidate, all_single_edit_patches
 from ..problem import Problem
+from ..transformation import Transformation
 from ..exceptions import SearchExhausted
 
 
 class ExhaustiveSearcher(Searcher):
+    @staticmethod
+    def from_dict(d: Dict[str, Any],
+                  problem: Problem,
+                  transformations: List[Transformation],
+                  *,
+                  threads: int = 1,
+                  candidate_limit: Optional[int] = None,
+                  time_limit: Optional[datetime.timedelta] = None
+                  ) -> 'ExhaustiveSearcher':
+        return ExhaustiveSearcher(problem.bugzoo,
+                                  problem,
+                                  transformations,
+                                  threads=threads,
+                                  candidate_limit=candidate_limit,
+                                  time_limit=time_limit)
+
     def __init__(self,
                  bugzoo: BugZooClient,
                  problem: Problem,
-                 candidates: Iterable[Candidate],
+                 transformations: List[Transformation],
                  *,
                  threads: int = 1,
                  time_limit: Optional[datetime.timedelta] = None,
                  candidate_limit: Optional[int] = None
                  ) -> None:
-        self.__candidates = candidates
+        # FIXME for now!
+        self.__candidates = all_single_edit_patches(transformations)
         super().__init__(bugzoo=bugzoo,
                          problem=problem,
                          threads=threads,
