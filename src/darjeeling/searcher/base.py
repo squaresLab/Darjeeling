@@ -52,8 +52,8 @@ class Searcher(object):
         try:
             kls = SEARCHERS[typ]  # type: Type[Searcher]
         except KeyError:
-            m = "'unsupported 'type' property used in 'algorithm' section: {}"
-            m.format(typ)
+            m = "unsupported 'type' property used in 'algorithm' section: {}"
+            m = m.format(typ)
             m += " [supported types: {}]".format(', '.join(SEARCHERS.keys()))
             raise BadConfigurationException(m)
 
