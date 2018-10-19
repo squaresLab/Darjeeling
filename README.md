@@ -113,6 +113,9 @@ optimizations:
   ignore-equivalent-prepends: yes
   ignore-dead-code: yes
   ignore-string-equivalent-snippets: yes
+limits:
+  candidates: 5000
+  time: 3600
 ```
 
 Below, we describe the top-level options exposed by the configuration file:
@@ -184,3 +187,22 @@ list of optimizations that can be toggled by the configuration file.
   statements, or else solely introduce a declaration statement.
 * `only-insert-executed-code`: prevents the insertion of code that has not been
   executed by at least one test case.
+
+### `limits`
+
+The `limits` section of the configuration file is used to impose limits on the
+resources that may be consumed during the search. The search will be terminated
+upon hitting any of these limits. The limits specified in this section of the
+configuration file may be overridden by command-line options. If a limit for
+a particular resource is not given in either the configuration file or as a
+command-line argument, then the use of that resource will be unbounded (i.e.,
+no limit will be imposed).
+
+Below is a list of the resource limits that may be specified in the
+configuration file:
+
+* `candidates`: the maximum number of candidate patches that may be evaluated.
+  May be overriden at the command line by the `--max-candidates` option.
+* `time`: the maximum length of wall-clock time that may be spent searching for
+  a patch, given in seconds.
+  May be overriden at the command line by the `--max-time` option.
