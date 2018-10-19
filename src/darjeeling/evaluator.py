@@ -1,12 +1,14 @@
 __all__ = ['Evaluator']
 
-from typing import Tuple, List, Optional, Iterator, Set
+from typing import Tuple, List, Optional, Iterator, Set, Union, FrozenSet
 from timeit import default_timer as timer
 from concurrent.futures import Future
+import math
 import logging
 import queue
 import threading
 import concurrent.futures
+import random
 
 import bugzoo
 from bugzoo import Client as BugZooClient
@@ -35,6 +37,7 @@ class Evaluator(object):
                  *,
                  num_workers: int = 1,
                  terminate_early: bool = True,
+                 sample_size: Optional[Union[float, int]] = None,
                  outcomes: Optional[OutcomeManager] = None
                  ) -> None:
         self.__bugzoo = client_bugzoo
@@ -43,6 +46,20 @@ class Evaluator(object):
             concurrent.futures.ThreadPoolExecutor(max_workers=num_workers)
         self.__num_workers = num_workers
         self.__terminate_early = terminate_early
+
+        self.__tests_failing = \
+            frozenset(self.__problem.failing_tests)  # type: FrozenSet[Test]
+        self.__tests_passing = \
+            frozenset(self.__problem.passing_tests)  # type: FrozenSet[Test]
+
+        # if the sample size is passed as a fraction, convert that fraction
+        # to an integer
+        if isinstance(sample_size, float):
+            num_passing = len(self.__tests_passing)
+            sample_size = math.ceil(num_passing * sample_size)
+            self.__sample_size = sample_size  # type: Optional[int]
+        else:
+            self.__sample_size = sample_size
 
         if outcomes:
             self.__outcomes = outcomes
@@ -77,10 +94,29 @@ class Evaluator(object):
         """
         return self.__counter_candidates
 
+    def _order_tests(self, tests: Set[Test]) -> List[Test]:
+        # FIXME implement ordering strategies
+        return list(tests)
+
     def _select_tests(self) -> Tuple[List[Test], List[Test]]:
-        # FIXME apply test sampling
-        # FIXME apply test ordering
-        return list(self.__problem.tests), []
+        """
+        Computes a test sequence for a candidate evaluation.
+        """
+        # sample passing tests
+        sample = set()  # type: Set[Test]
+        if self.__sample_size:
+            sample = \
+                set(random.sample(self.__tests_passing, self.__sample_size))
+        else:
+            sample = set(self.__tests_passing)
+
+        selected = sample | self.__tests_failing  # type: Set[Test]
+        remainder = set(self.__tests_passing - sample)  # type: Set[Test]
+
+        # order tests
+        ordered_selected = self._order_tests(selected)  # type: List[Test]
+        ordered_remainder = self._order_tests(remainder)  # type: List[Test]
+        return ordered_selected, ordered_remainder
 
     def _filter_redundant_tests(self,
                                 candidate: Candidate,
