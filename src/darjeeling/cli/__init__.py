@@ -61,6 +61,11 @@ class BaseController(cement.Controller):
               'type': int,
               'help': ('the maximum number of candidate patches that may be '
                        'considered by the search.')}),
+            (['--max-time-mins'],
+             {'dest': 'limit_time_minutes',
+              'type': int,
+              'help': ('the maximum number of minutes that may be spent '
+                       'searching for a patch.')}),
             (['--continue'],
              {'dest': 'terminate_early',
               'action': 'store_false',
@@ -305,7 +310,7 @@ class CLI(cement.App):
 
 def main():
     log_to_stdout = logging.StreamHandler()
-    log_to_stdout.setLevel(logging.DEBUG)
+    log_to_stdout.setLevel(logging.INFO)
     # logger.addHandler(log_to_stdout)
     logging.getLogger('darjeeling').addHandler(log_to_stdout)
 
