@@ -77,7 +77,7 @@ To install the latest stable release of Darjeeling from PyPI from inside the
 virtual environment:
 
 ```
-(venv) $ pipenv install darjeeling
+(venv) $ pip install darjeeling
 ```
 
 Alternatively, to install from source, execute the following inside the virtual
