@@ -1,6 +1,6 @@
 __all__ = ['Evaluator']
 
-from typing import Tuple, List, Optional, Iterator
+from typing import Tuple, List, Optional, Iterator, Set
 from timeit import default_timer as timer
 from concurrent.futures import Future
 import logging
@@ -11,6 +11,7 @@ import concurrent.futures
 import bugzoo
 from bugzoo import Client as BugZooClient
 from bugzoo.core import FileLine
+from bugzoo.core.test import TestCase as Test
 from bugzoo.core.test import TestOutcome as BugZooTestOutcome
 
 from .candidate import Candidate
@@ -85,7 +86,7 @@ class Evaluator(object):
                                 candidate: Candidate,
                                 tests: List[Test]
                                 ) -> Tuple[List[Test], Set[Test]]:
-        test_line_coverage = self.__problem.coverage
+        line_coverage_by_test = self.__problem.coverage
         lines_changed = candidate.lines_changed(self.__problem)
         keep = []  # type: List[Test]
         drop = set()  # type: Set[Test]
@@ -121,9 +122,12 @@ class Evaluator(object):
                   ) -> CandidateOutcome:
         bz = self.__bugzoo
 
+        patch = candidate.to_diff(self.__problem)
+        logger.info("evaluating candidate: %s\n%s\n", candidate, patch)
+
         # select a subset of tests to use for this evaluation
         tests, remainder = self._select_tests()
-        tests, redundant  = self._filter_redundant_tests()
+        tests, redundant  = self._filter_redundant_tests(candidate, tests)
 
         # compute outcomes for redundant tests
         test_outcomes = TestOutcomeSet({
@@ -141,16 +145,16 @@ class Evaluator(object):
             if not cached_outcome.build.successful:
                 return cached_outcome
 
-            # don't bother executing tests for which we already have tests
-            filtered_tests = set()  # type: Set[Test]
+            # don't bother executing tests for which we already have results
+            filtered_tests = []  # type: List[Test]
             for test in tests:
                 if test.name in cached_outcome.tests:
-                    test_outcome = cached_outcome[test.name]
+                    test_outcome = cached_outcome.tests[test.name]
                     test_outcomes = \
                         test_outcomes.with_outcome(test.name, test_outcome)
                     known_bad_patch &= not test_outcome.successful
                 else:
-                    filtered_tests.add(test)
+                    filtered_tests.append(test)
             tests = filtered_tests
 
             # if no tests remain, construct a partial view of the candidate
@@ -177,6 +181,8 @@ class Evaluator(object):
             # if there is no evidence that this patch fails any tests, execute
             # all remaining tests to determine whether or not this patch is
             # an acceptable repair
+            #
+            # FIXME check if outcome is redundant!
             if not known_bad_patch:
                 for test in remainder:
                     test_outcome = self._run_test(container, candidate, test)
@@ -204,7 +210,7 @@ class Evaluator(object):
         """
         # FIXME separate sample outcome from full outcome
         outcome = self._evaluate(candidate)
-        self.outcomes.update(candidate, outcome)
+        self.outcomes.record(candidate, outcome)
         with self.__lock:
             self.__queue_evaluated.put(outcome)
             self.__num_running -= 1
