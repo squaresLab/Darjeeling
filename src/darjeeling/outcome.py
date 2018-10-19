@@ -55,6 +55,12 @@ class TestOutcomeSet(object):
         outcomes[test] = outcome
         return TestOutcomeSet(outcomes)
 
+    def merge(self, other: 'TestOutcomeSet') -> 'TestOutcomeSet':
+        outcomes = self.__outcomes.copy()
+        for test_name in other:
+            outcomes[test_name] = other[test_name]
+        return TestOutcomeSet(outcomes)
+
 
 @attr.s(frozen=True)
 class CandidateOutcome(object):
@@ -77,6 +83,12 @@ class CandidateOutcome(object):
         test_outcomes = self.tests.with_outcome(test, outcome)
         return CandidateOutcome(self.build, test_outcomes)
 
+    def merge(self,
+              other: 'CandidateOutcome'
+              ) -> 'CandidateOutcome':
+        return CandidateOutcome(self.build,
+                                self.tests.merge(other.tests))
+
 
 class OutcomeManager(object):
     # FIXME hash candidate outcomes
@@ -92,6 +104,16 @@ class OutcomeManager(object):
         stored by this manager.
         """
         return self.__outcomes.keys().__iter__()
+
+    def record(self,
+               candidate: Candidate,
+               outcome: CandidateOutcome
+               ) -> None:
+        if candidate not in self.__outcomes:
+            self.__outcomes[candidate] = outcome
+        else:
+            self.__outcomes[candidate] = \
+                self.__outcomes[candidate].merge(outcome)
 
     def record_build(self,
                      candidate: Candidate,
