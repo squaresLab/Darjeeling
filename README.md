@@ -115,7 +115,7 @@ optimizations:
   ignore-string-equivalent-snippets: yes
 limits:
   candidates: 5000
-  time: 3600
+  time-minutes: 3600
 ```
 
 Below, we describe the top-level options exposed by the configuration file:
