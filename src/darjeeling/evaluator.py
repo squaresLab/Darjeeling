@@ -212,7 +212,7 @@ class Evaluator(object):
         outcome = self._evaluate(candidate)
         self.outcomes.record(candidate, outcome)
         with self.__lock:
-            self.__queue_evaluated.put(outcome)
+            self.__queue_evaluated.put((candidate, outcome))
             self.__num_running -= 1
         return (candidate, outcome)
 
