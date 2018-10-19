@@ -3,6 +3,7 @@ import logging
 from datetime import datetime, timedelta
 import sys
 import random
+import warnings
 
 import bugzoo
 import cement
@@ -85,6 +86,8 @@ class BaseController(cement.Controller):
         threads = self.app.pargs.threads  # type: Optional[int]
         limit_candidates = \
             self.app.pargs.limit_candidates  # type: Optional[int]
+        limit_time_minutes = \
+            self.app.pargs.limit_time_minutes  # type: Optional[int]
 
         with open(filename, 'r') as f:
             yml = yaml.load(f)
@@ -112,8 +115,26 @@ class BaseController(cement.Controller):
             m = "number of threads must be greater than or equal to 1."
             raise BadConfigurationException(m)
 
-        # FIXME determine time limit
+        # determine time limit
+        if limit_time_minutes is not None:
+            logger.info("using time limit override: %d minutes",
+                        limit_time_minutes)
+        elif 'limits' in yml and 'time-minutes' in yml['limits']:
+            if not isinstance(yml['limits']['time-minutes'], int):
+                m = "'time-minutes' property in 'limits' section should be an int"  # noqa: pycodestyle
+                raise BadConfigurationException(m)
+            limit_time_minutes = yml['limits']['time-minutes']
+            logger.info("using time limit specified by configuration: %d minutes",  # noqa: pycodestyle
+                        limit_time_minutes)
+        else:
+            logger.info("no time limit is being enforced")
+
         limit_time = None  # type: Optional[timedelta]
+        if limit_time_minutes:
+            if limit_time_minutes < 1:
+                m = "time limit must be greater than or equal to 1 minute"
+                raise BadConfigurationException(m)
+            limit_time = timedelta(mins=limit_time_minutes)
 
         # determine the limit on the number of candidate repairs
         if limit_candidates is not None:
@@ -126,6 +147,12 @@ class BaseController(cement.Controller):
             limit_candidates = yml['limits']['candidates']
             logger.info("using candidate limit specified by configuration: %d candidates",  # noqa: pycodestyle
                         limit_candidates)
+        else:
+            logger.info("no limit on number of candidate evaluations")
+
+        if not limit_time and not limit_candidates:
+            m = "no resource limits were specified; resource use will be unbounded"  # noqa: pycodestyle
+            logger.warn(m)
 
         # seed override
         if seed is not None:
