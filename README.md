@@ -204,6 +204,6 @@ configuration file:
 
 * `candidates`: the maximum number of candidate patches that may be evaluated.
   May be overriden at the command line by the `--max-candidates` option.
-* `time`: the maximum length of wall-clock time that may be spent searching for
-  a patch, given in seconds.
-  May be overriden at the command line by the `--max-time` option.
+* `time-minutes`: the maximum length of wall-clock time that may be spent
+  searching for a patch, given in minutes.
+  May be overriden at the command line by the `--max-time-mins` option.
