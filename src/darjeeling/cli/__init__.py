@@ -134,7 +134,7 @@ class BaseController(cement.Controller):
             if limit_time_minutes < 1:
                 m = "time limit must be greater than or equal to 1 minute"
                 raise BadConfigurationException(m)
-            limit_time = timedelta(mins=limit_time_minutes)
+            limit_time = timedelta(minutes=limit_time_minutes)
 
         # determine the limit on the number of candidate repairs
         if limit_candidates is not None:
