@@ -76,10 +76,10 @@ class Evaluator(object):
         """
         return self.__counter_candidates
 
-    def _select_tests(self) -> List[Test]:
+    def _select_tests(self) -> Tuple[List[Test], List[Test]]:
         # FIXME apply test sampling
         # FIXME apply test ordering
-        return list(self.__problem.tests)
+        return list(self.__problem.tests), []
 
     def _filter_redundant_tests(self,
                                 candidate: Candidate,
