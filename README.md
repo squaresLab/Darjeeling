@@ -127,6 +127,7 @@ Below, we describe the top-level options exposed by the configuration file:
 * `seed`: a seed for the random number generator.
 * `threads`: number of threads over which the repair workload should be
   distributed.
+* `limits`: limits on the resources that may be consumed during the search.
 
 ### `localization`
 
