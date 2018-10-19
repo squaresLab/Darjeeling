@@ -21,7 +21,7 @@ setup(
     install_requires=[
         'bugzoo>=2.1.18',
         'rooibos>=0.3.0',
-        'boggart>=0.1.14',
+        'boggart>=0.1.16',
         'kaskara>=0.0.4',
         'attrs>=17.2.0',
         'cement>=3.0.0',
