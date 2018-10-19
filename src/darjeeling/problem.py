@@ -268,6 +268,14 @@ class Problem(object):
         yield from self.__tests_ordered
 
     @property
+    def failing_tests(self) -> Iterator[TestCase]:
+        yield from self.__tests_failing
+
+    @property
+    def passing_tests(self) -> Iterator[TestCase]:
+        yield from self.__tests_passing
+
+    @property
     def coverage(self) -> TestSuiteCoverage:
         """
         Line coverage information for each test within the test suite for the
