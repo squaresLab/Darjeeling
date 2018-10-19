@@ -8,13 +8,20 @@ import queue
 import threading
 import concurrent.futures
 
+import bugzoo
 from bugzoo import Client as BugZooClient
 from bugzoo.core import FileLine
+from bugzoo.core.test import TestOutcome as BugZooTestOutcome
 
 from .candidate import Candidate
-from .outcome import CandidateOutcome, OutcomeManager
+from .outcome import CandidateOutcome, \
+                     OutcomeManager, \
+                     TestOutcomeSet, \
+                     TestOutcome, \
+                     BuildOutcome
 from .problem import Problem
 from .exceptions import BuildFailure
+from .util import Stopwatch
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
@@ -69,52 +76,120 @@ class Evaluator(object):
         """
         return self.__counter_candidates
 
-    def _evaluate(self, candidate: Candidate) -> None:
-        self.__counter_candidates += 1
+    def _select_tests(self) -> List[Test]:
+        # FIXME apply test sampling
+        # FIXME apply test ordering
+        return list(self.__problem.tests)
 
-        patch = candidate.to_diff(self.__problem)
-        line_coverage_by_test = self.__problem.coverage
-        lines_changed = \
-            candidate.lines_changed(self.__problem)  # type: List[FileLine]
-        logger.info("evaluating candidate: %s\n%s\n", candidate, patch)
+    def _filter_redundant_tests(self,
+                                candidate: Candidate,
+                                tests: List[Test]
+                                ) -> Tuple[List[Test], Set[Test]]:
+        test_line_coverage = self.__problem.coverage
+        lines_changed = candidate.lines_changed(self.__problem)
+        keep = []  # type: List[Test]
+        drop = set()  # type: Set[Test]
+        for test in tests:
+            test_line_coverage = line_coverage_by_test[test.name]
+            if not any(line in test_line_coverage for line in lines_changed):
+                drop.add(test)
+            else:
+                keep.append(test)
+        return (keep, drop)
 
+    def _run_test(self,
+                  container: bugzoo.Container,
+                  candidate: Candidate,
+                  test: Test
+                  ) -> TestOutcome:
+        """
+        Runs a test for a given candidate patch using a provided container.
+        """
+        logger.debug("executing test: %s [%s]", test.name, candidate)
+        self.__counter_tests += 1
         bz = self.__bugzoo
+        bz_outcome = \
+            bz.containers.test(container, test)  # type: BugZooTestOutcome
+        if not bz_outcome.passed:
+            logger.debug("* test failed: %s (%s)", test.name, candidate)
+        else:
+            logger.debug("* test passed: %s (%s)", test.name, candidate)
+        return TestOutcome(bz_outcome.passed, bz_outcome.duration)
+
+    def _evaluate(self,
+                  candidate: Candidate
+                  ) -> CandidateOutcome:
+        bz = self.__bugzoo
+
+        # select a subset of tests to use for this evaluation
+        tests, remainder = self._select_tests()
+        tests, redundant  = self._filter_redundant_tests()
+
+        # compute outcomes for redundant tests
+        test_outcomes = TestOutcomeSet({
+            t.name: TestOutcome(True, 0.0) for t in redundant
+        })  # type: TestOutcomeSet
+
+        # if we have evidence that this patch is not a complete repair,
+        # there is no need to extend beyond the test sample in the event
+        # that all tests in the sample are successful
+        known_bad_patch = False
+
+        if candidate in self.outcomes:
+            cached_outcome = self.outcomes[candidate]
+
+            if not cached_outcome.build.successful:
+                return cached_outcome
+
+            # don't bother executing tests for which we already have tests
+            filtered_tests = set()  # type: Set[Test]
+            for test in tests:
+                if test.name in cached_outcome.tests:
+                    test_outcome = cached_outcome[test.name]
+                    test_outcomes = \
+                        test_outcomes.with_outcome(test.name, test_outcome)
+                    known_bad_patch &= not test_outcome.successful
+                else:
+                    filtered_tests.add(test)
+            tests = filtered_tests
+
+            # if no tests remain, construct a partial view of the candidate
+            # outcome
+            if not tests:
+                return CandidateOutcome(cached_outcome.build, test_outcomes)
+
+        self.__counter_candidates += 1
         logger.debug("building candidate: %s", candidate)
-        time_build_start = timer()
+        timer_build = Stopwatch()
         try:
             container = self.__problem.build_patch(patch)
+            outcome_build = BuildOutcome(True, timer_build.duration)
             logger.debug("built candidate: %s", candidate)
-            self.outcomes.record_build(candidate,
-                                       True,
-                                       timer() - time_build_start)
-
-            # TODO perform test ordering
             logger.debug("executing tests for candidate: %s", candidate)
-            for test in self.__problem.tests:
-                # skip redundant tests
-                # FIXME for some search algos, we need to record this info
-                test_line_coverage = line_coverage_by_test[test.name]
-                if not any(line in test_line_coverage for line in lines_changed):
-                    logger.debug("skipping redundant test: %s [%s]",
-                                 test.name, candidate)
-                    continue
+            for test in tests:
+                if self.__terminate_early and known_bad_patch:
+                    break
+                test_outcome = self._run_test(container, candidate, test)
+                test_outcomes = \
+                    test_outcomes.with_outcome(test.name, test_outcome)
+                known_bad_patch &= not test_outcome.successful
 
-                logger.debug("executing test: %s [%s]", test.name, candidate)
-                self.__counter_tests += 1
-                outcome = bz.containers.test(container, test)
+            # if there is no evidence that this patch fails any tests, execute
+            # all remaining tests to determine whether or not this patch is
+            # an acceptable repair
+            if not known_bad_patch:
+                for test in remainder:
+                    test_outcome = self._run_test(container, candidate, test)
+                    test_outcomes = \
+                        test_outcomes.with_outcome(test.name, test_outcome)
+                    if not test_outcome.successful:
+                        break
 
-                self.outcomes.record_test(candidate, test.name, outcome)
-                if not outcome.passed:
-                    logger.debug("* test failed: %s (%s)", test.name, candidate)
-                    if self.__terminate_early:
-                        return
-                logger.debug("* test passed: %s (%s)", test.name, candidate)
-
+            return CandidateOutcome(outcome_build, test_outcomes)
         except BuildFailure:
             logger.debug("failed to build candidate: %s", candidate)
-            self.outcomes.record_build(candidate,
-                                       False,
-                                       timer() - time_build_start)
+            outcome_build = BuildOutcome(False, timer_build.duration)
+            return CandidateOutcome(outcome_build, TestOutcomeSet())
         finally:
             logger.info("evaluated candidate: %s", candidate)
             if container:
@@ -124,20 +199,23 @@ class Evaluator(object):
     def evaluate(self,
                  candidate: Candidate
                  ) -> Tuple[Candidate, CandidateOutcome]:
-        if candidate in self.outcomes:
-            logger.debug("already evaluated candidate -- using cached result")
-            result = (candidate, self.outcomes[candidate])
-        else:
-            self._evaluate(candidate)
-            result = (candidate, self.outcomes[candidate])
+        """
+        Evaluates a given candidate patch.
+        """
+        # FIXME separate sample outcome from full outcome
+        outcome = self._evaluate(candidate)
+        self.outcomes.update(candidate, outcome)
         with self.__lock:
-            self.__queue_evaluated.put(result)
+            self.__queue_evaluated.put(outcome)
             self.__num_running -= 1
-        return result
+        return (candidate, outcome)
 
     def submit(self,
                candidate: Candidate
                ) -> 'Future[Tuple[Candidate, CandidateOutcome]]':
+        """
+        Schedules a candidate patch evaluation.
+        """
         with self.__lock:
             self.__num_running += 1
         future = self.__executor.submit(self.evaluate, candidate)
