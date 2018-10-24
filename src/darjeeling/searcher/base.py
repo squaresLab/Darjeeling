@@ -193,34 +193,40 @@ class Searcher(object):
         self.__evaluator.submit(candidate)
 
     def evaluate_all(self,
-                     candidates: List[Candidate]
+                     candidates: List[Candidate],
+                     results: Optional[Dict[Candidate, CandidateOutcome]] = None
                      ) -> Iterator[Candidate]:
         """
         Evaluates all given candidate patches and blocks until all have been
         evaluated (or the search has been terminated).
 
+        Parameters:
+            candidates: a list of candidate patches that should be evaluated.
+            results: a dictionary to which the results of each candidate
+                patch evaluation should be written.
+
         Returns:
             an iterator over the subset of candidates that are acceptable
             repairs.
         """
+        if results is None:
+            results = {}
+
+        # FIXME handle duplicates!
         size = len(candidates)
-        # logger.debug("evaluating %d candidates", size)
         i = 0
         num_evaluated = 0
         for i in range(min(size, self.__evaluator.num_workers)):
-            # logger.debug("evaluating candidate %d/%d", i + 1, size)
             self.evaluate(candidates[i])
         i = min(size, self.__evaluator.num_workers)
         for candidate, outcome in self.as_evaluated():
+            results[candidate] = outcome
             num_evaluated += 1
-            # logger.debug("evaluated candidate %d/%d", num_evaluated, size)
             if outcome.is_repair:
                 yield candidate
             if i < size:
-                # logger.debug("evaluating candidate %d/%d", i + 1, size)
                 self.evaluate(candidates[i])
                 i += 1
-        # logger.debug("evaluated all candidates")
 
     def as_evaluated(self) -> Iterator[Evaluation]:
         yield from self.__evaluator.as_completed()

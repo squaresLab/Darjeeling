@@ -262,12 +262,10 @@ class Evaluator(object):
         """
         # FIXME separate sample outcome from full outcome
         outcome = self._evaluate(candidate)
-        logger.info("RECORDING OUTCOME: %s", outcome)
         self.outcomes.record(candidate, outcome)
         with self.__lock:
             self.__queue_evaluated.put((candidate, outcome))
             self.__num_running -= 1
-        logger.info("EVALUATED: %s", candidate)
         return (candidate, outcome)
 
     def submit(self,
@@ -276,7 +274,6 @@ class Evaluator(object):
         """
         Schedules a candidate patch evaluation.
         """
-        logger.info("SUBMITTING: %s", candidate)
         with self.__lock:
             self.__num_running += 1
         future = self.__executor.submit(self.evaluate, candidate)
