@@ -55,6 +55,12 @@ class TestOutcomeSet(object):
         outcomes[test] = outcome
         return TestOutcomeSet(outcomes)
 
+    def merge(self, other: 'TestOutcomeSet') -> 'TestOutcomeSet':
+        outcomes = self.__outcomes.copy()
+        for test_name in other:
+            outcomes[test_name] = other[test_name]
+        return TestOutcomeSet(outcomes)
+
 
 @attr.s(frozen=True)
 class CandidateOutcome(object):
@@ -63,10 +69,7 @@ class CandidateOutcome(object):
     """
     build = attr.ib(type=BuildOutcome)
     tests = attr.ib(type=TestOutcomeSet)
-
-    @property
-    def is_repair(self) -> bool:
-        return all(self.tests[t].successful for t in self.tests)
+    is_repair = attr.ib(type=bool)
 
     def with_test_outcome(self,
                           test: str,
@@ -75,7 +78,15 @@ class CandidateOutcome(object):
                           ) -> 'CandidateOutcome':
         outcome = TestOutcome(successful, time_taken)
         test_outcomes = self.tests.with_outcome(test, outcome)
-        return CandidateOutcome(self.build, test_outcomes)
+        return CandidateOutcome(self.build, test_outcomes, self.is_repair)
+
+    def merge(self,
+              other: 'CandidateOutcome'
+              ) -> 'CandidateOutcome':
+        other_is_repair = all(other.tests[t].successful for t in other.tests)
+        return CandidateOutcome(self.build,
+                                self.tests.merge(other.tests),
+                                self.is_repair and other_is_repair)
 
 
 class OutcomeManager(object):
@@ -93,25 +104,12 @@ class OutcomeManager(object):
         """
         return self.__outcomes.keys().__iter__()
 
-    def record_build(self,
-                     candidate: Candidate,
-                     successful: bool,
-                     time_taken: float
-                     ) -> None:
-        outcome_build = BuildOutcome(successful, time_taken)
-        c = CandidateOutcome(outcome_build, TestOutcomeSet())
-        self.__outcomes[candidate] = c
-
-    def record_test(self,
-                    candidate: Candidate,
-                    test_id: str,
-                    test_outcome: BugZooTestOutcome
-                    ) -> None:
-        # TODO  race condition if there can be simultaneous test evaluations
-        #       for a given patch; for now, that's not possible.
-        candidate_outcome = self.__outcomes[candidate]
-        candidate_outcome = \
-            candidate_outcome.with_test_outcome(test_id,
-                                                test_outcome.passed,
-                                                test_outcome.duration)
-        self.__outcomes[candidate] = candidate_outcome
+    def record(self,
+               candidate: Candidate,
+               outcome: CandidateOutcome
+               ) -> None:
+        if candidate not in self.__outcomes:
+            self.__outcomes[candidate] = outcome
+        else:
+            self.__outcomes[candidate] = \
+                self.__outcomes[candidate].merge(outcome)

@@ -1,4 +1,5 @@
-from typing import Iterable, Iterator, Optional, List, Tuple, Any, Dict, Type
+from typing import Iterable, Iterator, Optional, List, Tuple, Any, Dict, \
+    Type, Union
 from mypy_extensions import NoReturn
 import logging
 import datetime
@@ -13,7 +14,7 @@ from ..candidate import Candidate
 from ..problem import Problem
 from ..outcome import OutcomeManager, CandidateOutcome
 from ..transformation import Transformation
-from ..evaluator import Evaluator
+from ..evaluator import Evaluator, Evaluation
 from ..exceptions import BuildFailure, \
     SearchAlreadyStarted, \
     SearchExhausted, \
@@ -62,7 +63,6 @@ class Searcher(object):
                              candidate_limit=candidate_limit,
                              time_limit=time_limit)
 
-
     def __init__(self,
                  bugzoo: bugzoo.BugZoo,
                  problem: Problem,
@@ -70,7 +70,8 @@ class Searcher(object):
                  threads: int = 1,
                  time_limit: Optional[datetime.timedelta] = None,
                  candidate_limit: Optional[int] = None,
-                 terminate_early: bool = True
+                 terminate_early: bool = True,
+                 test_sample_size: Optional[Union[int, float]] = None
                  ) -> None:
         """
         Constructs a new searcher.
@@ -99,7 +100,8 @@ class Searcher(object):
                                      problem,
                                      num_workers=threads,
                                      terminate_early=terminate_early,
-                                     outcomes=self.__outcomes)
+                                     outcomes=self.__outcomes,
+                                     sample_size=test_sample_size)
 
         self.__stopwatch = Stopwatch()
         self.__started = False
@@ -193,36 +195,42 @@ class Searcher(object):
         self.__evaluator.submit(candidate)
 
     def evaluate_all(self,
-                     candidates: List[Candidate]
+                     candidates: List[Candidate],
+                     results: Optional[Dict[Candidate, CandidateOutcome]] = None
                      ) -> Iterator[Candidate]:
         """
         Evaluates all given candidate patches and blocks until all have been
         evaluated (or the search has been terminated).
 
+        Parameters:
+            candidates: a list of candidate patches that should be evaluated.
+            results: a dictionary to which the results of each candidate
+                patch evaluation should be written.
+
         Returns:
             an iterator over the subset of candidates that are acceptable
             repairs.
         """
+        if results is None:
+            results = {}
+
+        # FIXME handle duplicates!
         size = len(candidates)
-        # logger.debug("evaluating %d candidates", size)
         i = 0
         num_evaluated = 0
         for i in range(min(size, self.__evaluator.num_workers)):
-            # logger.debug("evaluating candidate %d/%d", i + 1, size)
             self.evaluate(candidates[i])
         i = min(size, self.__evaluator.num_workers)
         for candidate, outcome in self.as_evaluated():
+            results[candidate] = outcome
             num_evaluated += 1
-            # logger.debug("evaluated candidate %d/%d", num_evaluated, size)
             if outcome.is_repair:
                 yield candidate
             if i < size:
-                # logger.debug("evaluating candidate %d/%d", i + 1, size)
                 self.evaluate(candidates[i])
                 i += 1
-        # logger.debug("evaluated all candidates")
 
-    def as_evaluated(self) -> Iterator[Tuple[Candidate, CandidateOutcome]]:
+    def as_evaluated(self) -> Iterator[Evaluation]:
         yield from self.__evaluator.as_completed()
 
     def __iter__(self) -> Iterator[Candidate]:

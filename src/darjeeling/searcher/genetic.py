@@ -1,6 +1,6 @@
 __all__ = ['GeneticSearcher']
 
-from typing import Iterator, List, Optional, Dict, Any
+from typing import Iterator, List, Optional, Dict, Any, Union
 import concurrent.futures
 import logging
 import random
@@ -13,6 +13,7 @@ from .base import Searcher
 from ..candidate import Candidate
 from ..transformation import Transformation
 from ..problem import Problem
+from ..outcome import CandidateOutcome
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
@@ -30,11 +31,14 @@ class GeneticSearcher(Searcher):
                   candidate_limit: Optional[int] = None,
                   time_limit: Optional[datetime.timedelta] = None
                   ) -> 'GeneticSearcher':
+        sample_size = \
+            d.get('test-sample-size')  # type: Optional[Union[int, float]]
         return GeneticSearcher(problem.bugzoo,
                                problem,
                                transformations,
                                threads=threads,
                                candidate_limit=candidate_limit,
+                               test_sample_size=sample_size,
                                time_limit=time_limit)
 
     def __init__(self,
@@ -49,7 +53,8 @@ class GeneticSearcher(Searcher):
                  tournament_size: int = 3,
                  threads: int = 1,
                  time_limit: Optional[datetime.timedelta] = None,
-                 candidate_limit: Optional[int] = None
+                 candidate_limit: Optional[int] = None,
+                 test_sample_size: Optional[Union[int, float]] = None
                  ) -> None:
         self.__population_size = population_size
         self.__num_generations = num_generations
@@ -62,6 +67,7 @@ class GeneticSearcher(Searcher):
                          problem,
                          threads=threads,
                          time_limit=time_limit,
+                         test_sample_size=test_sample_size,
                          candidate_limit=candidate_limit,
                          terminate_early=False)
 
@@ -98,30 +104,36 @@ class GeneticSearcher(Searcher):
         # FIXME for now, just pick one at random
         return random.choice(self.__transformations)
 
-    def fitness(self, population: Population) -> Dict[Candidate, float]:
+    def fitness(self,
+                population: Population,
+                outcomes: Dict[Candidate, CandidateOutcome]
+                ) -> Dict[Candidate, float]:
         """
         Computes the fitness of each individual within a population.
         """
         logger.debug("computing population fitness...")
         f = {}  # type: Dict[Candidate, float]
         for ind in population:
-            outcome = self.outcomes[ind]
+            outcome = outcomes[ind]
             if not outcome.build.successful:
                 f[ind] = 0.0
             else:
                 # FIXME maybe we don't need to execute the test?
                 f[ind] = sum(1.0 for n in outcome.tests if outcome.tests[n].successful)
-        logger.debug("computed fitness:\n%s",
+        logger.info("computed fitness:\n%s",
                      '\n'.join(['  {}: {}'.format(ind, f[ind]) for ind in f]))
         return f
 
-    def select(self, pop: Population) -> Population:
+    def select(self,
+               pop: Population,
+               outcomes: Dict[Candidate, CandidateOutcome]
+               ) -> Population:
         """
         Selects N individuals from the population to survive into the
         next generation.
         """
-        survivors = []
-        ind_to_fitness = self.fitness(pop)
+        survivors = []  # type: Population
+        ind_to_fitness = self.fitness(pop, outcomes)
         for _ in range(self.population_size):
             participants = random.sample(pop, self.tournament_size)
             winner = max(participants, key=ind_to_fitness.__getitem__)
@@ -165,15 +177,17 @@ class GeneticSearcher(Searcher):
         return offspring
 
     def run(self) -> Iterator[Candidate]:
+        outcomes = {}  # type: Dict[Candidate, CandidateOutcome]
         logger.info("generating initial population...")
         pop = self.initial()
         logger.info("generated initial population")
 
         logger.info("evaluating initial population...")
-        yield from self.evaluate_all(pop)
+        yield from self.evaluate_all(pop, outcomes)
         logger.info("evaluated initial population")
+
         logger.info("selecting survivors...")
-        pop = self.select(pop)  # should this happen at the start?
+        pop = self.select(pop, outcomes)  # should this happen at the start?
         logger.info("selected survivors")
 
         for g in range(0, self.num_generations + 1):
@@ -181,6 +195,7 @@ class GeneticSearcher(Searcher):
             pop = self.crossover(pop)
             pop = self.mutate(pop)
             logger.info("evaluating candidate patches...")
-            yield from self.evaluate_all(pop)
+            outcomes = {}
+            yield from self.evaluate_all(pop, outcomes)
             logger.info("evaluated candidate patches")
-            pop = self.select(pop)
+            pop = self.select(pop, outcomes)
