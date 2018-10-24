@@ -26,6 +26,8 @@ from .problem import Problem
 from .exceptions import BuildFailure
 from .util import Stopwatch
 
+Evaluation = Tuple[Candidate, CandidateOutcome]
+
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
@@ -240,7 +242,7 @@ class Evaluator(object):
 
     def evaluate(self,
                  candidate: Candidate
-                 ) -> Tuple[Candidate, CandidateOutcome]:
+                 ) -> Evaluation:
         """
         Evaluates a given candidate patch.
         """
@@ -254,7 +256,7 @@ class Evaluator(object):
 
     def submit(self,
                candidate: Candidate
-               ) -> 'Future[Tuple[Candidate, CandidateOutcome]]':
+               ) -> 'Future[Evaluation]':
         """
         Schedules a candidate patch evaluation.
         """
@@ -263,7 +265,7 @@ class Evaluator(object):
         future = self.__executor.submit(self.evaluate, candidate)
         return future
 
-    def as_completed(self) -> Iterator[Tuple[Candidate, CandidateOutcome]]:
+    def as_completed(self) -> Iterator[Evaluation]:
         q = self.__queue_evaluated  # type: queue.Queue
         while True:
             with self.__lock:
