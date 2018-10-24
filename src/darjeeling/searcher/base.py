@@ -256,8 +256,8 @@ class Searcher(object):
             logger.info("candidate limit has been reached: stopping search.")
 
         # wait for remaining evaluations
-        for candidate, outcome, is_repair in self.as_evaluated():
-            if is_repair:
+        for candidate, outcome in self.as_evaluated():
+            if outcome.is_repair:
                 self.__stopwatch.stop()
                 yield candidate
                 self.__stopwatch.start()
