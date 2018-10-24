@@ -13,7 +13,7 @@ from ..candidate import Candidate
 from ..problem import Problem
 from ..outcome import OutcomeManager, CandidateOutcome
 from ..transformation import Transformation
-from ..evaluator import Evaluator
+from ..evaluator import Evaluator, Evaluation
 from ..exceptions import BuildFailure, \
     SearchAlreadyStarted, \
     SearchExhausted, \
@@ -222,7 +222,7 @@ class Searcher(object):
                 i += 1
         # logger.debug("evaluated all candidates")
 
-    def as_evaluated(self) -> Iterator[Tuple[Candidate, CandidateOutcome]]:
+    def as_evaluated(self) -> Iterator[Evaluation]:
         yield from self.__evaluator.as_completed()
 
     def __iter__(self) -> Iterator[Candidate]:
@@ -256,8 +256,8 @@ class Searcher(object):
             logger.info("candidate limit has been reached: stopping search.")
 
         # wait for remaining evaluations
-        for candidate, outcome in self.as_evaluated():
-            if outcome.is_repair:
+        for candidate, outcome, is_repair in self.as_evaluated():
+            if is_repair:
                 self.__stopwatch.stop()
                 yield candidate
                 self.__stopwatch.start()
