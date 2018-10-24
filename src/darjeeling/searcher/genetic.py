@@ -172,12 +172,12 @@ class GeneticSearcher(Searcher):
         return offspring
 
     def run(self) -> Iterator[Candidate]:
+        outcomes = {}  # type: Dict[Candidate, CandidateOutcome]
         logger.info("generating initial population...")
         pop = self.initial()
         logger.info("generated initial population")
 
         logger.info("evaluating initial population...")
-        outcomes = {}  # type: Dict[Candidate, CandidateOutcome]
         yield from self.evaluate_all(pop, outcomes)
         logger.info("evaluated initial population")
 
@@ -190,7 +190,7 @@ class GeneticSearcher(Searcher):
             pop = self.crossover(pop)
             pop = self.mutate(pop)
             logger.info("evaluating candidate patches...")
-            outcomes = {}  # type: Dict[Candidate, CandidateOutcome]
+            outcomes = {}
             yield from self.evaluate_all(pop, outcomes)
             logger.info("evaluated candidate patches")
             pop = self.select(pop, outcomes)
