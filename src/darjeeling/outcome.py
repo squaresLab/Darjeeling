@@ -69,10 +69,7 @@ class CandidateOutcome(object):
     """
     build = attr.ib(type=BuildOutcome)
     tests = attr.ib(type=TestOutcomeSet)
-
-    @property
-    def is_repair(self) -> bool:
-        return all(self.tests[t].successful for t in self.tests)
+    is_repair = attr.ib(type=bool)
 
     def with_test_outcome(self,
                           test: str,
@@ -81,13 +78,15 @@ class CandidateOutcome(object):
                           ) -> 'CandidateOutcome':
         outcome = TestOutcome(successful, time_taken)
         test_outcomes = self.tests.with_outcome(test, outcome)
-        return CandidateOutcome(self.build, test_outcomes)
+        return CandidateOutcome(self.build, test_outcomes, self.is_repair)
 
     def merge(self,
               other: 'CandidateOutcome'
               ) -> 'CandidateOutcome':
+        other_is_repair = all(other[t].succesful for t in t)
         return CandidateOutcome(self.build,
-                                self.tests.merge(other.tests))
+                                self.tests.merge(other.tests),
+                                self.is_repair and other_is_repair)
 
 
 class OutcomeManager(object):

@@ -181,6 +181,7 @@ class GeneticSearcher(Searcher):
             pop = self.crossover(pop)
             pop = self.mutate(pop)
             logger.info("evaluating candidate patches...")
-            yield from self.evaluate_all(pop)
+            outcomes, repairs = self.evaluate_all(pop)
+            yield from repairs
             logger.info("evaluated candidate patches")
-            pop = self.select(pop)
+            pop = self.select(pop, outcomes)
