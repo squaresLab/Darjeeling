@@ -1,4 +1,5 @@
-from typing import Iterable, Iterator, Optional, List, Tuple, Any, Dict, Type
+from typing import Iterable, Iterator, Optional, List, Tuple, Any, Dict, \
+    Type, Union
 from mypy_extensions import NoReturn
 import logging
 import datetime
@@ -62,7 +63,6 @@ class Searcher(object):
                              candidate_limit=candidate_limit,
                              time_limit=time_limit)
 
-
     def __init__(self,
                  bugzoo: bugzoo.BugZoo,
                  problem: Problem,
@@ -70,7 +70,8 @@ class Searcher(object):
                  threads: int = 1,
                  time_limit: Optional[datetime.timedelta] = None,
                  candidate_limit: Optional[int] = None,
-                 terminate_early: bool = True
+                 terminate_early: bool = True,
+                 test_sample_size: Optional[Union[int, float]] = None
                  ) -> None:
         """
         Constructs a new searcher.
@@ -99,7 +100,8 @@ class Searcher(object):
                                      problem,
                                      num_workers=threads,
                                      terminate_early=terminate_early,
-                                     outcomes=self.__outcomes)
+                                     outcomes=self.__outcomes,
+                                     sample_size=test_sample_size)
 
         self.__stopwatch = Stopwatch()
         self.__started = False

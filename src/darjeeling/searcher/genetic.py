@@ -1,6 +1,6 @@
 __all__ = ['GeneticSearcher']
 
-from typing import Iterator, List, Optional, Dict, Any
+from typing import Iterator, List, Optional, Dict, Any, Union
 import concurrent.futures
 import logging
 import random
@@ -31,11 +31,14 @@ class GeneticSearcher(Searcher):
                   candidate_limit: Optional[int] = None,
                   time_limit: Optional[datetime.timedelta] = None
                   ) -> 'GeneticSearcher':
+        sample_size = \
+            d.get('test-sample-size')  # type: Optional[Union[int, float]]
         return GeneticSearcher(problem.bugzoo,
                                problem,
                                transformations,
                                threads=threads,
                                candidate_limit=candidate_limit,
+                               test_sample_size=sample_size,
                                time_limit=time_limit)
 
     def __init__(self,
@@ -50,7 +53,8 @@ class GeneticSearcher(Searcher):
                  tournament_size: int = 3,
                  threads: int = 1,
                  time_limit: Optional[datetime.timedelta] = None,
-                 candidate_limit: Optional[int] = None
+                 candidate_limit: Optional[int] = None,
+                 test_sample_size: Optional[Union[int, float]] = None
                  ) -> None:
         self.__population_size = population_size
         self.__num_generations = num_generations
@@ -63,6 +67,7 @@ class GeneticSearcher(Searcher):
                          problem,
                          threads=threads,
                          time_limit=time_limit,
+                         test_sample_size=test_sample_size,
                          candidate_limit=candidate_limit,
                          terminate_early=False)
 
@@ -115,7 +120,7 @@ class GeneticSearcher(Searcher):
             else:
                 # FIXME maybe we don't need to execute the test?
                 f[ind] = sum(1.0 for n in outcome.tests if outcome.tests[n].successful)
-        logger.debug("computed fitness:\n%s",
+        logger.info("computed fitness:\n%s",
                      '\n'.join(['  {}: {}'.format(ind, f[ind]) for ind in f]))
         return f
 

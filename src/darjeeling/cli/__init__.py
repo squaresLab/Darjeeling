@@ -337,7 +337,7 @@ class CLI(cement.App):
 
 def main():
     log_to_stdout = logging.StreamHandler()
-    log_to_stdout.setLevel(logging.DEBUG)
+    log_to_stdout.setLevel(logging.INFO)
     # logger.addHandler(log_to_stdout)
     logging.getLogger('darjeeling').addHandler(log_to_stdout)
 
