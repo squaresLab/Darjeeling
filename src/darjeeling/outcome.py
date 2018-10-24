@@ -113,26 +113,3 @@ class OutcomeManager(object):
         else:
             self.__outcomes[candidate] = \
                 self.__outcomes[candidate].merge(outcome)
-
-    def record_build(self,
-                     candidate: Candidate,
-                     successful: bool,
-                     time_taken: float
-                     ) -> None:
-        outcome_build = BuildOutcome(successful, time_taken)
-        c = CandidateOutcome(outcome_build, TestOutcomeSet())
-        self.__outcomes[candidate] = c
-
-    def record_test(self,
-                    candidate: Candidate,
-                    test_id: str,
-                    test_outcome: BugZooTestOutcome
-                    ) -> None:
-        # TODO  race condition if there can be simultaneous test evaluations
-        #       for a given patch; for now, that's not possible.
-        candidate_outcome = self.__outcomes[candidate]
-        candidate_outcome = \
-            candidate_outcome.with_test_outcome(test_id,
-                                                test_outcome.passed,
-                                                test_outcome.duration)
-        self.__outcomes[candidate] = candidate_outcome
