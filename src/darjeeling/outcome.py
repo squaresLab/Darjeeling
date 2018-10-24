@@ -83,7 +83,7 @@ class CandidateOutcome(object):
     def merge(self,
               other: 'CandidateOutcome'
               ) -> 'CandidateOutcome':
-        other_is_repair = all(other[t].succesful for t in t)
+        other_is_repair = all(other.tests[t].succesful for t in other.tests)
         return CandidateOutcome(self.build,
                                 self.tests.merge(other.tests),
                                 self.is_repair and other_is_repair)
