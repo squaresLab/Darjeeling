@@ -45,9 +45,16 @@ class Candidate(object):
                  for loc in locations]
         return lines
 
+    @property
+    def id(self) -> str:
+        """
+        Returns an eight-character hexadecimal identifier for this candidate.
+        """
+        hex_hash = hex(abs(hash(self)))
+        return hex_hash[2:10]
+
     def __repr__(self) -> str:
-        tx = [repr(t) for t in self.transformations]
-        return "Candidate({})".format('; '.join(tx))
+        return "Candidate<#{}>".format(self.id)
 
 
 def all_single_edit_patches(transformations: Iterable[Transformation]
