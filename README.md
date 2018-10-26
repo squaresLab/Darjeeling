@@ -15,9 +15,11 @@ framework for composing and executing repair algorithms: Darjeeling.
 ## Features
 
 * *Language-Agnostic:*
-  delegates language-specific tasks to other services.
-* *Containerization:* uses [Docker](https://www.docker.com/) to quickly and
-  safely evaluate patches without executing arbitrary code on your machine.
+  uses [Rooibos](https://github.com/squaresLab/Rooibos) for syntax
+  transformation.
+* *Containerization:* uses [BugZoo](https://github.com/squaresLab/BugZoo)
+  to quickly and safely evaluate patches without executing arbitrary code on
+  your machine.
 * *Asynchronous Evaluation:* accelerates patch evaluation by spreading the
   load across multiple threads.
 * *Test Redundancy Checking:* uses coverage information to skip test
