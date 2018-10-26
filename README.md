@@ -20,7 +20,7 @@ framework for composing and executing repair algorithms: Darjeeling.
   your machine.
 * *Custom Repair Templates:* uses
   [Rooibos](https://github.com/squaresLab/Roobios) to support rich, custom
-  repair templates.
+  repair templates for arbitrary languages.
 * *Asynchronous Evaluation:* accelerates patch evaluation by spreading the
   load across multiple threads.
 * *Test Redundancy Checking:* uses coverage information to skip test
