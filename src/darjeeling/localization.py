@@ -99,6 +99,15 @@ class Localization(object):
         exclude_files = cfg.get('exclude-files', [])  # type: List[str]
         loc = loc.exclude_files(exclude_files)
 
+        # exclude specified lines
+        exclude_lines_arg = \
+            cfg.get('exclude-lines', {})  # type: Dict[str, List[int]]
+        exclude_lines = []  # type: List[FileLine]
+        for fn in exclude_lines_arg:
+            for line_num in exclude_lines_arg[fn]:
+                exclude_lines.append(FileLine(fn, line_num))
+        loc = loc.exclude_lines(exclude_lines)
+
         return loc
 
     @staticmethod
