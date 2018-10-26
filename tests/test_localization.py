@@ -58,6 +58,16 @@ def test_to_and_from_dict():
     assert Localization.from_dict(dict_expected) == loc
 
 
+def test_len():
+    ld = Localization.from_dict
+    loc = ld({'foo.c:1': 1.0})
+    assert len(loc) == 1
+    loc = ld({'foo.c:1': 1.0, 'foo.c:2': 1.0})
+    assert len(loc) == 2
+    loc = ld({'foo.c:1': 1.0, 'foo.c:2': 1.0, 'bar.c:1': 1.0})
+    assert len(loc) == 3
+
+
 def test_files():
     loc = Localization.from_dict({
         'foo.c:1': 1.0,
