@@ -111,6 +111,8 @@ threads: 16
 localization:
   type: spectrum
   metric: tarantula
+  exclude-files:
+    - foo.c
 algorithm:
   type: random
 transformations:
@@ -153,6 +155,19 @@ metrics via its `metric` property:
 * `genprog`
 * `jaccard`
 * `ochiai`
+
+The `localization` section also exposes an `exclude-files` property, which may
+be used to exclude certain files from the fault localization. Each file should
+be given by its location relative to the source directory for the program
+under repair.
+In the example below, the files `foo.c` and `bar.c` are excluded from the fault
+localization.
+
+```
+exclude-files:
+  - foo.c
+  - bar.c
+```
 
 ### `algorithm`
 
