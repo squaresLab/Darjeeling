@@ -8,7 +8,8 @@ __all__ = [
     'jaccard'
 ]
 
-from typing import Dict, Callable, List, Iterator, FrozenSet, Sequence, Any
+from typing import Dict, Callable, List, Iterator, FrozenSet, Sequence, Any, \
+    Iterable
 import math
 import json
 import random
@@ -222,6 +223,19 @@ class Localization(object):
         scores = self.__line_to_score.copy()
         if line in scores:
             del scores[line]
+        return Localization(scores)
+
+    def without_lines(self, lines: Iterable[FileLine]) -> 'Localization':
+        """
+        Returns a variant of this fault localization that does not contain any
+        of the specified lines.
+
+        Raises:
+            NoImplicatedLines: if no lines are determined to be suspicious
+                within the resulting localization.
+        """
+        scores = {l: s for (l, s) in self.__line_to_score.items()
+                  if l not in lines}
         return Localization(scores)
 
     def restricted_to_lines(self,
