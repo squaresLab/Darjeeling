@@ -28,6 +28,12 @@ setup(
         'requests',
         'flask'
     ],
+    setup_requires=[
+        'pytest-runner'
+    ],
+    tests_require=[
+        'pytest'
+    ],
     include_package_data=True,
     packages=find_packages('src'),
     package_dir={'': 'src'},
@@ -40,9 +46,10 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7'
     ],
-    entry_points = {
+    entry_points={
         'console_scripts': [
             'darjeeling = darjeeling.cli:main',
         ]
-    }
+    },
+    test_suite='tests'
 )
