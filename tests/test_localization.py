@@ -127,3 +127,24 @@ def test_without():
 
     with pytest.raises(darjeeling.exceptions.NoImplicatedLines):
         l4.without(l('foo.c:3'))
+
+
+def test_restricted_to_lines():
+    loc = Localization.from_dict({
+        'foo.c:1': 1.0,
+        'foo.c:2': 0.5,
+        'foo.c:3': 0.1
+    })
+
+    restricted_to = {l('foo.c:1'), l('foo.c:2')}
+    assert set(loc.restricted_to_lines(restricted_to)) == restricted_to
+
+    restricted_to = {l('foo.c:1'), l('foo.c:2'), l('bar.c:7')}
+    assert set(loc.restricted_to_lines(restricted_to)) == {
+            l('foo.c:1'), l('foo.c:2')}
+
+    restricted_to = {l('foo.c:1')}
+    assert set(loc.restricted_to_lines(restricted_to)) == restricted_to
+
+    with pytest.raises(darjeeling.exceptions.NoImplicatedLines):
+        loc.restricted_to_lines({})
