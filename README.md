@@ -1,6 +1,7 @@
 # Darjeeling
 
 [![Build Status](https://travis-ci.org/squaresLab/Darjeeling.svg?branch=master)](https://travis-ci.org/squaresLab/Darjeeling)
+[![GitQ](https://gitq.com/badge.svg)](https://gitq.com/squaresLab/Darjeeling)
 
 Darjeeling is a work-in-progress language-independent automated program repair
 tool. Unlike other repair tools such as GenProg, SPR, and Nopol, Darjeeling
