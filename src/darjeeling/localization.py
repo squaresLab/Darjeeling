@@ -215,17 +215,7 @@ class Localization(object):
         lines = [l for l in self if l.filename not in files_to_exclude]
         return self.restricted_to_lines(lines)
 
-    def without(self, line: FileLine) -> 'Localization':
-        """
-        Returns a variant of this fault localization that does not contain a
-        given line.
-        """
-        scores = self.__line_to_score.copy()
-        if line in scores:
-            del scores[line]
-        return Localization(scores)
-
-    def without_lines(self, lines: Iterable[FileLine]) -> 'Localization':
+    def exclude_lines(self, lines: Iterable[FileLine]) -> 'Localization':
         """
         Returns a variant of this fault localization that does not contain any
         of the specified lines.
@@ -236,6 +226,16 @@ class Localization(object):
         """
         scores = {l: s for (l, s) in self.__line_to_score.items()
                   if l not in lines}
+        return Localization(scores)
+
+    def without(self, line: FileLine) -> 'Localization':
+        """
+        Returns a variant of this fault localization that does not contain a
+        given line.
+        """
+        scores = self.__line_to_score.copy()
+        if line in scores:
+            del scores[line]
         return Localization(scores)
 
     def restricted_to_lines(self,
