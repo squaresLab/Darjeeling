@@ -14,11 +14,11 @@ framework for composing and executing repair algorithms: Darjeeling.
 
 ## Features
 
-* Multi-threaded asynchronous patch evaluation: maximises throughput by
-  distributing patch evaluation across multiple threads using an asychronous
-  queue.
-* Test case reduction: test outcomes that can't be affected by a given patch,
-  as determined by coverage information, are skipped during patch evaluation.
+* *Asynchronous patch evaluation:* maximises throughput by distributing patch
+  evaluation across multiple threads using a fast asychronous queue.
+* *Test redundancy checking:* uses coverage information to determine test
+  outcomes that can't be affected by a given patch, which are skipped during
+  evaluation.
 
 
 ## Installation
