@@ -21,3 +21,15 @@ Since `append-statement` is the only transformation that requires knowledge
 of the set of variables that are live after the target statement, we can
 avoid the need to compute this information by using `prepend-statement`
 instead.
+
+
+Empty Statement
+---------------
+
+Regardless of whether one chooses to use `prepend-statement` or
+`append-statement`, the search will not be able to insert statements at
+certain points in the program. `append-statement` prevents insertion
+at the start of a block, and `prepend-statement` prevents insertion at
+the end of a block. Darjeeling solves this problem by using
+`prepend-statement` exclusively and injecting an empty (and invisible!)
+statement at the end of each block.
