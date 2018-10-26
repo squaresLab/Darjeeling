@@ -169,6 +169,19 @@ exclude-files:
   - bar.c
 ```
 
+Individual source code lines can also be excluded using the `exclude-lines`
+property, as shown below. The `exclude-lines` property states which lines should
+be excluded from specified files. In the example below, lines 1, 2, 3 and 4 from
+`foo.c`, and lines 4, 6, 7 from `bar.c` are excluded from the fault
+localization.
+
+```
+exclude-lines:
+  foo.c: [1, 2, 3, 4]
+  bar.c: [4, 6, 7]
+```
+
+
 ### `algorithm`
 
 The `algorithm` section outlines the search algorithm that should be used

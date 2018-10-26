@@ -8,7 +8,8 @@ __all__ = [
     'jaccard'
 ]
 
-from typing import Dict, Callable, List, Iterator, FrozenSet, Sequence, Any
+from typing import Dict, Callable, List, Iterator, FrozenSet, Sequence, Any, \
+    Iterable
 import math
 import json
 import random
@@ -98,6 +99,15 @@ class Localization(object):
         # exclude specified files
         exclude_files = cfg.get('exclude-files', [])  # type: List[str]
         loc = loc.exclude_files(exclude_files)
+
+        # exclude specified lines
+        exclude_lines_arg = \
+            cfg.get('exclude-lines', {})  # type: Dict[str, List[int]]
+        exclude_lines = []  # type: List[FileLine]
+        for fn in exclude_lines_arg:
+            for line_num in exclude_lines_arg[fn]:
+                exclude_lines.append(FileLine(fn, line_num))
+        loc = loc.exclude_lines(exclude_lines)
 
         return loc
 
@@ -204,6 +214,19 @@ class Localization(object):
         """
         lines = [l for l in self if l.filename not in files_to_exclude]
         return self.restricted_to_lines(lines)
+
+    def exclude_lines(self, lines: Iterable[FileLine]) -> 'Localization':
+        """
+        Returns a variant of this fault localization that does not contain any
+        of the specified lines.
+
+        Raises:
+            NoImplicatedLines: if no lines are determined to be suspicious
+                within the resulting localization.
+        """
+        scores = {l: s for (l, s) in self.__line_to_score.items()
+                  if l not in lines}
+        return Localization(scores)
 
     def without(self, line: FileLine) -> 'Localization':
         """
