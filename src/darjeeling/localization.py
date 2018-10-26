@@ -147,6 +147,13 @@ class Localization(object):
             self.__cdf.append(cum)
             cum += p
 
+    def __eq__(self, other: 'Localization') -> bool:
+        lines_self = set(self)
+        lines_other = set(other)
+        if lines_self != lines_other:
+            return False
+        return all(self[l] == other[l] for l in lines_self)
+
     def to_dict(self) -> Dict[str, float]:
         """
         Transforms this fault localization to a dictionary, ready to be
