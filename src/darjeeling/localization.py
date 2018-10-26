@@ -8,12 +8,13 @@ __all__ = [
     'jaccard'
 ]
 
-from typing import Dict, Callable, List, Iterator, FrozenSet, Sequence
+from typing import Dict, Callable, List, Iterator, FrozenSet, Sequence, Any
 import math
 import json
 import random
 import bisect
 import logging
+import functools
 
 from bugzoo.core.spectra import Spectra
 from bugzoo.core.coverage import TestSuiteCoverage
@@ -22,7 +23,7 @@ from .problem import Problem
 from .core import FileLine
 from .exceptions import NoImplicatedLines
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
 Metric = Callable[[int, int, int, int], float]
@@ -81,6 +82,26 @@ class Localization(object):
         return Localization(scores)
 
     @staticmethod
+    def from_config(problem: Problem,
+                    cfg: Dict[str, Any]
+                    ) -> 'Localization':
+        name_metric = cfg['metric']
+        metric = ({
+            'genprog': genprog,
+            'ochiai': ochiai,
+            'ample': ample,
+            'jaccard': jaccard,
+            'tarantula': tarantula
+        })[name_metric]
+        loc = Localization.from_problem(problem, metric)
+
+        # exclude specified files
+        exclude_files = cfg.get('exclude-files', [])  # type: List[str]
+        loc = loc.exclude_files(exclude_files)
+
+        return loc
+
+    @staticmethod
     def from_dict(d: Dict[str, float]) -> 'Localization':
         scores = {FileLine.from_string(l): v for (l, v) in d.items()}
         return Localization(scores)
@@ -127,11 +148,18 @@ class Localization(object):
             cum += p
 
     def to_dict(self) -> Dict[str, float]:
+        """
+        Transforms this fault localization to a dictionary, ready to be
+        serialized into JSON or YAML.
+        """
         return {str(line): val
                 for (line, val) in self.__line_to_score.items()
                 if val > 0.0}
 
     def to_file(self, fn: str) -> None:
+        """
+        Dumps this fault localization to a given file.
+        """
         logger.debug("writing localization to file: %s", fn)
         jsn = self.to_dict()
         with open(fn, 'w') as f:
@@ -139,9 +167,18 @@ class Localization(object):
         logger.debug("wrote localization to file: %s", fn)
 
     def __iter__(self) -> Iterator[FileLine]:
+        """
+        Returns an iterator over the suspicious lines contained within this
+        fault localization.
+        """
         yield from self.__lines
 
     def __getitem__(self, line: FileLine) -> float:
+        """
+        Returns the suspiciousness score for a given line. If the line is not
+        contained within the fault localization, a score of zero will be
+        returned.
+        """
         return self.__line_to_score.get(line, 0.0)
 
     def __contains__(self, line: FileLine) -> bool:
@@ -151,17 +188,48 @@ class Localization(object):
         """
         return line in self.__line_to_score
 
+    def exclude_files(self, files_to_exclude: List[str]) -> 'Localization':
+        """
+        Returns a variant of this fault localization that does not contain
+        lines from any of the specified files.
+        """
+        lines = [l for l in self if l.filename not in files_to_exclude]
+        return self.restricted_to_lines(lines)
+
     def without(self, line: FileLine) -> 'Localization':
+        """
+        Returns a variant of this fault localization that does not contain a
+        given line.
+
+        Raises:
+            KeyError: if the line is not contained within this fault
+                localization.
+        """
         scores = self.__line_to_score.copy()
         del scores[line]
         return Localization(scores)
 
-    def restricted_to_lines(self, lines: Sequence[FileLine]) -> 'Localization':
+    def restricted_to_lines(self,
+                            lines: Sequence[FileLine]
+                            ) -> 'Localization':
+        """
+        Returns a variant of this fault localization that is restricted to a
+        given set of lines.
+
+        Raises:
+            NoImplicatedLines: if no lines are determined to be suspicious
+                within the resulting localization.
+        """
         scores = {l: s for (l, s) in self.__line_to_score.items()
                   if l in lines}
         return Localization(scores)
 
     def sample(self) -> FileLine:
+        """
+        Samples a line from this fault localization according to the implicit
+        probability distribution given by the suspiciousness values of the
+        lines contained within this fault localization.
+        """
         mu = random.random()
         i = max(bisect.bisect_left(self.__cdf, mu) - 1, 0)
         assert i >= 0
