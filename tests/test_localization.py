@@ -126,4 +126,4 @@ def test_without():
         })
 
     with pytest.raises(darjeeling.exceptions.NoImplicatedLines):
-        l4.without(l('foo.c:1'))
+        l4.without(l('foo.c:3'))
