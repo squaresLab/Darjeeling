@@ -96,3 +96,34 @@ def test_get():
     assert loc[l('foo.c:3')] == 0.1
     assert loc[l('foo.c:4')] == 0.0
     assert loc[l('bar.c:1')] == 0.0
+
+
+def test_without():
+    l1 = Localization.from_dict({
+        'foo.c:1': 1.0,
+        'foo.c:2': 0.5,
+        'foo.c:3': 0.1
+    })
+
+    l2 = l1.without(l('foo.c:2'))
+    assert l2 == \
+        Localization.from_dict({
+            'foo.c:1': 1.0,
+            'foo.c:3': 0.1
+        })
+
+    l3 = l2.without(l('foo.c:2'))
+    assert l3 == \
+        Localization.from_dict({
+            'foo.c:1': 1.0,
+            'foo.c:3': 0.1
+        })
+
+    l4 = l3.without(l('foo.c:1'))
+    assert l4 == \
+        Localization.from_dict({
+            'foo.c:3': 0.1
+        })
+
+    with pytest.raises(darjeeling.exceptions.NoImplicatedLines):
+        l4.without(l('foo.c:1'))
