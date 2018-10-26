@@ -22,6 +22,8 @@ framework for composing and executing repair algorithms: Darjeeling.
   executions that can't be affected by a given patch.
 * *Test Ordering:* numerous test ordering schemes reduce the
   cost of patch evaluation by prioritizing likely failing tests.
+* *Equivalent Patch Detection:* uses static analysis to remove duplicate
+  transformations from the search space.
 
 ## Installation
 
