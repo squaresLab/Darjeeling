@@ -147,7 +147,9 @@ class Localization(object):
             self.__cdf.append(cum)
             cum += p
 
-    def __eq__(self, other: 'Localization') -> bool:
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Localization):
+            return False
         lines_self = set(self)
         lines_other = set(other)
         if lines_self != lines_other:
