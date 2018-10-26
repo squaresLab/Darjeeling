@@ -92,6 +92,8 @@ class BaseController(cement.Controller):
         with open(filename, 'r') as f:
             yml = yaml.load(f)
 
+        has_limits = 'resource-limits' in yml
+
         # should we continue to search for repairs?
         if not terminate_early:
             logger.info("search will continue after an acceptable patch has been discovered")
@@ -119,11 +121,11 @@ class BaseController(cement.Controller):
         if limit_time_minutes is not None:
             logger.info("using time limit override: %d minutes",
                         limit_time_minutes)
-        elif 'limits' in yml and 'time-minutes' in yml['limits']:
-            if not isinstance(yml['limits']['time-minutes'], int):
-                m = "'time-minutes' property in 'limits' section should be an int"  # noqa: pycodestyle
+        elif has_limits and 'time-minutes' in yml['resource-limits']:
+            if not isinstance(yml['resource-limits']['time-minutes'], int):
+                m = "'time-minutes' property in 'resource-limits' section should be an int"  # noqa: pycodestyle
                 raise BadConfigurationException(m)
-            limit_time_minutes = yml['limits']['time-minutes']
+            limit_time_minutes = yml['resource-limits']['time-minutes']
             logger.info("using time limit specified by configuration: %d minutes",  # noqa: pycodestyle
                         limit_time_minutes)
         else:
@@ -140,11 +142,11 @@ class BaseController(cement.Controller):
         if limit_candidates is not None:
             logger.info("using candidate limit override: %d candidates",
                         limit_candidates)
-        elif 'limits' in yml and 'candidates' in yml['limits']:
-            if not isinstance(yml['limits']['candidates'], int):
-                m = "'candidates' property in 'limits' section should be an int"
+        elif has_limits and 'candidates' in yml['resource-limits']:
+            if not isinstance(yml['resource-limits']['candidates'], int):
+                m = "'candidates' property in 'resource-limits' section should be an int"
                 raise BadConfigurationException(m)
-            limit_candidates = yml['limits']['candidates']
+            limit_candidates = yml['resource-limits']['candidates']
             logger.info("using candidate limit specified by configuration: %d candidates",  # noqa: pycodestyle
                         limit_candidates)
         else:

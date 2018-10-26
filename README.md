@@ -125,7 +125,7 @@ optimizations:
   ignore-equivalent-prepends: yes
   ignore-dead-code: yes
   ignore-string-equivalent-snippets: yes
-limits:
+resource-limits:
   candidates: 5000
   time-minutes: 3600
 ```
@@ -227,15 +227,15 @@ list of optimizations that can be toggled by the configuration file.
 * `only-insert-executed-code`: prevents the insertion of code that has not been
   executed by at least one test case.
 
-### `limits`
+### `resource-limits`
 
-The `limits` section of the configuration file is used to impose limits on the
-resources that may be consumed during the search. The search will be terminated
-upon hitting any of these limits. The limits specified in this section of the
-configuration file may be overridden by command-line options. If a limit for
-a particular resource is not given in either the configuration file or as a
-command-line argument, then the use of that resource will be unbounded (i.e.,
-no limit will be imposed).
+The `resource-limits` section of the configuration file is used to impose
+limits on the resources that may be consumed during the search. The search will
+be terminated upon hitting any of these limits. The limits specified in this
+section of the configuration file may be overridden by command-line options. If
+a limit for a particular resource is not given in either the configuration
+file or as a command-line argument, then the use of that resource will be
+unbounded (i.e., no limit will be imposed).
 
 Below is a list of the resource limits that may be specified in the
 configuration file:
