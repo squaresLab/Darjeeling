@@ -20,8 +20,8 @@ framework for composing and executing repair algorithms: Darjeeling.
   load across multiple threads.
 * *Test redundancy checking:* uses coverage information to skip test
   executions that can't be affected by a given patch.
-* *Test ordering:* supports numerous test ordering schemes to reduce the
-  cost of patch evaluation (by prioritizing likely failing patches).
+* *Test ordering:* numerous test ordering schemes reduce the
+  cost of patch evaluation by prioritizing likely failing tests.
 
 ## Installation
 
