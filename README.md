@@ -16,11 +16,11 @@ framework for composing and executing repair algorithms: Darjeeling.
 
 * *Containerization:* uses [Docker](https://www.docker.com/) to quickly and
   safely evaluate patches without executing arbitrary code on your machine.
-* *Asynchronous evaluation:* accelerates patch evaluation by spreading the
+* *Asynchronous Evaluation:* accelerates patch evaluation by spreading the
   load across multiple threads.
-* *Test redundancy checking:* uses coverage information to skip test
+* *Test Redundancy Checking:* uses coverage information to skip test
   executions that can't be affected by a given patch.
-* *Test ordering:* numerous test ordering schemes reduce the
+* *Test Ordering:* numerous test ordering schemes reduce the
   cost of patch evaluation by prioritizing likely failing tests.
 
 ## Installation
