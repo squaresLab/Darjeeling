@@ -58,6 +58,15 @@ def test_to_and_from_dict():
     assert Localization.from_dict(dict_expected) == loc
 
 
+def test_files():
+    loc = Localization.from_dict({
+        'foo.c:1': 1.0,
+        'foo.c:2': 1.0,
+        'bar.c:1': 1.0
+    })
+    assert set(loc.files) == {'foo.c', 'bar.c'}
+
+
 def test_iter():
     loc = Localization.from_dict({
         'foo.c:1': 1.0,
