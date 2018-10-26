@@ -190,6 +190,7 @@ to search the space of candidate repairs. A description of the types of
 search algorithm exposed by the configuration file format is given below.
 
 * `random`
+* `genetic`
 
 ### `transformations`
 
