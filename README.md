@@ -14,8 +14,8 @@ framework for composing and executing repair algorithms: Darjeeling.
 
 ## Features
 
-* *Asynchronous patch evaluation:* maximises throughput by distributing patch
-  evaluation across multiple threads using a fast asychronous queue.
+* *Asynchronous evaluation:* accelerates patch evaluation by spreading the
+  load across multiple threads.
 * *Test redundancy checking:* uses coverage information to skip test
   executions that can't be affected by a given patch.
 * *Containerization:* uses [Docker](https://www.docker.com/) to quickly and
