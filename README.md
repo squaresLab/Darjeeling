@@ -18,6 +18,9 @@ framework for composing and executing repair algorithms: Darjeeling.
 * *Containerization:* uses [BugZoo](https://github.com/squaresLab/BugZoo)
   to quickly and safely evaluate patches without executing arbitrary code on
   your machine.
+* *Custom Repair Templates:* uses
+  [Rooibos](https://github.com/squaresLab/Roobios) to support rich, custom
+  repair templates.
 * *Asynchronous Evaluation:* accelerates patch evaluation by spreading the
   load across multiple threads.
 * *Test Redundancy Checking:* uses coverage information to skip test
