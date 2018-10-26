@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Set
 
 import pytest
 from bugzoo.core.filechar import FileCharRange, FileChar
@@ -200,3 +200,11 @@ def test_exclude_lines():
     loc = ld(['foo.c:1', 'foo.c:2', 'foo.c:3', 'bar.c:1', 'bar.c:2'])
     assert loc.exclude_lines(fl(['foo.c:1'])) == \
         ld(['foo.c:2', 'foo.c:3', 'bar.c:1', 'bar.c:2'])
+
+    assert loc == loc.exclude_lines([])
+
+    assert loc.exclude_lines(fl(['foo.c:1', 'bar.c:2'])) == \
+        ld(['foo.c:2', 'foo.c:3', 'bar.c:1'])
+
+    with pytest.raises(darjeeling.exceptions.NoImplicatedLines):
+        loc.exclude_lines(fl(['foo.c:1', 'foo.c:2', 'foo.c:3', 'bar.c:1', 'bar.c:2']))
