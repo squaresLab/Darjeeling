@@ -22,7 +22,7 @@ from bugzoo.core.coverage import TestSuiteCoverage
 
 from .problem import Problem
 from .core import FileLine
-from .exceptions import NoImplicatedLines
+from .exceptions import NoImplicatedLines, BadConfigurationException
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
@@ -83,18 +83,38 @@ class Localization(object):
         return Localization(scores)
 
     @staticmethod
-    def from_config(problem: Problem,
+    def from_config(coverage: TestSuiteCoverage,
                     cfg: Dict[str, Any]
                     ) -> 'Localization':
-        name_metric = cfg['metric']
-        metric = ({
-            'genprog': genprog,
-            'ochiai': ochiai,
-            'ample': ample,
-            'jaccard': jaccard,
-            'tarantula': tarantula
-        })[name_metric]
-        loc = Localization.from_problem(problem, metric)
+        if not isinstance(cfg, dict):
+            m = "'localization' section should be an object"
+            raise BadConfigurationException(m)
+        if not 'metric' in cfg:
+            m = "'metric' property is missing from 'localization' section"
+            raise BadConfigurationException(m)
+        if not isinstance(cfg['metric'], str):
+            m = "'metric' property in 'localization' should be a string"
+            raise BadConfigurationException(m)
+
+        name_metric = cfg['metric']  # type: str
+        try:
+            supported_metrics = {
+                'genprog': genprog,
+                'tarantula': tarantula,
+                'ochiai': ochiai,
+                'jaccard': jaccard,
+                'ample': ample
+            }
+            logger.info("supported suspiciousness metrics: %s",
+                        ', '.join(supported_metrics.keys()))
+            metric = supported_metrics[name_metric]
+        except KeyError:
+            m = "suspiciousness metric not supported: {}".format(name_metric)
+            raise BadConfigurationException(m)
+        logger.info("using suspiciousness metric: %s", name_metric)
+
+        # build base localization using given metric
+        loc = Localization.from_coverage(coverage, metric)
 
         # exclude specified files
         exclude_files = cfg.get('exclude-files', [])  # type: List[str]
