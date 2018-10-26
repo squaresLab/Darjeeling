@@ -148,6 +148,25 @@ def test_without():
         l4.without(l('foo.c:3'))
 
 
+def test_exclude_files():
+    loc = Localization.from_dict({
+        'foo.c:1': 1.0,
+        'foo.c:2': 1.0,
+        'foo.c:3': 1.0,
+        'bar.c:1': 1.0,
+        'bar.c:2': 1.0,
+        'woo.c:1': 1.0
+    })
+
+    assert len(loc.exclude_files([])) == 6
+    assert len(loc.exclude_files(['buzz.c'])) == 6
+    assert len(loc.exclude_files(['foo.c'])) == 3
+    assert len(loc.exclude_files(['bar.c'])) == 4
+    assert len(loc.exclude_files(['woo.c'])) == 5
+    assert len(loc.exclude_files(['bar.c', 'woo.c'])) == 3
+    assert len(loc.exclude_files(['bar.c', 'foo.c'])) == 1
+
+
 def test_restricted_to_lines():
     loc = Localization.from_dict({
         'foo.c:1': 1.0,
