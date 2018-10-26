@@ -13,6 +13,19 @@ def test_empty_throws_exception():
         Localization({})
 
 
+def test_iter():
+    loc = Localization.from_dict({
+        'foo.c:1': 1.0,
+        'foo.c:2': 1.0,
+        'foo.c:3': 1.0
+    })
+
+    lines_expected = \
+        {l('foo.c:1'), l('foo.c:2'), l('foo.c:3')}
+    lines_actual = set(loc)
+
+    assert lines_expected == lines_actual
+
 def test_contains():
     loc = Localization.from_dict({
         'foo.c:1': 1.0,
