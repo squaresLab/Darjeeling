@@ -18,8 +18,8 @@ framework for composing and executing repair algorithms: Darjeeling.
   evaluation across multiple threads using a fast asychronous queue.
 * *Test redundancy checking:* uses coverage information to skip test
   executions that can't be affected by a given patch.
-* *Containerization:* uses Docker to quickly and safely evaluate patches without
-  the risk of executing arbitrary, unsafe code on your machine.
+* *Containerization:* uses [Docker](https://www.docker.com/) to quickly and
+  safely evaluate patches without executing arbitrary code on your machine.
 
 ## Installation
 
