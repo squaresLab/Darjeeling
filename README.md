@@ -3,23 +3,33 @@
 [![Build Status](https://travis-ci.org/squaresLab/Darjeeling.svg?branch=master)](https://travis-ci.org/squaresLab/Darjeeling)
 [![GitQ](https://gitq.com/badge.svg)](https://gitq.com/squaresLab/Darjeeling)
 
-Darjeeling is a work-in-progress language-independent automated program repair
-tool. Unlike other repair tools such as GenProg, SPR, and Nopol, Darjeeling
+Darjeeling is a language-agnostic search-based program repair tool.
+Unlike other repair tools, such as GenProg, SPR, and Nopol, Darjeeling
 delegates the responsibility of generating patches, obtaining coverage,
-analysing code, and executing tests to other services. (For the most part, those
-other services are also language independent.)
+analyzing code, and executing tests to other services.
 Once those auxillary concerns are removed, what is left is a lightweight
 framework for composing and executing repair algorithms: Darjeeling.
 
 
 ## Features
 
-* *Asynchronous evaluation:* accelerates patch evaluation by spreading the
+* *Language Agnostic:* delegates syntax transformation and static analysis to
+  other services.
+* *Containerization:* uses [BugZoo](https://github.com/squaresLab/BugZoo)
+  to quickly and safely evaluate patches without executing arbitrary code on
+  your machine.
+* *Custom Repair Templates:* uses
+  [Rooibos](https://github.com/squaresLab/Roobios) to support rich, custom
+  repair templates for arbitrary languages.
+* *Asynchronous Evaluation:* accelerates patch evaluation by spreading the
   load across multiple threads.
-* *Test redundancy checking:* uses coverage information to skip test
+* *Test Redundancy Checking:* uses coverage information to skip test
   executions that can't be affected by a given patch.
-* *Containerization:* uses [Docker](https://www.docker.com/) to quickly and
-  safely evaluate patches without executing arbitrary code on your machine.
+* *Test Ordering:* numerous test ordering schemes reduce the
+  cost of patch evaluation by prioritizing likely failing tests.
+* *Equivalent Patch Detection:* uses static analysis to
+  [remove duplicate transformations](https://squareslab.github.io/papers-repo/pdfs/weimer-ase2013-preprint.pdf)
+  from the search space.
 
 ## Installation
 
