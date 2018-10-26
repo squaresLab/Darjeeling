@@ -1,6 +1,7 @@
 Pipfile
 Pipfile.lock
 
+.eggs
 .mypy_cache
 .pytest_cache
 dist

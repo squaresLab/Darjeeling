@@ -23,10 +23,16 @@ setup(
         'rooibos>=0.3.0',
         'boggart>=0.1.16',
         'kaskara>=0.0.4',
-        'attrs>=17.2.0',
+        'attrs>=17.4.0',
         'cement>=3.0.0',
         'requests',
         'flask'
+    ],
+    setup_requires=[
+        'pytest-runner'
+    ],
+    tests_require=[
+        'pytest'
     ],
     include_package_data=True,
     packages=find_packages('src'),
@@ -40,9 +46,10 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7'
     ],
-    entry_points = {
+    entry_points={
         'console_scripts': [
             'darjeeling = darjeeling.cli:main',
         ]
-    }
+    },
+    test_suite='tests'
 )

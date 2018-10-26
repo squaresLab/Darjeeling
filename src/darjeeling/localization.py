@@ -147,6 +147,15 @@ class Localization(object):
             self.__cdf.append(cum)
             cum += p
 
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Localization):
+            return False
+        lines_self = set(self)
+        lines_other = set(other)
+        if lines_self != lines_other:
+            return False
+        return all(self[l] == other[l] for l in lines_self)
+
     def to_dict(self) -> Dict[str, float]:
         """
         Transforms this fault localization to a dictionary, ready to be
@@ -200,13 +209,10 @@ class Localization(object):
         """
         Returns a variant of this fault localization that does not contain a
         given line.
-
-        Raises:
-            KeyError: if the line is not contained within this fault
-                localization.
         """
         scores = self.__line_to_score.copy()
-        del scores[line]
+        if line in scores:
+            del scores[line]
         return Localization(scores)
 
     def restricted_to_lines(self,
