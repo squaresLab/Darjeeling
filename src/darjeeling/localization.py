@@ -14,6 +14,7 @@ import json
 import random
 import bisect
 import logging
+import functools
 
 from bugzoo.core.spectra import Spectra
 from bugzoo.core.coverage import TestSuiteCoverage
@@ -186,6 +187,14 @@ class Localization(object):
         localization.
         """
         return line in self.__line_to_score
+
+    def exclude_files(self, files_to_exclude: List[str]) -> 'Localization':
+        """
+        Returns a variant of this fault localization that does not contain
+        lines from any of the specified files.
+        """
+        lines = [l for l in self if l.filename not in files_to_exclude]
+        return self.restricted_to_lines(lines)
 
     def without(self, line: FileLine) -> 'Localization':
         """
