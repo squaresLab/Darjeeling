@@ -197,36 +197,6 @@ class BaseController(cement.Controller):
                      only_insert_executed_code=opts.get('only-insert-executed-code', True))
         logger.info("using repair settings: %s", settings)
 
-        # fetch the suspiciousness metric
-        if 'localization' not in yml:
-            m = "'localization' section is missing"
-            raise BadConfigurationException(m)
-        if not isinstance(yml['localization'], dict):
-            m = "'localization' should be an object"
-            raise BadConfigurationException(m)
-        if not 'metric' in yml['localization']:
-            m = "'metric' property is missing from 'localization' section"
-            raise BadConfigurationException(m)
-        if not isinstance(yml['localization']['metric'], str):
-            m = "'metric' property in 'localization' should be a string"
-            raise BadConfigurationException(m)
-        name_metric = yml['localization']['metric']
-        try:
-            supported_metrics = {
-                'genprog': genprog,
-                'tarantula': tarantula,
-                'ochiai': ochiai,
-                'jaccard': jaccard,
-                'ample': ample
-            }
-            logger.info("supported suspiciousness metrics: %s",
-                        ', '.join(supported_metrics.keys()))
-            metric = supported_metrics[name_metric]
-        except KeyError:
-            m = "suspiciousness metric not supported: {}".format(name_metric)
-            raise BadConfigurationException(m)
-        logger.info("using suspiciousness metric: %s", name_metric)
-
         # fetch the transformation schemas
         if 'transformations' not in yml:
             m = "'transformations' property is missing"
@@ -268,7 +238,12 @@ class BaseController(cement.Controller):
 
             # compute localization
             logger.info("computing fault localization...")
-            localization = Localization.from_coverage(coverage, metric)
+            if 'localization' not in yml:
+                m = "'localization' section is missing"
+                raise BadConfigurationException(m)
+
+            localization = \
+                Localization.from_config(coverage, yml['localization'])
             logger.info("computed fault localization:\n%s", localization)
 
             # determine implicated files and lines
