@@ -14,9 +14,8 @@ framework for composing and executing repair algorithms: Darjeeling.
 
 ## Features
 
-* *Language-Agnostic:*
-  uses [Rooibos](https://github.com/squaresLab/Rooibos) for syntax
-  transformation.
+* *Language Agnostic:* delegates syntax transformation and static analysis to
+  other services.
 * *Containerization:* uses [BugZoo](https://github.com/squaresLab/BugZoo)
   to quickly and safely evaluate patches without executing arbitrary code on
   your machine.
