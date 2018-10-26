@@ -13,6 +13,32 @@ def test_empty_throws_exception():
         Localization({})
 
 
+def test_eq():
+    l1 = Localization({
+        l('foo.c:1'): 1.0,
+        l('foo.c:2'): 0.1,
+        l('foo.c:3'): 0.5,
+        l('bar.c:9'): 0.1
+    })
+    l2 = Localization({
+        l('foo.c:1'): 1.0,
+        l('foo.c:2'): 0.1,
+        l('foo.c:3'): 0.5,
+        l('bar.c:9'): 0.1
+    })
+    l3 = Localization({
+        l('foo.c:2'): 0.1,
+        l('foo.c:3'): 0.5
+    })
+
+    assert l1 == l2
+    assert l2 == l1
+    assert l1 != l3
+    assert l3 != l1
+    assert l2 != l3
+    assert l3 != l2
+
+
 def test_to_and_from_dict():
     loc = Localization({
         l('foo.c:1'): 1.0,
