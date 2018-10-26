@@ -207,13 +207,10 @@ class Localization(object):
         """
         Returns a variant of this fault localization that does not contain a
         given line.
-
-        Raises:
-            KeyError: if the line is not contained within this fault
-                localization.
         """
         scores = self.__line_to_score.copy()
-        del scores[line]
+        if line in scores:
+            del scores[line]
         return Localization(scores)
 
     def restricted_to_lines(self,
