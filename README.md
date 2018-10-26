@@ -89,10 +89,19 @@ environment:
 
 ## Usage
 
-Provide a "Hello World" example.
+Darjeeling exposes a command-line interface (CLI) for performing program
+repair, as demonstrated below. The CLI provides a single command, `repair`,
+which accepts the path to a Darjeeling configuration file format, described
+below.
 
+```
+$ darjeeling repair my-config.yml
+```
 
 ## Configuration File Format (v1.0)
+
+The Darjeeling configuration file format is written in YAML. Below is an
+example of a configuration file.
 
 ```
 version: '1.0'
