@@ -229,12 +229,15 @@ schemas:
   - type: prepend-statement
 ```
 
-Discuss template-based transformations.
+The configuration format also supports custom repair templates via
+match-rewrite patterns for [Rooibos](https://github.com/squaresLab/Rooibos).
+Below is an example of a simple repair template that replaces all calls to
+`foo` with calls to `bar`.
 
 ```
 - type: template
-  match: "+"
-  rewrite: "-"
+  match: "foo(:[1])"
+  rewrite: "bar(:[1])"
 ```
 
 ### `optimizations`
