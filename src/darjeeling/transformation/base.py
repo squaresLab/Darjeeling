@@ -1,3 +1,7 @@
+"""
+This module provides the base Transformation class, from which all
+transformation schemas inherit.
+"""
 __all__ = ['Transformation', 'register']
 
 from typing import Any, Dict, List, Type, Iterator, Callable
