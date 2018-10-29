@@ -206,10 +206,23 @@ search algorithm exposed by the configuration file format is given below.
 
 The `transformations` section describes the space of program transformations
 from which candidate patches should be composed. The `schemas` property of
-this section specifies which program transformation schemas may be used to
-construct the program transformations. The configuration format currently
-supports three transformation schemas: `delete-statement`,
-`replace-statement`, and `prepend-statement`.
+this section specifies a list of the program transformation schemas, along
+with any parameter values for those schemas, that should may be used to
+construct concrete program transformations. Each entry in the `schemas`
+list must specify a `type`.
+
+The configuration format supports three "classical" statement-based
+transformation schemas based on those introduced by
+[GenProg](https://squareslab.github.io/genprog-code/):
+`delete-statement`, `replace-statement`, and `prepend-statement`.
+
+Discuss template-based transformations.
+
+```
+- type: template
+  match: "+"
+  rewrite: "-"
+```
 
 ### `optimizations`
 
