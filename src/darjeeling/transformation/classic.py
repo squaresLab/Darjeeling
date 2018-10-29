@@ -1,3 +1,7 @@
+"""
+This module provides transformation schemas for each of the classical
+GenProg-style statement operators.
+"""
 __all__ = [
     'PrependStatement',
     'DeleteStatement',
