@@ -214,7 +214,11 @@ list must specify a `type`.
 The configuration format supports three "classical" statement-based
 transformation schemas based on those introduced by
 [GenProg](https://squareslab.github.io/genprog-code/):
-`delete-statement`, `replace-statement`, and `prepend-statement`.
+`delete-statement`, `replace-statement`, and `prepend-statement`;
+`swap-statement` has not been implemented at the time of writing.
+To learn more about why Darjeeling uses `prepend-statement` rather than the
+traditional `append-statement` schema, see the
+[Darjeeling design document](https://github.com/squaresLab/Darjeeling/blob/transformations/docs/design.md).
 
 Discuss template-based transformations.
 
