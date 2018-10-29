@@ -44,7 +44,7 @@ class Transformation(object):
         return REGISTRY[name]
 
     @staticmethod
-    def schemas(self) -> Iterator[str]:
+    def schemas() -> Iterator[str]:
         """
         Returns an iterator over the names of the transformation schemas
         that have been registered.
