@@ -240,6 +240,10 @@ Below is an example of a simple repair template that replaces all calls to
   rewrite: "bar(:[1])"
 ```
 
+The `type` property is set to `template` to indicate that this schema
+represents a Rooibos-based repair template. The `match` and `rewrite`
+sections are used to specify match and rewrite patterns, respectively.
+
 ### `optimizations`
 
 The `optimizations` section is used to toggle various optimizations available
