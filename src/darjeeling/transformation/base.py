@@ -44,6 +44,14 @@ class Transformation(object):
         return REGISTRY[name]
 
     @staticmethod
+    def schemas(self) -> Iterator[str]:
+        """
+        Returns an iterator over the names of the transformation schemas
+        that have been registered.
+        """
+        yield from REGISTRY
+
+    @staticmethod
     def from_dict(d: Dict[str, Any]) -> 'Transformation':
         """
         Constructs a transformation from a dictionary-based description.
