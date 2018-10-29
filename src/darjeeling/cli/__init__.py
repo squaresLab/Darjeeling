@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any, Type
 import logging
 from datetime import datetime, timedelta
 import sys
@@ -13,6 +13,7 @@ from bugzoo.core import FileLine
 
 from ..candidate import all_single_edit_patches
 from ..candidate import Candidate
+from ..transformation import Transformation
 from ..transformation import find_all as find_all_transformations
 from ..transformation.classic import DeleteStatement, \
                                      ReplaceStatement, \
@@ -199,13 +200,39 @@ class BaseController(cement.Controller):
 
         # fetch the transformation schemas
         if 'transformations' not in yml:
-            m = "'transformations' property is missing"
+            m = "'transformations' section is missing"
             raise BadConfigurationException(m)
-        if not isinstance(yml['transformations'], list):
-            m = "'transformations' property should be a list"
+        if not isinstance(yml['transformations'], dict):
+            m = "'transformations' section should be an object"
             raise BadConfigurationException(m)
-        # FIXME
-        schemas = [DeleteStatement, ReplaceStatement, PrependStatement]
+        if not 'schemas' in yml['transformations']:
+            m = "'schemas' property missing in 'transformations' section"
+            raise BadConfigurationException(m)
+        if not isinstance(yml['transformations']['schemas'], list):
+            m = "'schemas' property should be a list"
+            raise BadConfigurationException(m)
+
+        def schema_from_dict(d: Dict[str, Any]) -> Type[Transformation]:
+            if not isinstance(d, dict):
+                m = "expected an object but was a {}".format(type(d).__name__)
+                m = "illegal schema description: {}".format(m)
+                raise BadConfigurationException(m)
+            if not 'type' in d:
+                m = "missing 'type' property in schema description"
+                raise BadConfigurationException(m)
+
+            name_schema = d['type']
+            try:
+                return Transformation.find_schema(name_schema)
+            except KeyError:
+                known_schemas = "(known schemas: {})".format(
+                    ', '.join(Transformation.schemas()))
+                m = "no schema with name [{}]. {}"
+                m = m.format(name_schema, known_schemas)
+                raise BadConfigurationException(m)
+
+        schemas = \
+            [schema_from_dict(d) for d in yml['transformations']['schemas']]
 
         # fetch the bugzoo snapshot
         if 'snapshot' not in yml:

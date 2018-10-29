@@ -1,3 +1,7 @@
+"""
+This module provides the base Transformation class, from which all
+transformation schemas inherit.
+"""
 __all__ = ['Transformation', 'register']
 
 from typing import Any, Dict, List, Type, Iterator, Callable
@@ -27,6 +31,25 @@ class Transformation(object):
         Converts a transformation into a concrete source code replacement.
         """
         raise NotImplementedError
+
+    @staticmethod
+    def find_schema(name: str) -> 'Type[Transformation]':
+        """
+        Retrieves the transformation schema that is registered under a given
+        name.
+
+        Raises:
+            KeyError: if no schema is found under that name.
+        """
+        return REGISTRY[name]
+
+    @staticmethod
+    def schemas() -> Iterator[str]:
+        """
+        Returns an iterator over the names of the transformation schemas
+        that have been registered.
+        """
+        yield from REGISTRY
 
     @staticmethod
     def from_dict(d: Dict[str, Any]) -> 'Transformation':

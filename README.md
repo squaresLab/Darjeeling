@@ -206,10 +206,43 @@ search algorithm exposed by the configuration file format is given below.
 
 The `transformations` section describes the space of program transformations
 from which candidate patches should be composed. The `schemas` property of
-this section specifies which program transformation schemas may be used to
-construct the program transformations. The configuration format currently
-supports three transformation schemas: `delete-statement`,
-`replace-statement`, and `prepend-statement`.
+this section specifies a list of the program transformation schemas, along
+with any parameter values for those schemas, that should may be used to
+construct concrete program transformations. Each entry in the `schemas`
+list must specify a `type`.
+
+The configuration format supports three "classical" statement-based
+transformation schemas based on those introduced by
+[GenProg](https://squareslab.github.io/genprog-code/):
+`delete-statement`, `replace-statement`, and `prepend-statement`;
+`swap-statement` has not been implemented at the time of writing.
+To learn more about why Darjeeling uses `prepend-statement` rather than the
+traditional `append-statement` schema, see the
+[Darjeeling design document](https://github.com/squaresLab/Darjeeling/blob/transformations/docs/design.md).
+Below is an example of `schemas` property that uses all of the classical
+statement-based schemas.
+
+```
+schemas:
+  - type: delete-statement
+  - type: replace-statement
+  - type: prepend-statement
+```
+
+The configuration format also supports custom repair templates via
+match-rewrite patterns for [Rooibos](https://github.com/squaresLab/Rooibos).
+Below is an example of a simple repair template that replaces all calls to
+`foo` with calls to `bar`.
+
+```
+- type: template
+  match: "foo(:[1])"
+  rewrite: "bar(:[1])"
+```
+
+The `type` property is set to `template` to indicate that this schema
+represents a Rooibos-based repair template. The `match` and `rewrite`
+sections are used to specify match and rewrite patterns, respectively.
 
 ### `optimizations`
 
