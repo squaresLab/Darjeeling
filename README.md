@@ -219,6 +219,15 @@ transformation schemas based on those introduced by
 To learn more about why Darjeeling uses `prepend-statement` rather than the
 traditional `append-statement` schema, see the
 [Darjeeling design document](https://github.com/squaresLab/Darjeeling/blob/transformations/docs/design.md).
+Below is an example of `schemas` property that uses all of the classical
+statement-based schemas.
+
+```
+schemas:
+  - type: delete-statement
+  - type: replace-statement
+  - type: prepend-statement
+```
 
 Discuss template-based transformations.
 
