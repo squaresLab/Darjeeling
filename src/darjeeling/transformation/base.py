@@ -33,6 +33,17 @@ class Transformation(object):
         raise NotImplementedError
 
     @staticmethod
+    def find_schema(name: str) -> 'Type[Transformation]':
+        """
+        Retrieves the transformation schema that is registered under a given
+        name.
+
+        Raises:
+            KeyError: if no schema is found under that name.
+        """
+        return REGISTRY[name]
+
+    @staticmethod
     def from_dict(d: Dict[str, Any]) -> 'Transformation':
         """
         Constructs a transformation from a dictionary-based description.
