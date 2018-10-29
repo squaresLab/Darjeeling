@@ -116,7 +116,7 @@ class StatementTransformation(Transformation):
         yield from viable
 
 
-@register("DeleteStatement")
+@register("delete-statement")
 @attr.s(frozen=True, repr=False)
 class DeleteStatement(StatementTransformation):
     location = attr.ib(type=FileLocationRange)
@@ -154,7 +154,7 @@ class DeleteStatement(StatementTransformation):
         yield DeleteStatement(statement.location)
 
 
-@register("ReplaceStatement")
+@register("replace-statement")
 @attr.s(frozen=True, repr=False)
 class ReplaceStatement(StatementTransformation):
     location = attr.ib(type=FileLocationRange)
@@ -206,7 +206,7 @@ class ReplaceStatement(StatementTransformation):
                 yield ReplaceStatement(statement.location, snippet)
 
 
-@register("PrependStatement")
+@register("prepend-statement")
 @attr.s(frozen=True, repr=False)
 class PrependStatement(StatementTransformation):
     location = attr.ib(type=FileLocation)
