@@ -19,7 +19,7 @@ from ..transformation import find_all as find_all_transformations
 from ..transformation.classic import DeleteStatement, \
                                      ReplaceStatement, \
                                      PrependStatement
-from ..exceptions import BadConfigurationException, LanguageNotFound
+from ..exceptions import BadConfigurationException, LanguageNotSupported
 from ..searcher import Searcher
 from ..problem import Problem
 from ..localization import Localization, \
@@ -195,7 +195,7 @@ class BaseController(cement.Controller):
             raise BadConfigurationException(m)
         try:
             language = Language.find(yml['language'])
-        except LanguageNotFound:
+        except LanguageNotSupported:
             supported = ', '.join([l.value for l in Language])
             supported = "(supported languages: {})".format(supported)
             m = "unsupported language [{}]. {}"
