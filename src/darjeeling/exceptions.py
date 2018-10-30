@@ -4,6 +4,12 @@ class DarjeelingError(Exception):
     """
 
 
+class LanguageNotSupported(DarjeelingError):
+    """
+    Darjeeling does not support the given language.
+    """
+
+
 class SearchAlreadyStarted(DarjeelingError):
     """
     The searcher has already begun searching for patches.
