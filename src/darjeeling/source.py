@@ -8,7 +8,8 @@ from bugzoo.client import Client as BugZooClient
 from bugzoo.core.patch import Patch
 from bugzoo.core.bug import Bug as Snapshot
 
-from .core import Replacement, FileLine, FileLocationRange, Location
+from .core import Replacement, FileLine, FileLocationRange, Location, \
+    LocationRange
 
 
 # FIXME add option to save to disk
@@ -53,10 +54,11 @@ class ProgramSourceManager(object):
         """
         Returns the range of characters that are covered by a given line.
         """
-        content = self.__mgr.read_line(self.__snapshot, line)  # TODO include newline?
-        return FileLocationRange(line.filename,
-                                 Location(line.num, 0),
-                                 Location(line.num, len(content)))
+        content = self.__mgr.read_line(self.__snapshot, line)
+        start = Location(line.num, 0)
+        stop = Location(line.num, len(content) + 1)
+        r = LocationRange(start, stop)
+        return FileLocationRange(line.filename, r)
 
     def num_lines(self, fn: str) -> int:
         """
