@@ -4,6 +4,15 @@ class DarjeelingError(Exception):
     """
 
 
+class LanguageNotSupported(DarjeelingError):
+    """
+    Darjeeling does not support the given language.
+    """
+    def __init__(self, name: str) -> None:
+        msg = "language not supported: {}".format(name)
+        super().__init__(msg)
+
+
 class SearchAlreadyStarted(DarjeelingError):
     """
     The searcher has already begun searching for patches.

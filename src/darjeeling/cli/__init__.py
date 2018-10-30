@@ -11,6 +11,7 @@ import yaml
 import kaskara
 from bugzoo.core import FileLine
 
+from ..core import Language
 from ..candidate import all_single_edit_patches
 from ..candidate import Candidate
 from ..transformation import Transformation
@@ -18,7 +19,7 @@ from ..transformation import find_all as find_all_transformations
 from ..transformation.classic import DeleteStatement, \
                                      ReplaceStatement, \
                                      PrependStatement
-from ..exceptions import BadConfigurationException
+from ..exceptions import BadConfigurationException, LanguageNotSupported
 from ..searcher import Searcher
 from ..problem import Problem
 from ..localization import Localization, \
@@ -185,6 +186,23 @@ class BaseController(cement.Controller):
         # seed the RNG
         random.seed(seed)
 
+        # determine the language
+        if 'language' not in yml:
+            m = "'language' property is missing"
+            raise BadConfigurationException(m)
+        if not isinstance(yml['language'], str):
+            m = "'language' property should be a string"
+            raise BadConfigurationException(m)
+        try:
+            language = Language.find(yml['language'])
+        except LanguageNotSupported:
+            supported = ', '.join([l.value for l in Language])
+            supported = "(supported languages: {})".format(supported)
+            m = "unsupported language [{}]. {}"
+            m = m.format(yml['language'], supported)
+            raise BadConfigurationException(m)
+        logger.info("using language: %s", language.value)
+
         # build the settings
         opts = yml.get('optimizations', {})
         settings = \
@@ -285,6 +303,7 @@ class BaseController(cement.Controller):
             # build problem
             problem = Problem(client_bugzoo,
                               snapshot,
+                              language,
                               coverage,
                               analysis=analysis,
                               settings=settings)

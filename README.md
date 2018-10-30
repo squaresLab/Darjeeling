@@ -117,6 +117,7 @@ example of a configuration file.
 ```
 version: '1.0'
 snapshot: 'manybugs:python:69223-69224'
+language: c
 seed: 0
 threads: 16
 localization:
@@ -150,6 +151,24 @@ Below, we describe the top-level options exposed by the configuration file:
 * `threads`: number of threads over which the repair workload should be
   distributed.
 * `limits`: limits on the resources that may be consumed during the search.
+
+### `language`
+
+The `language` property specifies the language used by the program under
+repair. Although Darjeeling supports multiple languages, it is not yet
+possible to fix bugs that involve more than one language.
+
+Below is a list of the languages that are fully supported by Darjeeling.
+Darjeeling can automatically perform static analysis and compute coverage
+information for each of these languages.
+
+* *C:* `c`
+* *C++:* `cpp`
+
+The `text` option (i.e., `language: text`) may be used to ignore the language
+of the program under repair and to treat each file as a text file. When this
+option is used, users will need to manually provide coverage information, and
+static analysis will not be performed.
 
 ### `localization`
 
