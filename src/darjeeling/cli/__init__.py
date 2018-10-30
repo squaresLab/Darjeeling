@@ -301,10 +301,10 @@ class BaseController(cement.Controller):
                                               files)
 
             # build problem
-            problem = Problem(client_bugzoo,
-                              snapshot,
-                              language,
-                              coverage,
+            problem = Problem(bz=client_bugzoo,
+                              bug=snapshot,
+                              language=language,
+                              coverage=coverage,
                               analysis=analysis,
                               settings=settings)
 
