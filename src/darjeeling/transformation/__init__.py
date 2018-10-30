@@ -15,6 +15,7 @@ from kaskara import InsertionPoint
 from .base import Transformation, register
 from .rooibos import *
 from .classic import *
+from .line import *
 from ..exceptions import NoImplicatedLines
 from ..localization import Localization
 from ..problem import Problem
