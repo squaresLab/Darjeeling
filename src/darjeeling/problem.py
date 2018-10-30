@@ -20,6 +20,7 @@ from bugzoo.compiler import CompilationOutcome as BuildOutcome
 from bugzoo.util import indent
 from kaskara.analysis import Analysis
 
+from .core import Language
 from .source import ProgramSourceManager
 from .util import get_file_contents
 from .exceptions import NoFailingTests, NoImplicatedLines, BuildFailure
@@ -37,6 +38,7 @@ class Problem(object):
     def __init__(self,
                  bz: bugzoo.BugZoo,
                  bug: Bug,
+                 language: Language,
                  coverage: TestSuiteCoverage,
                  *,
                  analysis: Optional[Analysis] = None,
@@ -58,6 +60,7 @@ class Problem(object):
                 information and the provided suspiciousness metric.
         """
         self.__bug = bug
+        self.__language = language
         self.__client_rooibos = client_rooibos
         self.__client_bugzoo = bz
         self.__coverage = coverage
@@ -231,6 +234,10 @@ class Problem(object):
                     '\n* '.join(files))
         if len(lines) == 0:
             raise NoImplicatedLines
+
+    @property
+    def language(self) -> Language:
+        return self.__language
 
     @property
     def bugzoo(self) -> BugZooClient:
