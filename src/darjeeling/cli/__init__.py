@@ -303,6 +303,7 @@ class BaseController(cement.Controller):
             # build problem
             problem = Problem(client_bugzoo,
                               snapshot,
+                              language,
                               coverage,
                               analysis=analysis,
                               settings=settings)
