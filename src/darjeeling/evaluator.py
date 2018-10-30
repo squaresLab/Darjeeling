@@ -260,8 +260,14 @@ class Evaluator(object):
         """
         Evaluates a given candidate patch.
         """
-        # FIXME separate sample outcome from full outcome
-        outcome = self._evaluate(candidate)
+        # FIXME return an evaluation error
+        try:
+            outcome = self._evaluate(candidate)
+        except Exception:
+            m = "unexpected error occurred when evaluating candidate [{}]"
+            m = m.format(candidate.id)
+            logger.exception(m)
+
         self.outcomes.record(candidate, outcome)
         with self.__lock:
             self.__queue_evaluated.put((candidate, outcome))
