@@ -88,7 +88,27 @@ class ReplaceLine(LineTransformation):
                 yield ReplaceLine(line, replacement)
 
     def to_replacement(self, problem: Problem) -> Replacement:
-        loc = problem.sources.line_to_location_range(self.line)
-        repl = problem.sources.read_line(self.replacement,
-                                         keep_newline=True)
-        return Replacement(loc, repl)
+        sources = problem.sources
+        loc = sources.line_to_location_range(self.line)
+        rep = sources.read_line(self.replacement, keep_newline=True)
+        return Replacement(loc, rep)
+
+
+@register("insert-line")
+@attr.s(frozen=True)
+class InsertLine(LineTransformation):
+    line = attr.ib(type=FileLine)
+    insertion = attr.ib(type=FileLine)
+
+    @classmethod
+    def all_at_line(cls, problem, snippets, line):
+        # TODO append after the last line!
+        for ins in cls.viable_insertions(problem, line):
+            yield InsertLine(line, ins)
+
+    def to_replacement(self, problem: Problem) -> Replacement:
+        sources = problem.sources
+        r = sources.line_to_location_range(self.line)
+        r = FileLocationRange(r.filename, LocationRange(r.start, r.start))
+        ins = sources.read_line(self.insertion, keep_newline=True)
+        return Replacement(r, ins)
