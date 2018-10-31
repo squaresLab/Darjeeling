@@ -3,10 +3,9 @@ This module implements GenProg-style operators for individual source code
 lines.
 """
 __all__ = [
-#    'PrependLine',
-    'DeleteLine'
-#    'ReplaceLine',
-#    'SwapLines'
+    'InsertLine',
+    'DeleteLine',
+    'ReplaceLine'
 ]
 
 from typing import List, Iterator, Iterable, Dict, Any, FrozenSet
