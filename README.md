@@ -263,6 +263,16 @@ The `type` property is set to `template` to indicate that this schema
 represents a Rooibos-based repair template. The `match` and `rewrite`
 sections are used to specify match and rewrite patterns, respectively.
 
+Darjeeling also provides support for naive line-based transformations,
+given below, which can be used for programs that use languages that are
+not fully supported (i.e., programs that use the `text` language).
+
+```
+- type: delete-line
+- type: insert-line
+- type: replace-line
+```
+
 ### `optimizations`
 
 The `optimizations` section is used to toggle various optimizations available
