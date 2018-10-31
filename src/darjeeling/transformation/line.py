@@ -46,6 +46,20 @@ class LineTransformation(Transformation):
                     ) -> Iterator[Transformation]:
         raise NotImplementedError
 
+    @classmethod
+    def viable_insertions(cls,
+                          problem: Problem,
+                          context: FileLine
+                          ) -> Iterator[FileLine]:
+        sources = problem.sources
+        filename = context.filename
+        for line_num in range(1, sources.num_lines(filename) + 1):
+            insertion = FileLine(filename, line_num)
+            content = sources.read_line(insertion)
+            if content.isspace():
+                continue
+            yield insertion
+
 
 @register("delete-line")
 @attr.s(frozen=True)
@@ -56,14 +70,25 @@ class DeleteLine(LineTransformation):
     def all_at_line(cls, problem, snippets, line):
         yield DeleteLine(line)
 
-    @staticmethod
-    def from_dict(d: Dict[str, Any]) -> 'Transformation':
-        location = FileLine.from_string(d['line'])
-        return DeleteStatement(location)
-
-    def _to_dict(self) -> Dict[str, Any]:
-        return {'line': str(self.line)}
-
     def to_replacement(self, problem: Problem) -> Replacement:
         loc = problem.sources.line_to_location_range(self.line)
         return Replacement(loc, '')
+
+
+@register("replace-line")
+@attr.s(frozen=True)
+class ReplaceLine(LineTransformation):
+    line = attr.ib(type=FileLine)
+    replacement = attr.ib(type=FileLine)
+
+    @classmethod
+    def all_at_line(cls, problem, snippets, line):
+        for replacement in cls.viable_insertions(problem, line):
+            if replacement != line:
+                yield ReplaceLine(line, replacement)
+
+    def to_replacement(self, problem: Problem) -> Replacement:
+        loc = problem.sources.line_to_location_range(self.line)
+        repl = problem.sources.read_line(self.replacement,
+                                         keep_newline=True)
+        return Replacement(loc, repl)
