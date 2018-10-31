@@ -83,7 +83,7 @@ class ProgramSourceManager(object):
                 newline character will be removed.
         """
         content = self.__mgr.read_line(self.__snapshot, at)
-        return content.rstrip('\n') if keep_newline else content
+        return content + '\n' if keep_newline else content
 
     def read_chars(self, at: FileLocationRange) -> str:
         return self.__mgr.read_chars(self.__snapshot, at)
