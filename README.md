@@ -332,3 +332,10 @@ Darjeeling.
 The `exhaustive` search algorithm exhaustively searches over all legal
 single-transformation patches within the search space until the termination
 criteria are fulfilled.
+
+
+### `genetic`
+
+The `genetic` search algorithm implements a genetic algorithm that is inspired
+by the one used by [GenProg](https://squareslab.github.io/genprog-code/), a
+formative search-based program repair tool for C.
