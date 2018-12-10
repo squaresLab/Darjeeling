@@ -9,7 +9,7 @@ __all__ = [
 ]
 
 from typing import Dict, Callable, List, Iterator, FrozenSet, Sequence, Any, \
-    Iterable
+    Iterable, Optional
 import math
 import json
 import random
