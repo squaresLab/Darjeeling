@@ -126,7 +126,7 @@ localization:
   exclude-files:
     - foo.c
 algorithm:
-  type: random
+  type: exhaustive
 transformations:
   schemas:
     - type: delete-statement
