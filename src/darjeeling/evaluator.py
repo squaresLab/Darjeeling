@@ -252,7 +252,7 @@ class Evaluator(object):
         finally:
             logger.info("evaluated candidate: %s", candidate)
             if container:
-                del bz.containers[container.uid]
+                del bz.containers[container.id]
                 logger.debug("destroyed container for candidate: %s", candidate)
 
     def evaluate(self,
