@@ -129,6 +129,15 @@ class Localization(object):
                 exclude_lines.append(FileLine(fn, line_num))
         loc = loc.exclude_lines(exclude_lines)
 
+        # restrict to specified files
+        restrict_to_files = cfg.get('restrict-to-files',
+                                    None)  # type: Optional[List[str]]
+        if restrict_to_files is []:
+            m = "cannot restrict to empty set of files"
+            raise BadConfigurationException(m)
+        if restrict_to_files is not None:
+            loc = loc.restrict_to_files(restrict_to_files)
+
         return loc
 
     @staticmethod
@@ -257,6 +266,14 @@ class Localization(object):
         if line in scores:
             del scores[line]
         return Localization(scores)
+
+    def restrict_to_files(self, restricted_files: List[str]) -> 'Localization':
+        """
+        Returns a variant of this fault localization that is restricted to
+        lines that belong to a given set of files.
+        """
+        lines = [l for l in self if l.filename in restricted_files]
+        return self.restricted_to_lines(lines)
 
     def restricted_to_lines(self,
                             lines: Sequence[FileLine]
