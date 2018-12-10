@@ -144,7 +144,7 @@ class Localization(object):
         if restrict_lines_arg is []:
             m = "cannot restrict to empty set of lines"
             raise BadConfigurationException(m)
-        if restrict_to_lines is not None:
+        if restrict_to_lines_arg is not None:
             restrict_to_lines = []  # type: List[FileLine]
             for fn in restrict_lines_arg:
                 for line_num in restrict_lines_arg[fn]:
