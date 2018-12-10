@@ -326,3 +326,9 @@ configuration file:
 
 This section describes the different search algorithms that are supported by
 Darjeeling.
+
+### `exhaustive`
+
+The `exhaustive` search algorithm exhaustively searches over all legal
+single-transformation patches within the search space until the termination
+criteria are fulfilled.
