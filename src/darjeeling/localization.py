@@ -140,7 +140,7 @@ class Localization(object):
 
         # restrict to specified lines
         restrict_lines_arg = cfg.get('restrict-to-lines',
-                                     None)   # type: Optional[List[str]]
+                                     None)  # type: Optional[Dict[str, List[int]]]
         if restrict_lines_arg is []:
             m = "cannot restrict to empty set of lines"
             raise BadConfigurationException(m)
