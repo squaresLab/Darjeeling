@@ -211,6 +211,22 @@ exclude-lines:
   bar.c: [4, 6, 7]
 ```
 
+The fault localization can also be restricted to only consider certain files
+by using the `restrict-to-files` property, as shown below.
+
+```
+restrict-to-files:
+  - foo.c
+```
+
+Similarly, the fault localization can also be restricted to individual source
+code lines using the `restrict-to-lines` property:
+
+```
+restrict-to-lines:
+  foo.c: [11, 14, 16]
+```
+
 
 ### `algorithm`
 
