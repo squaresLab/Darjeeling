@@ -138,6 +138,19 @@ class Localization(object):
         if restrict_to_files is not None:
             loc = loc.restrict_to_files(restrict_to_files)
 
+        # restrict to specified lines
+        restrict_lines_arg = cfg.get('restrict-to-lines',
+                                     None)   # type: Optiona[List[str]]
+        if restrict_lines_arg is []:
+            m = "cannot restrict to empty set of lines"
+            raise BadConfigurationException(m)
+        if restrict_to_lines is not None:
+            restrict_to_lines = []  # type: List[FileLine]
+            for fn in restrict_lines_arg:
+                for line_num in restrict_lines_arg[fn]:
+                    restrict_to_lines.append(FileLine(fn, line_num))
+            loc = loc.restricted_to_lines(restrict_to_lines)
+
         return loc
 
     @staticmethod
