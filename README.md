@@ -218,8 +218,10 @@ The `algorithm` section outlines the search algorithm that should be used
 to search the space of candidate repairs. A description of the types of
 search algorithm exposed by the configuration file format is given below.
 
-* `random`
-* `genetic`
+* `exhaustive`: iterates over all single-transformation patches within
+  the search space until the termination criteria are met.
+* `genetic`: implements a customisable genetic algorithm, inspired by
+  [GenProg](https://squareslab.github.io/genprog-code/).
 
 ### `transformations`
 
@@ -318,3 +320,9 @@ configuration file:
 * `time-minutes`: the maximum length of wall-clock time that may be spent
   searching for a patch, given in minutes.
   May be overriden at the command line by the `--max-time-mins` option.
+
+
+## Search Algorithms
+
+This section describes the different search algorithms that are supported by
+Darjeeling.
