@@ -208,6 +208,7 @@ class Evaluator(object):
         logger.debug("building candidate: %s", candidate)
         timer_build = Stopwatch()
         timer_build.start()
+        container = None  # type: Optional[Candidate]
         try:
             container = self.__problem.build_patch(patch)
             outcome_build = BuildOutcome(True, timer_build.duration)
