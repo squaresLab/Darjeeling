@@ -9,7 +9,7 @@ __all__ = [
 ]
 
 from typing import Dict, Callable, List, Iterator, FrozenSet, Sequence, Any, \
-    Iterable
+    Iterable, Optional
 import math
 import json
 import random
@@ -128,6 +128,28 @@ class Localization(object):
             for line_num in exclude_lines_arg[fn]:
                 exclude_lines.append(FileLine(fn, line_num))
         loc = loc.exclude_lines(exclude_lines)
+
+        # restrict to specified files
+        restrict_to_files = cfg.get('restrict-to-files',
+                                    None)  # type: Optional[List[str]]
+        if restrict_to_files is []:
+            m = "cannot restrict to empty set of files"
+            raise BadConfigurationException(m)
+        if restrict_to_files is not None:
+            loc = loc.restrict_to_files(restrict_to_files)
+
+        # restrict to specified lines
+        restrict_lines_arg = cfg.get('restrict-to-lines',
+                                     None)  # type: Optional[Dict[str, List[int]]]
+        if restrict_lines_arg is []:
+            m = "cannot restrict to empty set of lines"
+            raise BadConfigurationException(m)
+        if restrict_lines_arg is not None:
+            restrict_to_lines = []  # type: List[FileLine]
+            for fn in restrict_lines_arg:
+                for line_num in restrict_lines_arg[fn]:
+                    restrict_to_lines.append(FileLine(fn, line_num))
+            loc = loc.restricted_to_lines(restrict_to_lines)
 
         return loc
 
@@ -257,6 +279,14 @@ class Localization(object):
         if line in scores:
             del scores[line]
         return Localization(scores)
+
+    def restrict_to_files(self, restricted_files: List[str]) -> 'Localization':
+        """
+        Returns a variant of this fault localization that is restricted to
+        lines that belong to a given set of files.
+        """
+        lines = [l for l in self if l.filename in restricted_files]
+        return self.restricted_to_lines(lines)
 
     def restricted_to_lines(self,
                             lines: Sequence[FileLine]
