@@ -273,7 +273,7 @@ class Searcher(object):
         self.__stopwatch.stop()
 
     def close(self) -> None:
-        logger.debug("waiting for pending evaluations to complete.")
+        logger.info("waiting for pending evaluations to complete.")
         for candidate, outcome in self.as_evaluated():
             pass
-        logger.debug("finished waiting for pending evaluations to complete.")
+        logger.info("finished waiting for pending evaluations to complete.")
