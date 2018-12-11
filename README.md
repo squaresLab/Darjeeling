@@ -370,6 +370,15 @@ algorithm:
 
 Below is a list of the parameters that are exposed by `genetic`:
 
+* `population`: the size of the (initial) population. Used to control the
+  number of individuals that are selected as parents.
+* `generations`: the maximum number of generations.
+* `tournament-size`: the size of the tournament when performing tournament
+  selection to choose parents. Larger tournament sizes lead to an increased
+  selective pressure.
+* `mutation-rate`: the probability of an individual mutation event.
+* `crossover-rate`: the probability of an individual crossover event between
+  two parents.
 * `test-sample-size`: controls test sampling. When test sampling is
   enabled, the fitness of an individual is computed using a randomly selected
   subset of the test suite, rather than the entire test suite. (More specifically,
