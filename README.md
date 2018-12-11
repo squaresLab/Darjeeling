@@ -354,16 +354,30 @@ criteria are fulfilled.
 
 The `genetic` search algorithm implements a genetic algorithm that is inspired
 by the one used by [GenProg](https://squareslab.github.io/genprog-code/), a
-formative search-based program repair tool for C.
+formative search-based program repair tool for C. Below is an excerpt from a
+configuration file that uses a `genetic` search algorithm.
 
-`test-sample-size` is used to control test sampling. When test sampling is
-enabled, the fitness of an individual is computed using a randomly selected
-subset of the test suite, rather than the entire test suite. (More specifically,
-test sampling selects a subset of the passing tests whilst keeping all of the
-failing tests.)
-The value of `test-sample-size` is used to specify the size of the subset
-(or *sample*). If `test-sample-size` is given as a float, then it will be
-treated as a fraction. If `test-sample-size` is given as an integer, then its
-value will be used as the absolute number of (passing) tests that should be
-included in the sample. If `test-sample-size` is omitted or set to `null`,
-test sampling will be disabled.
+```
+algorithm:
+  type: genetic
+  population: 80
+  generations: 20
+  tournament-size: 3
+  mutation-rate: 0.6
+  crossover-rate: 0.1
+  test-sample-size: 0.4
+```
+
+Below is a list of the parameters that are exposed by `genetic`:
+
+* `test-sample-size`: controls test sampling. When test sampling is
+  enabled, the fitness of an individual is computed using a randomly selected
+  subset of the test suite, rather than the entire test suite. (More specifically,
+  test sampling selects a subset of the passing tests whilst keeping all of the
+  failing tests.)
+  The value of `test-sample-size` is used to specify the size of the subset
+  (or *sample*). If `test-sample-size` is given as a float, then it will be
+  treated as a fraction. If `test-sample-size` is given as an integer, then its
+  value will be used as the absolute number of (passing) tests that should be
+  included in the sample. If `test-sample-size` is omitted or set to `null`,
+  test sampling will be disabled.
