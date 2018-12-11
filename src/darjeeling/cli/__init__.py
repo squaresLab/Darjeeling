@@ -341,6 +341,9 @@ class BaseController(cement.Controller):
             if not patches:
                 logger.info("failed to find a patch")
 
+            # wait for threads to finish gracefully before exiting
+            searcher.close()
+
             # report stats
             num_test_evals = searcher.num_test_evals
             num_candidate_evals = searcher.num_candidate_evals
@@ -360,7 +363,7 @@ class CLI(cement.App):
 
 def main():
     log_to_stdout = logging.StreamHandler()
-    log_to_stdout.setLevel(logging.INFO)
+    log_to_stdout.setLevel(logging.DEBUG)
     # logger.addHandler(log_to_stdout)
     logging.getLogger('darjeeling').addHandler(log_to_stdout)
 
