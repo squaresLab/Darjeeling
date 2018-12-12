@@ -31,12 +31,11 @@ Metric = Callable[[int, int, int, int], float]
 
 
 def genprog(ep: int, np: int, ef: int, nf: int) -> float:
-    if nf == 0:
-        return 0
+    if ef == 0:
+        return 0.0
     if ep == 0:
         return 1.0
-    else:
-        return 0.0
+    return 0.1
 
 
 def ochiai(ep: int, np: int, ef: int, nf: int) -> float:
