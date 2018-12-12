@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import sys
 import random
 import warnings
+import os
 
 import bugzoo
 import cement
@@ -353,6 +354,21 @@ class BaseController(cement.Controller):
             logger.info("time taken: %.2f minutes", time_running_mins)
             logger.info("# test evaluations: %d", searcher.num_test_evals)
             logger.info("# candidate evaluations: %d", searcher.num_candidate_evals)
+
+            # save patches to disk
+            dir_patches = 'patches'
+            os.makedirs(dir_patches, exist_ok=True)
+            for i, patch in enumerate(patches):
+                diff = str(patch.to_diff(problem))
+                fn_patch = os.path.join(dir_patches, '{}.diff'.format(i))
+                logger.debug("writing patch to %s", fn_patch)
+                try:
+                    with open(fn_patch, 'w') as f:
+                        f.write(diff)
+                except Exception:
+                    logger.exception("failed to write patch: %s", fn_patch)
+                    raise
+                logger.debug("wrote patch to %s", fn_patch)
 
 
 class CLI(cement.App):
