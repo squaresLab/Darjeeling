@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import sys
 import random
 import warnings
+import shutil
 import os
 
 import bugzoo
