@@ -92,6 +92,11 @@ class BaseController(cement.Controller):
         limit_time_minutes = \
             self.app.pargs.limit_time_minutes  # type: Optional[int]
 
+        dir_patches = 'patches'
+        if os.path.exists(dir_patches):
+            logger.warning("destroying existing patch directory")
+            shutil.rmtree(dir_patches)
+
         with open(filename, 'r') as f:
             yml = yaml.load(f)
 
@@ -356,7 +361,6 @@ class BaseController(cement.Controller):
             logger.info("# candidate evaluations: %d", searcher.num_candidate_evals)
 
             # save patches to disk
-            dir_patches = 'patches'
             os.makedirs(dir_patches, exist_ok=True)
             for i, patch in enumerate(patches):
                 diff = str(patch.to_diff(problem))
