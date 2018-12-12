@@ -33,11 +33,21 @@ class GeneticSearcher(Searcher):
                   ) -> 'GeneticSearcher':
         sample_size = \
             d.get('test-sample-size')  # type: Optional[Union[int, float]]
+        num_generations = d.get('num-generations', 10)  # type: int
+        population_size = d.get('population', 40)  # type: int
+        rate_mutation = d.get('rate-mutation', 1.0)  # type: float
+        rate_crossover = d.get('rate-crossover', 1.0)  # type: float
+        tournament_size = d.get('tournament-size', 2)  # type: int
         return GeneticSearcher(problem.bugzoo,
                                problem,
                                transformations,
                                threads=threads,
                                candidate_limit=candidate_limit,
+                               num_generations=num_generations,
+                               population_size=population_size,
+                               rate_crossover=rate_crossover,
+                               rate_mutation=rate_mutation,
+                               tournament_size=tournament_size,
                                test_sample_size=sample_size,
                                time_limit=time_limit)
 
@@ -46,11 +56,11 @@ class GeneticSearcher(Searcher):
                  problem: Problem,
                  transformations: List[Transformation],
                  *,
-                 population_size: int = 5,
+                 population_size: int = 40,
                  num_generations: int = 10,
                  rate_crossover: float = 1.0,
                  rate_mutation: float = 1.0,
-                 tournament_size: int = 3,
+                 tournament_size: int = 2,
                  threads: int = 1,
                  time_limit: Optional[datetime.timedelta] = None,
                  candidate_limit: Optional[int] = None,
