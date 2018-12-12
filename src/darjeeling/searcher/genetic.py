@@ -33,11 +33,21 @@ class GeneticSearcher(Searcher):
                   ) -> 'GeneticSearcher':
         sample_size = \
             d.get('test-sample-size')  # type: Optional[Union[int, float]]
+        num_generations = d.get('generations', 10)  # type: int
+        population_size = d.get('population', 40)  # type: int
+        rate_mutation = d.get('mutation-rate', 1.0)  # type: float
+        rate_crossover = d.get('crossover-rate', 1.0)  # type: float
+        tournament_size = d.get('tournament-size', 2)  # type: int
         return GeneticSearcher(problem.bugzoo,
                                problem,
                                transformations,
                                threads=threads,
                                candidate_limit=candidate_limit,
+                               num_generations=num_generations,
+                               population_size=population_size,
+                               rate_crossover=rate_crossover,
+                               rate_mutation=rate_mutation,
+                               tournament_size=tournament_size,
                                test_sample_size=sample_size,
                                time_limit=time_limit)
 
@@ -46,11 +56,11 @@ class GeneticSearcher(Searcher):
                  problem: Problem,
                  transformations: List[Transformation],
                  *,
-                 population_size: int = 5,
+                 population_size: int = 40,
                  num_generations: int = 10,
                  rate_crossover: float = 1.0,
                  rate_mutation: float = 1.0,
-                 tournament_size: int = 3,
+                 tournament_size: int = 2,
                  threads: int = 1,
                  time_limit: Optional[datetime.timedelta] = None,
                  candidate_limit: Optional[int] = None,
@@ -62,6 +72,19 @@ class GeneticSearcher(Searcher):
         self.__rate_mutation = rate_mutation
         self.__tournament_size = tournament_size
         self.__transformations = transformations
+
+        m = ("using GA settings:\n"
+             "  * num. generations: %d\n"
+             "  * population size: %d\n"
+             "  * tournament size: %d\n"
+             "  * mutation rate: %.2f\n"
+             "  * crossover rate: %.2f")
+        logger.info(m,
+                    self.__num_generations,
+                    self.__population_size,
+                    self.__tournament_size,
+                    self.__rate_mutation,
+                    self.__rate_crossover)
 
         super().__init__(bugzoo,
                          problem,

@@ -126,7 +126,7 @@ localization:
   exclude-files:
     - foo.c
 algorithm:
-  type: random
+  type: exhaustive
 transformations:
   schemas:
     - type: delete-statement
@@ -234,8 +234,10 @@ The `algorithm` section outlines the search algorithm that should be used
 to search the space of candidate repairs. A description of the types of
 search algorithm exposed by the configuration file format is given below.
 
-* `random`
-* `genetic`
+* `exhaustive`: iterates over all single-transformation patches within
+  the search space until the termination criteria are met.
+* `genetic`: implements a customisable genetic algorithm, inspired by
+  [GenProg](https://squareslab.github.io/genprog-code/).
 
 ### `transformations`
 
@@ -334,3 +336,57 @@ configuration file:
 * `time-minutes`: the maximum length of wall-clock time that may be spent
   searching for a patch, given in minutes.
   May be overriden at the command line by the `--max-time-mins` option.
+
+
+## Search Algorithms
+
+This section describes the different search algorithms that are supported by
+Darjeeling.
+
+### `exhaustive`
+
+The `exhaustive` search algorithm exhaustively searches over all legal
+single-transformation patches within the search space until the termination
+criteria are fulfilled.
+
+
+### `genetic`
+
+The `genetic` search algorithm implements a genetic algorithm that is inspired
+by the one used by [GenProg](https://squareslab.github.io/genprog-code/), a
+formative search-based program repair tool for C. Below is an excerpt from a
+configuration file that uses a `genetic` search algorithm.
+
+```
+algorithm:
+  type: genetic
+  population: 80
+  generations: 20
+  tournament-size: 3
+  mutation-rate: 0.6
+  crossover-rate: 0.1
+  test-sample-size: 0.4
+```
+
+Below is a list of the parameters that are exposed by `genetic`:
+
+* `population`: the size of the (initial) population. Used to control the
+  number of individuals that are selected as parents.
+* `generations`: the maximum number of generations.
+* `tournament-size`: the size of the tournament when performing tournament
+  selection to choose parents. Larger tournament sizes lead to an increased
+  selective pressure.
+* `mutation-rate`: the probability of an individual mutation event.
+* `crossover-rate`: the probability of an individual crossover event between
+  two parents.
+* `test-sample-size`: controls test sampling. When test sampling is
+  enabled, the fitness of an individual is computed using a randomly selected
+  subset of the test suite, rather than the entire test suite. (More specifically,
+  test sampling selects a subset of the passing tests whilst keeping all of the
+  failing tests.)
+  The value of `test-sample-size` is used to specify the size of the subset
+  (or *sample*). If `test-sample-size` is given as a float, then it will be
+  treated as a fraction. If `test-sample-size` is given as an integer, then its
+  value will be used as the absolute number of (passing) tests that should be
+  included in the sample. If `test-sample-size` is omitted or set to `null`,
+  test sampling will be disabled.
