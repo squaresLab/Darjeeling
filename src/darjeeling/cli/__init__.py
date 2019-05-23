@@ -105,9 +105,14 @@ class BaseController(cement.Controller):
         if not log_to_filename:
             log_to_filename = self._default_log_filename
         logger.info("logging to file: %s", log_to_filename)
+
+        log_formatter = logging.Formatter(
+            '%(asctime)s:%(name)s:%(levelname)s: %(message)s',
+            '%Y-%m-%d %H:%M:%S')
         log_to_file = \
             logging.handlers.WatchedFileHandler(log_to_filename, mode='w')
         log_to_file.setLevel(logging.DEBUG)
+        log_to_file.setFormatter(log_formatter)
         logging.getLogger('darjeeling').addHandler(log_to_file)
 
         filename = self.app.pargs.filename  # type: str
