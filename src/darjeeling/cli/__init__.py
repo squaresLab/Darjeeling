@@ -131,7 +131,7 @@ class BaseController(cement.Controller):
             shutil.rmtree(dir_patches)
 
         with open(filename, 'r') as f:
-            yml = yaml.load(f)
+            yml = yaml.safe_load(f)
 
         has_limits = 'resource-limits' in yml
 
