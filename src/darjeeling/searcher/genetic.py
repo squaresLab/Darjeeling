@@ -169,7 +169,8 @@ class GeneticSearcher(Searcher):
             child = ind
             if random.random() <= self.rate_mutation:
                 mutation = self.choose_transformation()
-                child = Candidate(child.transformations + (mutation,))
+                transformations = child.transformations + (mutation,)
+                child = Candidate(transformations)  # type: ignore
             offspring.append(child)
         return offspring
 
