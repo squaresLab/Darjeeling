@@ -1,6 +1,7 @@
 from typing import List, Optional, Dict, Any, Type
 import logging
 from datetime import datetime, timedelta
+from glob import glob
 import sys
 import random
 import warnings
@@ -52,12 +53,27 @@ class BaseController(cement.Controller):
         # type: () -> None
         self.app.args.print_help()
 
+    @property
+    def _default_log_filename(self) -> str:
+        # find all log file numbers that have been used in this directory
+        used_numbers = [int(s.rpartition('.')[-1])
+                        for s in glob('darjeeling.log.*')]
+
+        if not used_numbers:
+            return os.path.join(os.getcwd(), 'darjeeling.log.0')
+
+        num = max(used_numbers) + 1
+        return os.path.join(os.getcwd(), 'darjeeling.log.{}'.format(num))
+
     @cement.ex(
         help='attempt to automatically repair a given program',
         arguments=[
             (['filename'],
              {'help': ('a Darjeeling configuration file describing the faulty '
                        'program and how it should be repaired.') }),
+            (['--log-to-file'],
+             {'help': 'path to store the log file.',
+              'type': str}),
             (['--seed'],
              {'help': 'random number generator seed',
               'type': int}),
@@ -84,6 +100,12 @@ class BaseController(cement.Controller):
         ]
     )
     def repair(self) -> None:
+        # setup logging to file
+        log_to_filename = self.app.pargs.log_to_file  # type: Optional[str]
+        if not log_to_filename:
+            log_to_filename = self._default_log_filename
+        logger.info("logging to file: %s", log_to_filename)
+
         filename = self.app.pargs.filename  # type: str
         seed = self.app.pargs.seed  # type: Optional[int]
         terminate_early = self.app.pargs.terminate_early  # type: bool
