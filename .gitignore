@@ -1,3 +1,6 @@
+darjeeling.log.*
+bugzood.log*
+
 Pipfile
 Pipfile.lock
 
