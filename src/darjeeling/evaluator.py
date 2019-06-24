@@ -130,7 +130,7 @@ class Evaluator(object):
         drop = set()  # type: Set[Test]
         for test in tests:
             test_line_coverage = line_coverage_by_test[test.name]
-            if not any(line in test_line_coverage for line in lines_changed):
+            if len(lines_changed)>0 and not any(line in test_line_coverage for line in lines_changed):
                 drop.add(test)
             else:
                 keep.append(test)
