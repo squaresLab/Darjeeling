@@ -127,9 +127,9 @@ class Evaluator(object):
         line_coverage_by_test = self.__problem.coverage
         lines_changed = candidate.lines_changed(self.__problem)
 
-		# if no lines are changed, retain all tests (fixes issue #128)
-		if not lines_changed:
-		    return (tests, set())
+        # if no lines are changed, retain all tests (fixes issue #128)
+        if not lines_changed:
+            return (tests, set())
 
         keep = []  # type: List[Test]
         drop = set()  # type: Set[Test]
