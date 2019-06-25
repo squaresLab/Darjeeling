@@ -126,11 +126,16 @@ class Evaluator(object):
                                 ) -> Tuple[List[Test], Set[Test]]:
         line_coverage_by_test = self.__problem.coverage
         lines_changed = candidate.lines_changed(self.__problem)
+
+		# if no lines are changed, retain all tests (fixes issue #128)
+		if not lines_changed:
+		    return (tests, set())
+
         keep = []  # type: List[Test]
         drop = set()  # type: Set[Test]
         for test in tests:
             test_line_coverage = line_coverage_by_test[test.name]
-            if len(lines_changed)>0 and not any(line in test_line_coverage for line in lines_changed):
+            if not any(line in test_line_coverage for line in lines_changed):
                 drop.add(test)
             else:
                 keep.append(test)
