@@ -153,9 +153,7 @@ class Evaluator(object):
             logger.debug("* test passed: %s (%s)", test.name, candidate)
         return TestOutcome(bz_outcome.passed, bz_outcome.duration)
 
-    def _evaluate(self,
-                  candidate: Candidate
-                  ) -> CandidateOutcome:
+    def _evaluate(self, candidate: Candidate) -> CandidateOutcome:
         bz = self.__bugzoo
 
         patch = candidate.to_diff(self.__problem)
@@ -253,9 +251,7 @@ class Evaluator(object):
                 del bz.containers[container.id]
                 logger.debug("destroyed container for candidate: %s", candidate)
 
-    def evaluate(self,
-                 candidate: Candidate
-                 ) -> Evaluation:
+    def evaluate(self, candidate: Candidate) -> Evaluation:
         """Evaluates a given candidate patch."""
         # FIXME return an evaluation error
         try:
@@ -271,9 +267,7 @@ class Evaluator(object):
             self.__num_running -= 1
         return (candidate, outcome)
 
-    def submit(self,
-               candidate: Candidate
-               ) -> 'Future[Evaluation]':
+    def submit(self, candidate: Candidate) -> 'Future[Evaluation]':
         """Schedules a candidate patch evaluation."""
         with self.__lock:
             self.__num_running += 1
