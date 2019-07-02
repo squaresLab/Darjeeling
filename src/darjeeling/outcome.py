@@ -1,42 +1,39 @@
-from typing import Dict, Optional, Iterator
-import attr
-
-from bugzoo.core import TestOutcome as BugZooTestOutcome
-from bugzoo.compiler import CompilationOutcome as BugZooBuildOutcome
-
-from .candidate import Candidate
-
-__all__ = [
+# -*- coding: utf-8 -*-
+"""
+This module implements data structures and containers for describing the
+outcome of test and build attempts.
+"""
+__all__ = (
     'TestOutcome',
     'TestOutcomeSet',
     'BuildOutcome',
     'CandidateOutcome',
     'OutcomeManager'
-]
+)
+
+from typing import Dict, Optional, Iterator
+
+import attr
+
+from .candidate import Candidate
 
 
 @attr.s(frozen=True)
 class TestOutcome(object):
-    """
-    Records the outcome of a test execution.
-    """
+    """Records the outcome of a test execution."""
     successful = attr.ib(type=bool)
     time_taken = attr.ib(type=float)
 
 
 @attr.s(frozen=True)
 class BuildOutcome(object):
-    """
-    Records the outcome of a build attempt.
-    """
+    """Records the outcome of a build attempt."""
     successful = attr.ib(type=bool)
     time_taken = attr.ib(type=float)
 
 
 class TestOutcomeSet(object):
-    """
-    Records the outcome of different test executions for a single patch.
-    """
+    """Records the outcome of different test executions for a single patch."""
     def __init__(self,
                  outcomes: Optional[Dict[str, TestOutcome]] = None
                  ) -> None:
@@ -64,9 +61,7 @@ class TestOutcomeSet(object):
 
 @attr.s(frozen=True)
 class CandidateOutcome(object):
-    """
-    Records the outcome of a candidate patch evaluation.
-    """
+    """Records the outcome of a candidate patch evaluation."""
     build = attr.ib(type=BuildOutcome)
     tests = attr.ib(type=TestOutcomeSet)
     is_repair = attr.ib(type=bool)
