@@ -1,4 +1,5 @@
-__all__ = ['Evaluator']
+# -*- coding: utf-8 -*-
+__all__ = ('Evaluator',)
 
 from typing import Tuple, List, Optional, Iterator, Set, Union, FrozenSet
 from timeit import default_timer as timer
@@ -84,16 +85,12 @@ class Evaluator(object):
 
     @property
     def num_test_evals(self) -> int:
-        """
-        The number of test case evaluations performed by this evaluator.
-        """
+        """Number of test case evaluations performed by this evaluator."""
         return self.__counter_tests
 
     @property
     def num_candidate_evals(self) -> int:
-        """
-        The number of candidate evaluations performed by this evaluator.
-        """
+        """Number of candidate evaluations performed by this evaluator."""
         return self.__counter_candidates
 
     def _order_tests(self, tests: Set[Test]) -> List[Test]:
@@ -101,9 +98,7 @@ class Evaluator(object):
         return list(tests)
 
     def _select_tests(self) -> Tuple[List[Test], List[Test]]:
-        """
-        Computes a test sequence for a candidate evaluation.
-        """
+        """Computes a test sequence for a candidate evaluation."""
         # sample passing tests
         sample = set()  # type: Set[Test]
         if self.__sample_size:
@@ -146,9 +141,7 @@ class Evaluator(object):
                   candidate: Candidate,
                   test: Test
                   ) -> TestOutcome:
-        """
-        Runs a test for a given candidate patch using a provided container.
-        """
+        """Runs a test for a given patch using a provided container."""
         logger.debug("executing test: %s [%s]", test.name, candidate)
         self.__counter_tests += 1
         bz = self.__bugzoo
@@ -263,9 +256,7 @@ class Evaluator(object):
     def evaluate(self,
                  candidate: Candidate
                  ) -> Evaluation:
-        """
-        Evaluates a given candidate patch.
-        """
+        """Evaluates a given candidate patch."""
         # FIXME return an evaluation error
         try:
             outcome = self._evaluate(candidate)
@@ -283,9 +274,7 @@ class Evaluator(object):
     def submit(self,
                candidate: Candidate
                ) -> 'Future[Evaluation]':
-        """
-        Schedules a candidate patch evaluation.
-        """
+        """Schedules a candidate patch evaluation."""
         with self.__lock:
             self.__num_running += 1
         future = self.__executor.submit(self.evaluate, candidate)
