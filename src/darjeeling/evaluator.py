@@ -14,8 +14,6 @@ import random
 import bugzoo
 from bugzoo import Client as BugZooClient
 from bugzoo.core import FileLine
-from bugzoo.core.test import TestCase as Test
-from bugzoo.core.test import TestOutcome as BugZooTestOutcome
 
 from .candidate import Candidate
 from .outcome import CandidateOutcome, \
@@ -25,6 +23,7 @@ from .outcome import CandidateOutcome, \
                      BuildOutcome
 from .problem import Problem
 from .exceptions import BuildFailure
+from .core import Test, TestSuite
 from .util import Stopwatch
 
 Evaluation = Tuple[Candidate, CandidateOutcome]
@@ -33,7 +32,7 @@ logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
 
-class Evaluator(object):
+class Evaluator:
     def __init__(self,
                  client_bugzoo: BugZooClient,
                  problem: Problem,
@@ -45,6 +44,7 @@ class Evaluator(object):
                  ) -> None:
         self.__bugzoo = client_bugzoo
         self.__problem = problem
+        self.__test_suite = problem.test_suite
         self.__executor = \
             concurrent.futures.ThreadPoolExecutor(max_workers=num_workers)
         self.__num_workers = num_workers
@@ -144,14 +144,12 @@ class Evaluator(object):
         """Runs a test for a given patch using a provided container."""
         logger.debug("executing test: %s [%s]", test.name, candidate)
         self.__counter_tests += 1
-        bz = self.__bugzoo
-        bz_outcome = \
-            bz.containers.test(container, test)  # type: BugZooTestOutcome
-        if not bz_outcome.passed:
+        outcome = self.__test_suite.execute(container, test)
+        if not outcome.successful:
             logger.debug("* test failed: %s (%s)", test.name, candidate)
         else:
             logger.debug("* test passed: %s (%s)", test.name, candidate)
-        return TestOutcome(bz_outcome.passed, bz_outcome.duration)
+        return outcome
 
     def _evaluate(self, candidate: Candidate) -> CandidateOutcome:
         bz = self.__bugzoo
