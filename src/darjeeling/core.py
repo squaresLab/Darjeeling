@@ -1,6 +1,6 @@
 __all__ = ['Replacement', 'FileLine', 'FileLocationRange', 'Location']
 
-from typing import TypeVar, Sequence, Iterator, Optional, Dict
+from typing import TypeVar, Sequence, Iterator, Optional, Dict, Generic
 from enum import Enum
 import abc
 
@@ -12,9 +12,6 @@ from boggart.core.location import FileLocationRange, FileLine, Location, \
                                   LocationRange, FileLocation, FileLineSet
 
 from .exceptions import LanguageNotSupported
-
-T = TypeVar('T')
-
 
 class Language(Enum):
     @classmethod
@@ -77,7 +74,10 @@ class TestOutcomeSet(object):
         return TestOutcomeSet(outcomes)
 
 
-class TestSuite:
+T = TypeVar('T', bound=Test)
+
+
+class TestSuite(Generic[T]):
     def __init__(self, bz: BugZooClient, tests: Sequence[T]) -> None:
         self.__name_to_test = {t.name: t for t in tests}
         self._bugzoo = bz
