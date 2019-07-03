@@ -34,6 +34,7 @@ from ..localization import Localization, \
                            tarantula
 from ..snippet import SnippetDatabase
 from ..settings import Settings
+from ..test import BugZooTestSuite
 from .. import localization
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
@@ -299,6 +300,7 @@ class BaseController(cement.Controller):
             raise BadConfigurationException(m)
         name_snapshot = yml['snapshot']
 
+
         # connect to BugZoo
         logger.info("connecting to BugZoo server")
         with bugzoo.server.ephemeral(timeout_connection=120) as client_bugzoo:
@@ -314,6 +316,9 @@ class BaseController(cement.Controller):
                 logger.error("BugZoo snapshot is not installed: %s",
                              name_snapshot)
                 sys.exit(1)
+
+            # build the test suite
+            test_suite = BugZooTestSuite.from_bug(client_bugzoo, snapshot)
 
             # compute coverage
             logger.info("computing coverage information...")
@@ -345,6 +350,7 @@ class BaseController(cement.Controller):
                               language=language,
                               coverage=coverage,
                               analysis=analysis,
+                              test_suite=test_suite,
                               settings=settings)
 
             # build snippet database
