@@ -20,7 +20,7 @@ from bugzoo.compiler import CompilationOutcome as BuildOutcome
 from bugzoo.util import indent
 from kaskara.analysis import Analysis
 
-from .core import Language
+from .core import Language, Test
 from .source import ProgramSourceManager
 from .util import get_file_contents
 from .exceptions import NoFailingTests, NoImplicatedLines, BuildFailure
@@ -41,6 +41,7 @@ class Problem:
                  bug: Bug,
                  language: Language,
                  coverage: TestSuiteCoverage,
+                 test_suite: TestSuite,
                  *,
                  analysis: Optional[Analysis] = None,
                  client_rooibos: Optional[RooibosClient] = None,
@@ -66,7 +67,7 @@ class Problem:
         self.__coverage = coverage
         self.__analysis = analysis
         self.__settings = settings if settings else Settings()
-        self.__test_suite = BugZooTestSuite.from_bug(bz, bug)
+        self.__test_suite = test_suite
         self._dump_coverage()
 
         # use coverage to determine the passing and failing tests
@@ -74,7 +75,7 @@ class Problem:
         self.__tests_failing = set()  # type: Set[TestCase]
         self.__tests_passing = set()  # type: Set[TestCase]
         for test_name in self.__coverage:
-            test = bug.harness[test_name]
+            test = test_suite[test_name]
             test_coverage = self.__coverage[test_name]
             if test_coverage.outcome.passed:
                 self.__tests_passing.add(test)
@@ -114,8 +115,8 @@ class Problem:
 
         logger.info("ordering test cases")
         self.__tests_ordered = \
-            sorted(bug.tests,
-                   key=functools.cmp_to_key(ordering)) # type: List[TestCase]
+            sorted(test_suite,
+                   key=functools.cmp_to_key(ordering)) # type: List[Test]
         logger.info("test order: %s",
                     ', '.join(t.name for t in self.__tests_ordered))
 
@@ -262,16 +263,20 @@ class Problem:
         return self.__bug
 
     @property
-    def tests(self) -> Iterator[TestCase]:
+    def tests(self) -> Iterator[Test]:
         """Returns an iterator over the tests for this problem."""
         yield from self.__tests_ordered
 
     @property
-    def failing_tests(self) -> Iterator[TestCase]:
+    def test_suite(self) -> TestSuite:
+        return self.__test_suite
+
+    @property
+    def failing_tests(self) -> Iterator[Test]:
         yield from self.__tests_failing
 
     @property
-    def passing_tests(self) -> Iterator[TestCase]:
+    def passing_tests(self) -> Iterator[Test]:
         yield from self.__tests_passing
 
     @property
