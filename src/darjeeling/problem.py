@@ -25,12 +25,13 @@ from .source import ProgramSourceManager
 from .util import get_file_contents
 from .exceptions import NoFailingTests, NoImplicatedLines, BuildFailure
 from .settings import Settings
-
+from .test import TestSuite, BugZooTestSuite
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
+logger.setLevel(logging.DEBUG)
 
 
-class Problem(object):
+class Problem:
     """
     Used to provide a description of a problem (i.e., a bug), and to hold
     information pertinent to its solution (e.g., coverage, transformations).
@@ -46,8 +47,7 @@ class Problem(object):
                  settings: Optional[Settings] = None,
                  restrict_to_files: Optional[List[str]] = None
                  ) -> None:
-        """
-        Constructs a Darjeeling problem description.
+        """Constructs a Darjeeling problem description.
 
         Params:
             bug: A description of the faulty program.
@@ -66,9 +66,10 @@ class Problem(object):
         self.__coverage = coverage
         self.__analysis = analysis
         self.__settings = settings if settings else Settings()
+        self.__test_suite = BugZooTestSuite.from_bug(bz, bug)
         self._dump_coverage()
 
-        # determine the passing and failing tests
+        # use coverage to determine the passing and failing tests
         logger.debug("using test execution used to generate coverage to determine passing and failing tests")
         self.__tests_failing = set()  # type: Set[TestCase]
         self.__tests_passing = set()  # type: Set[TestCase]
@@ -213,10 +214,7 @@ class Problem(object):
     def restrict_with_filter(self,
                              fltr: Callable[[str], bool]
                              ) -> None:
-        """
-        Uses a given filter to remove certain lines from the scope of the
-        repair.
-        """
+        """Uses a filter to remove certain lines from the scope of repair."""
         f = lambda fl: fltr(self.__sources.read_line(fl))
         filtered = [l for l in self.lines if f(l)]  # type: List[FileLine]
         self.restrict_to_lines(filtered)
@@ -249,9 +247,7 @@ class Problem(object):
 
     @property
     def analysis(self) -> Optional[Analysis]:
-        """
-        Results of an optional static analysis for the progrram under repair.
-        """
+        """Results of an optional static analysis for the program."""
         return self.__analysis
 
     @property
@@ -262,16 +258,12 @@ class Problem(object):
 
     @property
     def bug(self) -> Bug:
-        """
-        A description of the bug, provided by BugZoo.
-        """
+        """A description of the bug, provided by BugZoo."""
         return self.__bug
 
     @property
     def tests(self) -> Iterator[TestCase]:
-        """
-        Returns an iterator over the tests for this problem.
-        """
+        """Returns an iterator over the tests for this problem."""
         yield from self.__tests_ordered
 
     @property
@@ -304,7 +296,5 @@ class Problem(object):
 
     @property
     def sources(self) -> ProgramSourceManager:
-        """
-        The source code files for the program under repair.
-        """
+        """The source code files for the program under repair."""
         return self.__sources
