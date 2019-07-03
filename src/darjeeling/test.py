@@ -27,6 +27,5 @@ class BugZooTestSuite(TestSuite):
                 test: bugzoo.core.TestCase
                 ) -> TestOutcome:
         bz = self._bugzoo
-        bz_outcome = \
-            bz.containers.test(container, test)  # type: BugZooTestOutcome
+        bz_outcome = bz.containers.test(container, test)
         return TestOutcome(bz_outcome.passed, bz_outcome.duration)
