@@ -83,7 +83,7 @@ class TestSuite:
         self._bugzoo = bz
 
     def __len__(self) -> int:
-        return len(self.__tests)
+        return len(self.__name_to_test)
 
     def __iter__(self) -> Iterator[Test]:
         yield from self.__name_to_test.values()
