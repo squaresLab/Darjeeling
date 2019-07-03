@@ -79,7 +79,7 @@ class TestOutcomeSet(object):
 
 class TestSuite:
     def __init__(self, bz: BugZooClient, tests: Sequence[T]) -> None:
-        self.__name_to_test = {t.name for t in tests}
+        self.__name_to_test = {t.name: t for t in tests}
         self._bugzoo = bz
 
     def __len__(self) -> int:
