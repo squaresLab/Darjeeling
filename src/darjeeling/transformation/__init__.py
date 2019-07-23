@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This module is responsible for describing concrete transformations to source
 code files.
@@ -38,8 +39,8 @@ def find_all(problem: Problem,
     """
     for schema in schemas:
         line_to_trans = schema.all_at_lines(problem, snippets, lines)
-        for trans in line_to_trans.values():
-            yield from trans
+        for line in lines:
+            yield from line_to_trans[line]
 
 
 def sample_by_localization_and_type(problem: Problem,
