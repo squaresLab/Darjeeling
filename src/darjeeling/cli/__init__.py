@@ -356,6 +356,7 @@ class BaseController(cement.Controller):
                         len(snippets))
 
             # FIXME build and index transformations
+            # FIXME does not allow lazy construction!
             logger.info("constructing transformation database...")
             tx = list(find_all_transformations(problem, lines, snippets, schemas))
             logger.info("constructed transformation database: %d transformations",  # noqa: pycodestyle
