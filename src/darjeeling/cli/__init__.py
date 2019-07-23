@@ -356,13 +356,13 @@ class BaseController(cement.Controller):
                         len(snippets))
 
             # FIXME build and index transformations
+            # FIXME does not allow lazy construction!
             logger.info("constructing transformation database...")
             tx = list(find_all_transformations(problem, lines, snippets, schemas))
             logger.info("constructed transformation database: %d transformations",  # noqa: pycodestyle
                         len(tx))
 
             # build the search strategy
-            # FIXME pass limits!
             searcher = Searcher.from_dict(yml['algorithm'], problem, tx,
                                           threads=threads,
                                           candidate_limit=limit_candidates,
