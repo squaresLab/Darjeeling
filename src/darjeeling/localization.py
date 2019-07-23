@@ -1,4 +1,5 @@
-__all__ = [
+# -*- coding: utf-8 -*-
+__all__ = (
     'Metric',
     'Localization',
     'genprog',
@@ -6,7 +7,7 @@ __all__ = [
     'ample',
     'tarantula',
     'jaccard'
-]
+)
 
 from typing import Dict, Callable, List, Iterator, FrozenSet, Sequence, Any, \
     Iterable, Optional
@@ -57,7 +58,7 @@ def tarantula(ep: int, np: int, ef: int, nf: int) -> float:
     return top / bottom
 
 
-class Localization(object):
+class Localization:
     @staticmethod
     def from_problem(problem: Problem,
                      metric: Metric
