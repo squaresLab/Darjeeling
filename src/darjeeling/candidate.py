@@ -12,16 +12,12 @@ from .transformation import Transformation
 
 @attr.s(frozen=True, repr=False)
 class Candidate(object):
-    """
-    Represents a candidate repair as a set of atomic program transformations.
-    """
+    """Represents a repair as a set of atomic program transformations."""
     transformations = attr.ib(type=Tuple[Transformation],
                               converter=tuple)  # type: ignore  # bug in mypy (should be fixed in v0.610)  # noqa: pycodestyle
 
     def to_diff(self, problem: Problem) -> Patch:
-        """
-        Transforms this candidate patch into a concrete, unified diff.
-        """
+        """Transforms this candidate patch into a concrete, unified diff."""
         replacements = \
             map(lambda t: t.to_replacement(problem), self.transformations)
         replacements_by_file = {}  # type: Dict[str, List[Replacement]]
@@ -47,9 +43,7 @@ class Candidate(object):
 
     @property
     def id(self) -> str:
-        """
-        Returns an eight-character hexadecimal identifier for this candidate.
-        """
+        """An eight-character hexadecimal identifier for this candidate."""
         hex_hash = hex(abs(hash(self)))
         return hex_hash[2:10]
 
