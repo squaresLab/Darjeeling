@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from typing import List, Optional, Dict, Iterator, Callable, Set, Iterable
 from timeit import default_timer as timer
 import tempfile
@@ -26,11 +27,11 @@ from .util import get_file_contents
 from .exceptions import NoFailingTests, NoImplicatedLines, BuildFailure
 from .settings import Settings
 
-
 logger = logging.getLogger(__name__)  # type: logging.Logger
+logger.setLevel(logging.DEBUG)
 
 
-class Problem(object):
+class Problem:
     """
     Used to provide a description of a problem (i.e., a bug), and to hold
     information pertinent to its solution (e.g., coverage, transformations).
@@ -70,15 +71,15 @@ class Problem(object):
 
         # determine the passing and failing tests
         logger.debug("using test execution used to generate coverage to determine passing and failing tests")
-        self.__tests_failing = set()  # type: Set[TestCase]
-        self.__tests_passing = set()  # type: Set[TestCase]
-        for test_name in self.__coverage:
+        self.__tests_failing = []  # type: List[TestCase]
+        self.__tests_passing = []  # type: List[TestCase]
+        for test_name in sorted(self.__coverage):
             test = bug.harness[test_name]
             test_coverage = self.__coverage[test_name]
             if test_coverage.outcome.passed:
-                self.__tests_passing.add(test)
+                self.__tests_passing.append(test)
             else:
-                self.__tests_failing.add(test)
+                self.__tests_failing.append(test)
 
         logger.info("determined passing and failing tests")
         logger.info("* passing tests: %s",
