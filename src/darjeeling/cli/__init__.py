@@ -363,7 +363,6 @@ class BaseController(cement.Controller):
                         len(tx))
 
             # build the search strategy
-            # FIXME pass limits!
             searcher = Searcher.from_dict(yml['algorithm'], problem, tx,
                                           threads=threads,
                                           candidate_limit=limit_candidates,
