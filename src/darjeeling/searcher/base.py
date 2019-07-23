@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from typing import Iterable, Iterator, Optional, List, Tuple, Any, Dict, \
     Type, Union
 from mypy_extensions import NoReturn
@@ -27,7 +28,7 @@ logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
 
-class Searcher(object):
+class Searcher:
     @staticmethod
     def from_dict(d: Dict[str, Any],
                   problem: Problem,
@@ -179,7 +180,7 @@ class Searcher(object):
     @property
     def time_running(self) -> datetime.timedelta:
         """
-        The amount nof time that has been spent searching for patches.
+        The amount of time that has been spent searching for patches.
         """
         return datetime.timedelta(seconds=self.__stopwatch.duration)
 
