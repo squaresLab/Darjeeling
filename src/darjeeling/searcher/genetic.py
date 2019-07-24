@@ -115,9 +115,7 @@ class GeneticSearcher(Searcher):
         return self.__tournament_size
 
     def initial(self) -> Population:
-        """
-        Generates an initial population according to this strategy.
-        """
+        """Generates an initial population according to this strategy."""
         pop = []
         for _ in range(self.population_size):
             pop.append(Candidate([]))
@@ -131,9 +129,7 @@ class GeneticSearcher(Searcher):
                 population: Population,
                 outcomes: Dict[Candidate, CandidateOutcome]
                 ) -> Dict[Candidate, float]:
-        """
-        Computes the fitness of each individual within a population.
-        """
+        """Computes the fitness of each individual within a population."""
         logger.debug("computing population fitness...")
         f = {}  # type: Dict[Candidate, float]
         for ind in population:
