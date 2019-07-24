@@ -25,7 +25,7 @@ class Session:
     @property
     def problem(self) -> Problem:
         """The repair problem that is being solved in this session."""
-        return self._searcher.problem
+        return self.searcher.problem
 
     def run(self) -> None:
         logger.info("beginning search process...")
