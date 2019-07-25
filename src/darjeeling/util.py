@@ -1,6 +1,26 @@
 import warnings
-from typing import List
+from typing import List, Union, Tuple
 from timeit import default_timer as timer
+
+
+def duration_tuple(secs: Union[int, float]) -> Tuple[int, int, int, int]:
+    """Converts seconds into a tuple of days, hours, minutes, secs."""
+    secs = int(secs)
+    days, secs = divmod(secs, 86400)
+    hours, secs = divmod(secs, 3600)
+    mins, secs = divmod(secs, 60)
+    return (secs, mins, hours, days)
+
+
+def duration_str(secs: Union[int, float]) -> str:
+    """Creates a duration string from a number of seconds.
+
+    Example
+    -------
+    14 d 18 h 39 m 29 s
+    """
+    secs, mins, hours, days = duration_tuple(secs)
+    return f'{days:2d} d {hours:2d} h {mins:2d} m {secs:2d} s'
 
 
 def get_file_contents(fn: str) -> str:
