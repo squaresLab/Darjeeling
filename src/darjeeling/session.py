@@ -339,6 +339,11 @@ class Session:
     def num_candidate_evaluations(self) -> int:
         return self.searcher.num_candidate_evals
 
+    @property
+    def running_time_secs(self) -> float:
+        """Number of seconds that the search has been running."""
+        return self.searcher.time_running.seconds
+
     def close(self) -> None:
         """Closes the session."""
         # wait for threads to finish gracefully before exiting

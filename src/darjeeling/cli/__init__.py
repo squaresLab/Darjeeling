@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Any, Type, Sequence
+from typing import List, Optional, Dict, Any, Type, Sequence, Tuple, Union
 import logging
 import logging.handlers
 from datetime import datetime, timedelta
@@ -16,8 +16,11 @@ import pyroglyph
 import attr
 import yaml
 
+from ..problem import Problem
+from ..version import __version__ as VERSION
 from ..session import Session
 from ..exceptions import BadConfigurationException
+from ..util import duration_str
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
@@ -35,15 +38,33 @@ class ResourcesBlock(pyroglyph.Block):
 
     @property
     def contents(self) -> Sequence[str]:
-        l_candidates = f'Num Candidates: {self.session.num_candidate_evaluations}'
-        return [l_candidates]
+        duration_s: str = duration_str(self.session.running_time_secs)
+        l_time = f'Running Time: {duration_s}'
+        l_candidates = f'Num. Candidates: {self.session.num_candidate_evaluations}'
+        l_patches = 'Num. Acceptable Patches: TODO'
+        return [l_time, l_candidates, l_patches]
+
+
+class ProblemBlock(pyroglyph.BasicBlock):
+    def __init__(self, problem: Problem) -> None:
+        title = f'Problem [{problem.bug.name}]'
+        num_failing = len(list(problem.failing_tests))
+        num_passing = len(list(problem.passing_tests))
+        num_lines = len(list(problem.lines))
+        num_files = len(list(problem.implicated_files))
+        contents = [
+            f'Passing Tests: {num_passing}',
+            f'Failing Tests: {num_failing}',
+            f'Implicated Lines: {num_lines} ({num_files} files)'
+        ]
+        super().__init__(title, contents)
 
 
 class UI(pyroglyph.Window):
     def __init__(self, session: Session, **kwargs) -> None:
-        title = f' Darjeeling [{session.snapshot.name}] '
+        title = f' Darjeeling [v{VERSION}] '
         blocks_left = [ResourcesBlock(session)]
-        blocks_right = []
+        blocks_right = [ProblemBlock(session.problem)]
         super().__init__(title, blocks_left, blocks_right, **kwargs)
 
 
@@ -109,6 +130,11 @@ class BaseController(cement.Controller):
         ]
     )
     def repair(self) -> None:
+        # setup logging to stdout
+        log_to_stdout = logging.StreamHandler()
+        log_to_stdout.setLevel(logging.INFO)
+        logging.getLogger('darjeeling').addHandler(log_to_stdout)
+
         # setup logging to file
         log_to_filename = self.app.pargs.log_to_file  # type: Optional[str]
         if not log_to_filename:
@@ -155,6 +181,7 @@ class BaseController(cement.Controller):
                 sys.exit(1)
 
             if interactive:
+                log_to_stdout.setLevel(logging.CRITICAL)
                 with UI(session):
                     session.run()
                     session.close()
@@ -171,10 +198,5 @@ class CLI(cement.App):
 
 
 def main():
-    log_to_stdout = logging.StreamHandler()
-    log_to_stdout.setLevel(logging.INFO)
-    # logger.addHandler(log_to_stdout)
-    logging.getLogger('darjeeling').addHandler(log_to_stdout)
-
     with CLI() as app:
         app.run()
