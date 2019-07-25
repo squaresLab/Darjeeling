@@ -11,6 +11,8 @@ import os
 
 import bugzoo
 import cement
+import pyroglyph
+import attr
 import yaml
 
 from ..session import Session
@@ -20,6 +22,19 @@ logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
 BANNER = 'DARJEELING'
+
+
+@attr.s
+class UI:
+    session: Session = attr.ib()
+
+    def run(self) -> None:
+        session = self.session
+        title = f' Darjeeling [{session.snapshot.name}] '
+        blocks_left = []
+        blocks_right = []
+        window = pyroglyph.Window(title, blocks_left, blocks_right)
+        window.run()
 
 
 class BaseController(cement.Controller):
@@ -52,6 +67,9 @@ class BaseController(cement.Controller):
             (['filename'],
              {'help': ('a Darjeeling configuration file describing the faulty '
                        'program and how it should be repaired.') }),
+            (['--interactive'],
+             {'help': 'enables an interactive user interface.',
+              'action': 'store_true'}),
             (['--log-to-file'],
              {'help': 'path to store the log file.',
               'type': str}),
@@ -97,6 +115,7 @@ class BaseController(cement.Controller):
         logging.getLogger('darjeeling').addHandler(log_to_file)
 
         filename = self.app.pargs.filename  # type: str
+        interactive = self.app.pargs.interactive  # type: bool
         seed = self.app.pargs.seed  # type: Optional[int]
         terminate_early = self.app.pargs.terminate_early  # type: bool
         threads = self.app.pargs.threads  # type: Optional[int]
@@ -124,8 +143,12 @@ class BaseController(cement.Controller):
             except BadConfigurationException as err:
                 logger.error(str(err))
                 sys.exit(1)
-            session.run()
-            session.close()
+
+            if interactive:
+                UI(session).run()
+            if not interactive:
+                session.run()
+                session.close()
 
 
 class CLI(cement.App):

@@ -6,6 +6,7 @@ import asyncio
 import shutil
 import logging
 import random
+import asyncio
 from datetime import timedelta, datetime
 
 import attr
@@ -367,3 +368,7 @@ class Session:
                 logger.exception("failed to write patch: %s", fn_patch)
                 raise
             logger.debug("wrote patch to %s", fn_patch)
+
+    def __enter__(self) -> 'Session':
+        self.run()
+        return self
