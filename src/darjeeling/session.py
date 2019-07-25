@@ -12,6 +12,7 @@ import attr
 import bugzoo
 import kaskara
 from bugzoo.core import FileLine
+from bugzoo import Bug as Snapshot
 
 from .core import Language
 from .candidate import Candidate
@@ -310,6 +311,11 @@ class Session:
         return Session(dir_patches=dir_patches,
                        searcher=searcher,
                        terminate_early=terminate_early)
+
+    @property
+    def snapshot(self) -> Snapshot:
+        """The snapshot for the program being repaired."""
+        return self.searcher.problem.bug
 
     @property
     def problem(self) -> Problem:
