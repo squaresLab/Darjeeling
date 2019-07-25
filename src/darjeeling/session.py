@@ -335,6 +335,10 @@ class Session:
         if not self._patches:
             logger.info("failed to find a patch")
 
+    @property
+    def num_candidate_evaluations(self) -> int:
+        return self.searcher.num_candidate_evals
+
     def close(self) -> None:
         """Closes the session."""
         # wait for threads to finish gracefully before exiting

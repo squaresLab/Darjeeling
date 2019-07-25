@@ -1,8 +1,9 @@
-from typing import List, Optional, Dict, Any, Type
+from typing import List, Optional, Dict, Any, Type, Sequence
 import logging
 import logging.handlers
 from datetime import datetime, timedelta
 from glob import glob
+from threading import Thread, Event
 import sys
 import random
 import warnings
@@ -25,16 +26,25 @@ BANNER = 'DARJEELING'
 
 
 @attr.s
-class UI:
+class ResourcesBlock(pyroglyph.Block):
     session: Session = attr.ib()
 
-    def run(self) -> None:
-        session = self.session
+    @property
+    def title(self) -> str:
+        return 'Resources Used'
+
+    @property
+    def contents(self) -> Sequence[str]:
+        l_candidates = f'Num Candidates: {self.session.num_candidate_evaluations}'
+        return [l_candidates]
+
+
+class UI(pyroglyph.Window):
+    def __init__(self, session: Session, **kwargs) -> None:
         title = f' Darjeeling [{session.snapshot.name}] '
-        blocks_left = []
+        blocks_left = [ResourcesBlock(session)]
         blocks_right = []
-        window = pyroglyph.Window(title, blocks_left, blocks_right)
-        window.run()
+        super().__init__(title, blocks_left, blocks_right, **kwargs)
 
 
 class BaseController(cement.Controller):
@@ -145,7 +155,10 @@ class BaseController(cement.Controller):
                 sys.exit(1)
 
             if interactive:
-                UI(session).run()
+                with UI(session):
+                    session.run()
+                    session.close()
+
             if not interactive:
                 session.run()
                 session.close()
