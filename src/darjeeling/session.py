@@ -6,12 +6,14 @@ import asyncio
 import shutil
 import logging
 import random
+import asyncio
 from datetime import timedelta, datetime
 
 import attr
 import bugzoo
 import kaskara
 from bugzoo.core import FileLine
+from bugzoo import Bug as Snapshot
 
 from .core import Language
 from .candidate import Candidate
@@ -312,6 +314,11 @@ class Session:
                        terminate_early=terminate_early)
 
     @property
+    def snapshot(self) -> Snapshot:
+        """The snapshot for the program being repaired."""
+        return self.searcher.problem.bug
+
+    @property
     def problem(self) -> Problem:
         """The repair problem that is being solved in this session."""
         return self.searcher.problem
@@ -327,6 +334,15 @@ class Session:
             self._patches = list(self.searcher)
         if not self._patches:
             logger.info("failed to find a patch")
+
+    @property
+    def num_candidate_evaluations(self) -> int:
+        return self.searcher.num_candidate_evals
+
+    @property
+    def running_time_secs(self) -> float:
+        """Number of seconds that the search has been running."""
+        return self.searcher.time_running.seconds
 
     def close(self) -> None:
         """Closes the session."""
@@ -361,3 +377,7 @@ class Session:
                 logger.exception("failed to write patch: %s", fn_patch)
                 raise
             logger.debug("wrote patch to %s", fn_patch)
+
+    def __enter__(self) -> 'Session':
+        self.run()
+        return self
