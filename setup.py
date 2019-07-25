@@ -24,7 +24,7 @@ setup(
         'boggart>=0.1.16',
         'kaskara>=0.0.5',
         'attrs>=17.4.0',
-        'pyroglyph~=0.0.3',
+        'pyroglyph~=0.0.4',
         'cement~=3.0.0',
         'requests',
         'flask'
