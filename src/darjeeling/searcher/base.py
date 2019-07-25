@@ -119,6 +119,11 @@ class Searcher:
         return self.__evaluator.num_workers
 
     @property
+    def problem(self) -> Problem:
+        """A description of the problem being solved."""
+        return self.__problem
+
+    @property
     def history(self) -> List[Candidate]:
         """
         Returns an ordered list of all of the candidate patches that have been
