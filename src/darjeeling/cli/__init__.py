@@ -34,6 +34,7 @@ from ..localization import Localization, \
                            tarantula
 from ..snippet import SnippetDatabase
 from ..settings import Settings
+from ..session import Session
 from .. import localization
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
@@ -125,7 +126,7 @@ class BaseController(cement.Controller):
         limit_time_minutes = \
             self.app.pargs.limit_time_minutes  # type: Optional[int]
 
-        dir_patches = 'patches'
+        dir_patches = os.path.abspath('patches')
         if os.path.exists(dir_patches):
             logger.warning("destroying existing patch directory")
             shutil.rmtree(dir_patches)
@@ -368,44 +369,12 @@ class BaseController(cement.Controller):
                                           candidate_limit=limit_candidates,
                                           time_limit=limit_time)
 
-            logger.info("beginning search process...")
-            patches = []  # type: List[Candidate]
-            if terminate_early:
-                try:
-                    patches.append(next(searcher.__iter__()))
-                except StopIteration:
-                    pass
-            else:
-                patches = list(searcher)
-            if not patches:
-                logger.info("failed to find a patch")
-
-            # wait for threads to finish gracefully before exiting
-            searcher.close()
-
-            # report stats
-            num_test_evals = searcher.num_test_evals
-            num_candidate_evals = searcher.num_candidate_evals
-            time_running_mins = searcher.time_running.seconds / 60
-
-            logger.info("found %d plausible patches", len(patches))
-            logger.info("time taken: %.2f minutes", time_running_mins)
-            logger.info("# test evaluations: %d", searcher.num_test_evals)
-            logger.info("# candidate evaluations: %d", searcher.num_candidate_evals)
-
-            # save patches to disk
-            os.makedirs(dir_patches, exist_ok=True)
-            for i, patch in enumerate(patches):
-                diff = str(patch.to_diff(problem))
-                fn_patch = os.path.join(dir_patches, '{}.diff'.format(i))
-                logger.debug("writing patch to %s", fn_patch)
-                try:
-                    with open(fn_patch, 'w') as f:
-                        f.write(diff)
-                except Exception:
-                    logger.exception("failed to write patch: %s", fn_patch)
-                    raise
-                logger.debug("wrote patch to %s", fn_patch)
+            # TODO manage context
+            session = Session(searcher=searcher,
+                              terminate_early=terminate_early,
+                              dir_patches=dir_patches)
+            session.run()
+            session.close()
 
 
 class CLI(cement.App):
