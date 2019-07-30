@@ -16,6 +16,7 @@ from bugzoo.core import FileLine
 from bugzoo import Bug as Snapshot
 
 from .core import Language
+from .test import BugZooTestSuite
 from .candidate import Candidate
 from .searcher import Searcher
 from .problem import Problem
@@ -279,11 +280,14 @@ class Session:
                                           snapshot,
                                           files)
 
+        # build test suite
+        test_suite = BugZooTestSuite.from_bug(client_bugzoo, snapshot)
+
         # build problem
         problem = Problem(bz=client_bugzoo,
                           bug=snapshot,
                           language=language,
-                          test_suite=snapshot.tests,
+                          test_suite=test_suite,
                           coverage=coverage,
                           analysis=analysis,
                           settings=settings)
