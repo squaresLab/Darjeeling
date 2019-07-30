@@ -283,6 +283,7 @@ class Session:
         problem = Problem(bz=client_bugzoo,
                           bug=snapshot,
                           language=language,
+                          test_suite=snapshot.tests,
                           coverage=coverage,
                           analysis=analysis,
                           settings=settings)
