@@ -1,8 +1,9 @@
-from typing import List, Optional, Dict, Any, Type
+from typing import List, Optional, Dict, Any, Type, Sequence, Tuple, Union
 import logging
 import logging.handlers
 from datetime import datetime, timedelta
 from glob import glob
+from threading import Thread, Event
 import sys
 import random
 import warnings
@@ -11,36 +12,60 @@ import os
 
 import bugzoo
 import cement
+import pyroglyph
+import attr
 import yaml
-import kaskara
-from bugzoo.core import FileLine
 
-from ..core import Language
-from ..candidate import all_single_edit_patches
-from ..candidate import Candidate
-from ..transformation import Transformation
-from ..transformation import find_all as find_all_transformations
-from ..transformation.classic import DeleteStatement, \
-                                     ReplaceStatement, \
-                                     PrependStatement
-from ..exceptions import BadConfigurationException, LanguageNotSupported
-from ..searcher import Searcher
 from ..problem import Problem
-from ..localization import Localization, \
-                           ample, \
-                           genprog, \
-                           jaccard, \
-                           ochiai, \
-                           tarantula
-from ..snippet import SnippetDatabase
-from ..settings import Settings
-from ..test import BugZooTestSuite
-from .. import localization
+from ..version import __version__ as VERSION
+from ..session import Session
+from ..exceptions import BadConfigurationException
+from ..util import duration_str
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
 BANNER = 'DARJEELING'
+
+
+@attr.s
+class ResourcesBlock(pyroglyph.Block):
+    session: Session = attr.ib()
+
+    @property
+    def title(self) -> str:
+        return 'Resources Used'
+
+    @property
+    def contents(self) -> Sequence[str]:
+        duration_s: str = duration_str(self.session.running_time_secs)
+        l_time = f'Running Time: {duration_s}'
+        l_candidates = f'Num. Candidates: {self.session.num_candidate_evaluations}'
+        l_patches = 'Num. Acceptable Patches: TODO'
+        return [l_time, l_candidates, l_patches]
+
+
+class ProblemBlock(pyroglyph.BasicBlock):
+    def __init__(self, problem: Problem) -> None:
+        title = f'Problem [{problem.bug.name}]'
+        num_failing = len(list(problem.failing_tests))
+        num_passing = len(list(problem.passing_tests))
+        num_lines = len(list(problem.lines))
+        num_files = len(list(problem.implicated_files))
+        contents = [
+            f'Passing Tests: {num_passing}',
+            f'Failing Tests: {num_failing}',
+            f'Implicated Lines: {num_lines} ({num_files} files)'
+        ]
+        super().__init__(title, contents)
+
+
+class UI(pyroglyph.Window):
+    def __init__(self, session: Session, **kwargs) -> None:
+        title = f' Darjeeling [v{VERSION}] '
+        blocks_left = [ResourcesBlock(session)]
+        blocks_right = [ProblemBlock(session.problem)]
+        super().__init__(title, blocks_left, blocks_right, **kwargs)
 
 
 class BaseController(cement.Controller):
@@ -73,6 +98,9 @@ class BaseController(cement.Controller):
             (['filename'],
              {'help': ('a Darjeeling configuration file describing the faulty '
                        'program and how it should be repaired.') }),
+            (['--interactive'],
+             {'help': 'enables an interactive user interface.',
+              'action': 'store_true'}),
             (['--log-to-file'],
              {'help': 'path to store the log file.',
               'type': str}),
@@ -102,6 +130,11 @@ class BaseController(cement.Controller):
         ]
     )
     def repair(self) -> None:
+        # setup logging to stdout
+        log_to_stdout = logging.StreamHandler()
+        log_to_stdout.setLevel(logging.INFO)
+        logging.getLogger('darjeeling').addHandler(log_to_stdout)
+
         # setup logging to file
         log_to_filename = self.app.pargs.log_to_file  # type: Optional[str]
         if not log_to_filename:
@@ -118,6 +151,7 @@ class BaseController(cement.Controller):
         logging.getLogger('darjeeling').addHandler(log_to_file)
 
         filename = self.app.pargs.filename  # type: str
+        interactive = self.app.pargs.interactive  # type: bool
         seed = self.app.pargs.seed  # type: Optional[int]
         terminate_early = self.app.pargs.terminate_early  # type: bool
         threads = self.app.pargs.threads  # type: Optional[int]
@@ -126,292 +160,35 @@ class BaseController(cement.Controller):
         limit_time_minutes = \
             self.app.pargs.limit_time_minutes  # type: Optional[int]
 
-        dir_patches = 'patches'
-        if os.path.exists(dir_patches):
-            logger.warning("destroying existing patch directory")
-            shutil.rmtree(dir_patches)
-
         with open(filename, 'r') as f:
             yml = yaml.safe_load(f)
-
-        has_limits = 'resource-limits' in yml
-
-        # should we continue to search for repairs?
-        if not terminate_early:
-            logger.info("search will continue after an acceptable patch has been discovered")
-        else:
-            logger.info("search will terminate when an acceptable patch has been discovered")
-
-        # how many threads should we use?
-        if threads is not None:
-            logger.info("using threads override: %d threads", threads)
-        elif 'threads' in yml:
-            if not isinstance(yml['threads'], int):
-                m = "'threads' property should be an int"
-                raise BadConfigurationException(m)
-            threads = yml['threads']
-            logger.info("using threads specified by configuration: %d threads",
-                        threads)
-        else:
-            threads = 1
-            logger.info("using default number of threads: %d", threads)
-        if threads < 1:
-            m = "number of threads must be greater than or equal to 1."
-            raise BadConfigurationException(m)
-
-        # determine time limit
-        if limit_time_minutes is not None:
-            logger.info("using time limit override: %d minutes",
-                        limit_time_minutes)
-        elif has_limits and 'time-minutes' in yml['resource-limits']:
-            if not isinstance(yml['resource-limits']['time-minutes'], int):
-                m = "'time-minutes' property in 'resource-limits' section should be an int"  # noqa: pycodestyle
-                raise BadConfigurationException(m)
-            limit_time_minutes = yml['resource-limits']['time-minutes']
-            logger.info("using time limit specified by configuration: %d minutes",  # noqa: pycodestyle
-                        limit_time_minutes)
-        else:
-            logger.info("no time limit is being enforced")
-
-        limit_time = None  # type: Optional[timedelta]
-        if limit_time_minutes:
-            if limit_time_minutes < 1:
-                m = "time limit must be greater than or equal to 1 minute"
-                raise BadConfigurationException(m)
-            limit_time = timedelta(minutes=limit_time_minutes)
-
-        # determine the limit on the number of candidate repairs
-        if limit_candidates is not None:
-            logger.info("using candidate limit override: %d candidates",
-                        limit_candidates)
-        elif has_limits and 'candidates' in yml['resource-limits']:
-            if not isinstance(yml['resource-limits']['candidates'], int):
-                m = "'candidates' property in 'resource-limits' section should be an int"
-                raise BadConfigurationException(m)
-            limit_candidates = yml['resource-limits']['candidates']
-            logger.info("using candidate limit specified by configuration: %d candidates",  # noqa: pycodestyle
-                        limit_candidates)
-        else:
-            logger.info("no limit on number of candidate evaluations")
-
-        if not limit_time and not limit_candidates:
-            m = "no resource limits were specified; resource use will be unbounded"  # noqa: pycodestyle
-            logger.warn(m)
-
-        # seed override
-        if seed is not None:
-            logger.info("using random number generator seed override: %d",
-                        seed)
-
-        # no seed override; seed provided in config
-        elif 'seed' in yml:
-            if not isinstance(yml['seed'], int):
-                m = "'seed' property should be an int."
-                raise BadConfigurationException(m)
-            elif yml['seed'] < 0:
-                m = "'seed' property should be greater than or equal to zero."
-                raise BadConfigurationException(m)
-            seed = yml['seed']
-            logger.info("using random number generator seed provided by configuration: %d",  # noqa: pycodestyle
-                        seed)
-
-        # no seed override or provided in provided
-        # use current date/time
-        elif seed is None:
-            random.seed(datetime.now())
-            seed = random.randint(0, sys.maxsize)
-            logger.info("using random number generator seed based on current date and time: %d",  # noqa: pycodestyle
-                        seed)
-
-        # seed the RNG
-        random.seed(seed)
-
-        # determine the language
-        if 'language' not in yml:
-            m = "'language' property is missing"
-            raise BadConfigurationException(m)
-        if not isinstance(yml['language'], str):
-            m = "'language' property should be a string"
-            raise BadConfigurationException(m)
-        try:
-            language = Language.find(yml['language'])
-        except LanguageNotSupported:
-            supported = ', '.join([l.value for l in Language])
-            supported = "(supported languages: {})".format(supported)
-            m = "unsupported language [{}]. {}"
-            m = m.format(yml['language'], supported)
-            raise BadConfigurationException(m)
-        logger.info("using language: %s", language.value)
-
-        # build the settings
-        opts = yml.get('optimizations', {})
-        settings = \
-            Settings(use_scope_checking=opts.get('use-scope-checking', True),
-                     use_syntax_scope_checking=opts.get('use-syntax-scope-checking', True),
-                     ignore_dead_code=opts.get('ignore-dead-code', True),
-                     ignore_equivalent_appends=opts.get('ignore-equivalent-prepends', True),
-                     ignore_untyped_returns=opts.get('ignore-untyped-returns', True),
-                     ignore_string_equivalent_snippets=opts.get('ignore-string-equivalent-snippets', True),
-                     ignore_decls=opts.get('ignore-decls', True),
-                     only_insert_executed_code=opts.get('only-insert-executed-code', True))
-        logger.info("using repair settings: %s", settings)
-
-        # fetch the transformation schemas
-        if 'transformations' not in yml:
-            m = "'transformations' section is missing"
-            raise BadConfigurationException(m)
-        if not isinstance(yml['transformations'], dict):
-            m = "'transformations' section should be an object"
-            raise BadConfigurationException(m)
-        if not 'schemas' in yml['transformations']:
-            m = "'schemas' property missing in 'transformations' section"
-            raise BadConfigurationException(m)
-        if not isinstance(yml['transformations']['schemas'], list):
-            m = "'schemas' property should be a list"
-            raise BadConfigurationException(m)
-
-        def schema_from_dict(d: Dict[str, Any]) -> Type[Transformation]:
-            if not isinstance(d, dict):
-                m = "expected an object but was a {}".format(type(d).__name__)
-                m = "illegal schema description: {}".format(m)
-                raise BadConfigurationException(m)
-            if not 'type' in d:
-                m = "missing 'type' property in schema description"
-                raise BadConfigurationException(m)
-
-            name_schema = d['type']
-            try:
-                return Transformation.find_schema(name_schema)
-            except KeyError:
-                known_schemas = "(known schemas: {})".format(
-                    ', '.join(Transformation.schemas()))
-                m = "no schema with name [{}]. {}"
-                m = m.format(name_schema, known_schemas)
-                raise BadConfigurationException(m)
-
-        schemas = \
-            [schema_from_dict(d) for d in yml['transformations']['schemas']]
-
-        # fetch the bugzoo snapshot
-        if 'snapshot' not in yml:
-            raise BadConfigurationException("'snapshot' property is missing")
-        if not isinstance(yml['snapshot'], str):
-            m = "'snapshot' property should be a string"
-            raise BadConfigurationException(m)
-        name_snapshot = yml['snapshot']
-
 
         # connect to BugZoo
         logger.info("connecting to BugZoo server")
         with bugzoo.server.ephemeral(timeout_connection=120) as client_bugzoo:
             logger.info("connected to BugZoo server")
             try:
-                snapshot = client_bugzoo.bugs[name_snapshot]
-            except bugzoo.exceptions.BugZooException:
-                logger.error("failed to fetch BugZoo snapshot: %s",
-                             name_snapshot)
+                session = Session.from_yml(
+                    client_bugzoo,
+                    yml,
+                    threads=threads,
+                    seed=seed,
+                    terminate_early=terminate_early,
+                    limit_candidates=limit_candidates,
+                    limit_time_minutes=limit_time_minutes)
+            except BadConfigurationException as err:
+                logger.error(str(err))
                 sys.exit(1)
 
-            if not client_bugzoo.bugs.is_installed(snapshot):
-                logger.error("BugZoo snapshot is not installed: %s",
-                             name_snapshot)
-                sys.exit(1)
+            if interactive:
+                log_to_stdout.setLevel(logging.CRITICAL)
+                with UI(session):
+                    session.run()
+                    session.close()
 
-            # build the test suite
-            test_suite = BugZooTestSuite.from_bug(client_bugzoo, snapshot)
-
-            # compute coverage
-            logger.info("computing coverage information...")
-            coverage = client_bugzoo.bugs.coverage(snapshot)
-            logger.info("computed coverage information")
-
-            # compute localization
-            logger.info("computing fault localization...")
-            if 'localization' not in yml:
-                m = "'localization' section is missing"
-                raise BadConfigurationException(m)
-
-            localization = \
-                Localization.from_config(coverage, yml['localization'])
-            logger.info("computed fault localization:\n%s", localization)
-
-            # determine implicated files and lines
-            files = localization.files
-            lines = list(localization)  # type: List[FileLine]
-
-            # compute analysis
-            analysis = kaskara.Analysis.build(client_bugzoo,
-                                              snapshot,
-                                              files)
-
-            # build problem
-            problem = Problem(bz=client_bugzoo,
-                              bug=snapshot,
-                              language=language,
-                              coverage=coverage,
-                              analysis=analysis,
-                              test_suite=test_suite,
-                              settings=settings)
-
-            # build snippet database
-            logger.info("constructing database of donor snippets...")
-            snippets = SnippetDatabase.from_statements(
-                analysis.statements,
-                use_canonical_form=settings.ignore_string_equivalent_snippets)
-            logger.info("constructed database of donor snippets: %d snippets",
-                        len(snippets))
-
-            # FIXME build and index transformations
-            logger.info("constructing transformation database...")
-            tx = list(find_all_transformations(problem, lines, snippets, schemas))
-            logger.info("constructed transformation database: %d transformations",  # noqa: pycodestyle
-                        len(tx))
-
-            # build the search strategy
-            # FIXME pass limits!
-            searcher = Searcher.from_dict(yml['algorithm'], problem, tx,
-                                          threads=threads,
-                                          candidate_limit=limit_candidates,
-                                          time_limit=limit_time)
-
-            logger.info("beginning search process...")
-            patches = []  # type: List[Candidate]
-            if terminate_early:
-                try:
-                    patches.append(next(searcher.__iter__()))
-                except StopIteration:
-                    pass
-            else:
-                patches = list(searcher)
-            if not patches:
-                logger.info("failed to find a patch")
-
-            # wait for threads to finish gracefully before exiting
-            searcher.close()
-
-            # report stats
-            num_test_evals = searcher.num_test_evals
-            num_candidate_evals = searcher.num_candidate_evals
-            time_running_mins = searcher.time_running.seconds / 60
-
-            logger.info("found %d plausible patches", len(patches))
-            logger.info("time taken: %.2f minutes", time_running_mins)
-            logger.info("# test evaluations: %d", searcher.num_test_evals)
-            logger.info("# candidate evaluations: %d", searcher.num_candidate_evals)
-
-            # save patches to disk
-            os.makedirs(dir_patches, exist_ok=True)
-            for i, patch in enumerate(patches):
-                diff = str(patch.to_diff(problem))
-                fn_patch = os.path.join(dir_patches, '{}.diff'.format(i))
-                logger.debug("writing patch to %s", fn_patch)
-                try:
-                    with open(fn_patch, 'w') as f:
-                        f.write(diff)
-                except Exception:
-                    logger.exception("failed to write patch: %s", fn_patch)
-                    raise
-                logger.debug("wrote patch to %s", fn_patch)
+            if not interactive:
+                session.run()
+                session.close()
 
 
 class CLI(cement.App):
@@ -421,10 +198,5 @@ class CLI(cement.App):
 
 
 def main():
-    log_to_stdout = logging.StreamHandler()
-    log_to_stdout.setLevel(logging.INFO)
-    # logger.addHandler(log_to_stdout)
-    logging.getLogger('darjeeling').addHandler(log_to_stdout)
-
     with CLI() as app:
         app.run()

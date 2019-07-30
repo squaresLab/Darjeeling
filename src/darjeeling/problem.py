@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from typing import List, Optional, Dict, Iterator, Callable, Set, Iterable
 from timeit import default_timer as timer
 import tempfile
@@ -72,15 +73,15 @@ class Problem:
 
         # use coverage to determine the passing and failing tests
         logger.debug("using test execution used to generate coverage to determine passing and failing tests")
-        self.__tests_failing = set()  # type: Set[TestCase]
-        self.__tests_passing = set()  # type: Set[TestCase]
-        for test_name in self.__coverage:
+        self.__tests_failing = []  # type: List[TestCase]
+        self.__tests_passing = []  # type: List[TestCase]
+        for test_name in sorted(self.__coverage):
             test = test_suite[test_name]
             test_coverage = self.__coverage[test_name]
             if test_coverage.outcome.passed:
-                self.__tests_passing.add(test)
+                self.__tests_passing.append(test)
             else:
-                self.__tests_failing.add(test)
+                self.__tests_failing.append(test)
 
         logger.info("determined passing and failing tests")
         logger.info("* passing tests: %s",

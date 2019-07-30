@@ -17,14 +17,15 @@ setup(
     author_email='ctimperley@cmu.edu',
     url='https://github.com/squaresLab/Darjeeling',
     license='mit',
-    python_requires='>=3.5',
+    python_requires='>=3.6',
     install_requires=[
-        'bugzoo>=2.1.26',
+        'bugzoo~=2.1.28',
         'rooibos>=0.3.0',
         'boggart>=0.1.16',
         'kaskara>=0.0.5',
         'attrs>=17.4.0',
-        'cement>=3.0.0',
+        'pyroglyph~=0.0.4',
+        'cement~=3.0.0',
         'requests',
         'flask'
     ],
@@ -42,7 +43,6 @@ setup(
         'Natural Language :: English',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7'
     ],

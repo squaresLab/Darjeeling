@@ -1,4 +1,5 @@
-__all__ = [
+# -*- coding: utf-8 -*-
+__all__ = (
     'Metric',
     'Localization',
     'genprog',
@@ -6,7 +7,7 @@ __all__ = [
     'ample',
     'tarantula',
     'jaccard'
-]
+)
 
 from typing import Dict, Callable, List, Iterator, FrozenSet, Sequence, Any, \
     Iterable, Optional
@@ -57,7 +58,7 @@ def tarantula(ep: int, np: int, ef: int, nf: int) -> float:
     return top / bottom
 
 
-class Localization(object):
+class Localization:
     @staticmethod
     def from_problem(problem: Problem,
                      metric: Metric
@@ -172,19 +173,18 @@ class Localization(object):
             NoImplicatedLines: if no lines are determined to be suspicious.
             ValueError: if a line is assigned a negative suspiciousness.
         """
-        assert scores != []
         self.__line_to_score = scores.copy()
         self.__lines = []  # type: List[FileLine]
         self.__scores = []  # type: List[float]
-        for line, score in scores.items():
+        for line in sorted(scores):
+            score = scores[line]
             if score < 0.0:
                 raise ValueError("suspiciousness values must be non-negative.")
             if score == 0.0:
                 continue
             self.__lines.append(line)
             self.__scores.append(score)
-        self.__files = \
-            frozenset(line.filename for line in self.__lines)  # type: FrozenSet[str]  # noqa: pycodestyle
+        self.__files = [line.filename for line in self.__lines]
 
         if not self.__lines:
             raise NoImplicatedLines
@@ -315,16 +315,12 @@ class Localization(object):
         return self.__lines[i]
 
     def __len__(self) -> int:
-        """
-        Returns a count of the number of suspicious lines.
-        """
+        """Returns a count of the number of suspicious lines."""
         return len(self.__lines)
 
     @property
     def files(self) -> List[str]:
-        """
-        Returns a list of files that contain suspicious lines.
-        """
+        """A list of files that contain suspicious lines."""
         return list(self.__files)
 
     def __repr__(self) -> str:

@@ -2,11 +2,11 @@
 This module provides transformation schemas for each of the classical
 GenProg-style statement operators.
 """
-__all__ = [
+__all__ = (
     'PrependStatement',
     'DeleteStatement',
     'ReplaceStatement'
-]
+)
 
 from typing import List, Iterator, Iterable, Dict, Any, FrozenSet
 import logging
@@ -25,9 +25,7 @@ logger.setLevel(logging.DEBUG)
 
 
 class StatementTransformation(Transformation):
-    """
-    Base class for all transformations that are applied to a statement.
-    """
+    """Base class for all transformations that are applied to a statement."""
     @classmethod
     def all_at_lines(cls,
                      problem: Problem,
