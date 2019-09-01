@@ -35,14 +35,14 @@ class Test:
         raise NotImplementedError
 
 
-@attr.s(frozen=True)
+@attr.s(frozen=True, slots=True)
 class TestOutcome(object):
     """Records the outcome of a test execution."""
     successful = attr.ib(type=bool)
     time_taken = attr.ib(type=float)
 
 
-@attr.s(frozen=True)
+@attr.s(frozen=True, slots=True)
 class BuildOutcome(object):
     """Records the outcome of a build attempt."""
     successful = attr.ib(type=bool)
