@@ -16,7 +16,7 @@ setup(
     author='Chris Timperley',
     author_email='ctimperley@cmu.edu',
     url='https://github.com/squaresLab/Darjeeling',
-    license='mit',
+    license='apache',
     python_requires='>=3.6',
     install_requires=[
         'bugzoo~=2.1.28',
