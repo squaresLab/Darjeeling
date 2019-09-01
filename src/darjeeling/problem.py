@@ -21,11 +21,12 @@ from bugzoo.compiler import CompilationOutcome as BuildOutcome
 from bugzoo.util import indent
 from kaskara.analysis import Analysis
 
-from .core import Language
+from .core import Language, Test
 from .source import ProgramSourceManager
 from .util import get_file_contents
 from .exceptions import NoFailingTests, NoImplicatedLines, BuildFailure
 from .settings import Settings
+from .test import TestSuite, BugZooTestSuite
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
@@ -41,14 +42,14 @@ class Problem:
                  bug: Bug,
                  language: Language,
                  coverage: TestSuiteCoverage,
+                 test_suite: TestSuite,
                  *,
                  analysis: Optional[Analysis] = None,
                  client_rooibos: Optional[RooibosClient] = None,
                  settings: Optional[Settings] = None,
                  restrict_to_files: Optional[List[str]] = None
                  ) -> None:
-        """
-        Constructs a Darjeeling problem description.
+        """Constructs a Darjeeling problem description.
 
         Params:
             bug: A description of the faulty program.
@@ -67,14 +68,15 @@ class Problem:
         self.__coverage = coverage
         self.__analysis = analysis
         self.__settings = settings if settings else Settings()
+        self.__test_suite = test_suite
         self._dump_coverage()
 
-        # determine the passing and failing tests
+        # use coverage to determine the passing and failing tests
         logger.debug("using test execution used to generate coverage to determine passing and failing tests")
         self.__tests_failing = []  # type: List[TestCase]
         self.__tests_passing = []  # type: List[TestCase]
         for test_name in sorted(self.__coverage):
-            test = bug.harness[test_name]
+            test = test_suite[test_name]
             test_coverage = self.__coverage[test_name]
             if test_coverage.outcome.passed:
                 self.__tests_passing.append(test)
@@ -114,8 +116,8 @@ class Problem:
 
         logger.info("ordering test cases")
         self.__tests_ordered = \
-            sorted(bug.tests,
-                   key=functools.cmp_to_key(ordering)) # type: List[TestCase]
+            sorted(test_suite,
+                   key=functools.cmp_to_key(ordering)) # type: List[Test]
         logger.info("test order: %s",
                     ', '.join(t.name for t in self.__tests_ordered))
 
@@ -214,10 +216,7 @@ class Problem:
     def restrict_with_filter(self,
                              fltr: Callable[[str], bool]
                              ) -> None:
-        """
-        Uses a given filter to remove certain lines from the scope of the
-        repair.
-        """
+        """Uses a filter to remove certain lines from the scope of repair."""
         f = lambda fl: fltr(self.__sources.read_line(fl))
         filtered = [l for l in self.lines if f(l)]  # type: List[FileLine]
         self.restrict_to_lines(filtered)
@@ -250,9 +249,7 @@ class Problem:
 
     @property
     def analysis(self) -> Optional[Analysis]:
-        """
-        Results of an optional static analysis for the progrram under repair.
-        """
+        """Results of an optional static analysis for the program."""
         return self.__analysis
 
     @property
@@ -263,24 +260,24 @@ class Problem:
 
     @property
     def bug(self) -> Bug:
-        """
-        A description of the bug, provided by BugZoo.
-        """
+        """A description of the bug, provided by BugZoo."""
         return self.__bug
 
     @property
-    def tests(self) -> Iterator[TestCase]:
-        """
-        Returns an iterator over the tests for this problem.
-        """
+    def tests(self) -> Iterator[Test]:
+        """Returns an iterator over the tests for this problem."""
         yield from self.__tests_ordered
 
     @property
-    def failing_tests(self) -> Iterator[TestCase]:
+    def test_suite(self) -> TestSuite:
+        return self.__test_suite
+
+    @property
+    def failing_tests(self) -> Iterator[Test]:
         yield from self.__tests_failing
 
     @property
-    def passing_tests(self) -> Iterator[TestCase]:
+    def passing_tests(self) -> Iterator[Test]:
         yield from self.__tests_passing
 
     @property
@@ -305,7 +302,5 @@ class Problem:
 
     @property
     def sources(self) -> ProgramSourceManager:
-        """
-        The source code files for the program under repair.
-        """
+        """The source code files for the program under repair."""
         return self.__sources

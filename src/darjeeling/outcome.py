@@ -15,48 +15,8 @@ from typing import Dict, Optional, Iterator
 
 import attr
 
+from .core import TestOutcome, TestOutcomeSet, BuildOutcome
 from .candidate import Candidate
-
-
-@attr.s(frozen=True)
-class TestOutcome(object):
-    """Records the outcome of a test execution."""
-    successful = attr.ib(type=bool)
-    time_taken = attr.ib(type=float)
-
-
-@attr.s(frozen=True)
-class BuildOutcome(object):
-    """Records the outcome of a build attempt."""
-    successful = attr.ib(type=bool)
-    time_taken = attr.ib(type=float)
-
-
-class TestOutcomeSet(object):
-    """Records the outcome of different test executions for a single patch."""
-    def __init__(self,
-                 outcomes: Optional[Dict[str, TestOutcome]] = None
-                 ) -> None:
-        if outcomes is None:
-            outcomes = {}
-        self.__outcomes = outcomes # type: Dict[str, TestOutcome]
-
-    def __iter__(self) -> Iterator[str]:
-        return self.__outcomes.keys().__iter__()
-
-    def __getitem__(self, test: str) -> TestOutcome:
-        return self.__outcomes[test]
-
-    def with_outcome(self, test: str, outcome: TestOutcome) -> 'TestOutcomeSet':
-        outcomes = self.__outcomes.copy()
-        outcomes[test] = outcome
-        return TestOutcomeSet(outcomes)
-
-    def merge(self, other: 'TestOutcomeSet') -> 'TestOutcomeSet':
-        outcomes = self.__outcomes.copy()
-        for test_name in other:
-            outcomes[test_name] = other[test_name]
-        return TestOutcomeSet(outcomes)
 
 
 @attr.s(frozen=True)
