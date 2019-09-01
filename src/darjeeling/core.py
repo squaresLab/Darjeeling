@@ -27,9 +27,11 @@ class Language(Enum):
 
 
 class Test:
+    """An individual test case for the program under repair."""
     @property
     @abc.abstractmethod
     def name(self) -> str:
+        """A unique name for the test case."""
         raise NotImplementedError
 
 
