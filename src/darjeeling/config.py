@@ -37,7 +37,7 @@ class Config:
     """
     snapshot: str = attr.ib()
     language: Language = attr.ib()
-    seed: int = attr.ib()  # FIXME use factory to generate default
+    seed: int = attr.ib(default=0)
     optimizations: OptimizationsConfig = attr.ib(factory=OptimizationsConfig)
     terminate_early: bool = attr.ib(default=True)
     threads: int = attr.ib(default=1)
