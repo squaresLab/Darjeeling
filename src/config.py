@@ -12,6 +12,8 @@ class Config:
 
     Attributes
     ----------
+    snapshot: str
+        The name of the BugZoo snapshot that should be repaired.
     seed: int
         The seed that should be used by the random number generator.
     terminate_early: bool
@@ -26,6 +28,7 @@ class Config:
         An optional limit on the number of minutes that may be spent
         searching for an acceptable patch.
     """
+    snapshot: str = attr.ib()
     seed: int = attr.ib()  # FIXME use factory to generate default
     terminate_early: bool = attr.ib(default=True)
     num_threads: int = attr.ib(default=1)
