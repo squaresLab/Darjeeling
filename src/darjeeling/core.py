@@ -1,6 +1,8 @@
-__all__ = ('Replacement', 'FileLine', 'FileLocationRange', 'Location')
+__all__ = ('Replacement', 'FileLine', 'FileLocationRange', 'Location',
+           'TestCoverage', 'TestCoverageMap')
 
 from typing import (TypeVar, Sequence, Iterator, Optional, Dict, Generic, Set)
+from collections import OrderedDict
 from enum import Enum
 import abc
 
@@ -99,7 +101,7 @@ class TestSuite(Generic[T]):
 
 
 @attr.ib(frozen=True, slots=True)
-class TestLineCoverage(Set[FileLine]):
+class TestCoverage(Set[FileLine]):
     """Describes the lines that were executed during a given test execution."""
     test: str = attr.ib()
     outcome: TestOutcome = attr.ib()
@@ -113,3 +115,15 @@ class TestLineCoverage(Set[FileLine]):
 
     def __contains__(self, l: FileLine) -> bool:
         return l in self.lines
+
+
+class TestCoverageMap(Mapping[str, TestCoverage]):
+    """Contains coverage information for each test within a test suite."""
+    def __init__(self, mapping: Mapping[str, TestCoverage]):
+        self.__mapping: OrderedDict[str, TestCoverage] = OrderedDict()
+        for test_name in sorted(mapping):
+            self.__mapping[test_name] = mapping[test_name]
+
+    def __len__(self) -> int:
+        """Returns the number of tests represented in this map."""
+        return len(self.__mapping)
