@@ -20,7 +20,7 @@ from .test import BugZooTestSuite
 from .candidate import Candidate
 from .searcher import Searcher
 from .problem import Problem
-from .settings import Settings
+from .config import OptimizationsConfig
 from .snippet import SnippetDatabase
 from .exceptions import BadConfigurationException, LanguageNotSupported
 from .localization import (Localization, ample, genprog, jaccard, ochiai,
@@ -58,17 +58,6 @@ class Session:
         ----------
         yml: Dict[str, Any]
             A dictionary representation of the YAML configuration.
-        seed: Optional[int] = None
-            An optional seed for the random number generator.
-        terminate_early: bool = True
-            Specifies whether or not the search should terminate upon
-            discovering an acceptable patch.
-        limit_candidates: Optional[int] = None
-            An optional limit on the number of candidate patches that may be
-            considered by the search.
-        limit_time_minutes: Optional[int] = None
-            An optional limit on the number of minutes that may be spent
-            searching for an acceptable patch.
         """
         # are any resource limits specified?
         has_limits = 'resource-limits' in yml
@@ -198,15 +187,15 @@ class Session:
 
         # build the settings
         opts = yml.get('optimizations', {})
-        settings = \
-            Settings(use_scope_checking=opts.get('use-scope-checking', True),
-                     use_syntax_scope_checking=opts.get('use-syntax-scope-checking', True),
-                     ignore_dead_code=opts.get('ignore-dead-code', True),
-                     ignore_equivalent_appends=opts.get('ignore-equivalent-prepends', True),
-                     ignore_untyped_returns=opts.get('ignore-untyped-returns', True),
-                     ignore_string_equivalent_snippets=opts.get('ignore-string-equivalent-snippets', True),
-                     ignore_decls=opts.get('ignore-decls', True),
-                     only_insert_executed_code=opts.get('only-insert-executed-code', True))
+        settings = OptimizationsConfig(
+            use_scope_checking=opts.get('use-scope-checking', True),
+            use_syntax_scope_checking=opts.get('use-syntax-scope-checking', True),
+            ignore_dead_code=opts.get('ignore-dead-code', True),
+            ignore_equivalent_appends=opts.get('ignore-equivalent-prepends', True),
+            ignore_untyped_returns=opts.get('ignore-untyped-returns', True),
+            ignore_string_equivalent_snippets=opts.get('ignore-string-equivalent-snippets', True),
+            ignore_decls=opts.get('ignore-decls', True),
+            only_insert_executed_code=opts.get('only-insert-executed-code', True))
         logger.info("using repair settings: %s", settings)
 
         # fetch the transformation schemas
