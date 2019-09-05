@@ -137,6 +137,13 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
         yield from self.__mapping
 
     @property
+    def passing(self) -> TestCoverageMap:
+        """Returns a variant of this mapping restricted to passing tests."""
+        contents = {name: coverage for (name, coverage) in self.__mapping
+                    if coverage.outcome.successful}
+        return TestCoverageMap(contents)
+
+    @property
     def locations(self) -> Set[FileLine]:
         """Returns the set of all locations that are covered in this map."""
         if not self.__mapping:
