@@ -14,6 +14,8 @@ class Config:
     ----------
     snapshot: str
         The name of the BugZoo snapshot that should be repaired.
+    language: Language
+        The language that is used by the program under repair.
     seed: int
         The seed that should be used by the random number generator.
     terminate_early: bool
@@ -29,6 +31,7 @@ class Config:
         searching for an acceptable patch.
     """
     snapshot: str = attr.ib()
+    language: Language = attr.ib()
     seed: int = attr.ib()  # FIXME use factory to generate default
     terminate_early: bool = attr.ib(default=True)
     num_threads: int = attr.ib(default=1)
