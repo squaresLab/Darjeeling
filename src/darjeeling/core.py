@@ -144,6 +144,13 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
         return TestCoverageMap(contents)
 
     @property
+    def failing(self) -> TestCoverageMap:
+        """Returns a variant of this mapping restricted to failing tests."""
+        contents = {name: coverage for (name, coverage) in self.__mapping
+                    if not coverage.outcome.successful}
+        return TestCoverageMap(contents)
+
+    @property
     def locations(self) -> Set[FileLine]:
         """Returns the set of all locations that are covered in this map."""
         if not self.__mapping:
