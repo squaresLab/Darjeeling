@@ -135,3 +135,11 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
     def __iter__(self) -> Iterator[str]:
         """Returns an iterator over the names of the tests in this map."""
         yield from self.__mapping
+
+    @property
+    def locations(self) -> Set[FileLine]:
+        """Returns the set of all locations that are covered in this map."""
+        if not self.__mapping:
+            return FileLineSet()
+        coverage_locations = self.__mapping.values()
+        return coverage_locations[0].union(coverage_locations[1:])
