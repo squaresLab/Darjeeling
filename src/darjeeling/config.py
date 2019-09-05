@@ -5,6 +5,8 @@ from typing import Optional
 
 import attr
 
+from .core import Language
+
 
 @attr.s
 class Config:
