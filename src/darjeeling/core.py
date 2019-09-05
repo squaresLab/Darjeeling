@@ -1,6 +1,6 @@
-__all__ = ['Replacement', 'FileLine', 'FileLocationRange', 'Location']
+__all__ = ('Replacement', 'FileLine', 'FileLocationRange', 'Location')
 
-from typing import TypeVar, Sequence, Iterator, Optional, Dict, Generic
+from typing import (TypeVar, Sequence, Iterator, Optional, Dict, Generic, Set)
 from enum import Enum
 import abc
 
@@ -36,14 +36,14 @@ class Test:
 
 
 @attr.s(frozen=True, slots=True)
-class TestOutcome(object):
+class TestOutcome:
     """Records the outcome of a test execution."""
     successful = attr.ib(type=bool)
     time_taken = attr.ib(type=float)
 
 
 @attr.s(frozen=True, slots=True)
-class BuildOutcome(object):
+class BuildOutcome:
     """Records the outcome of a build attempt."""
     successful = attr.ib(type=bool)
     time_taken = attr.ib(type=float)
@@ -96,3 +96,11 @@ class TestSuite(Generic[T]):
     @abc.abstractmethod
     def execute(self, container: Container, test: T) -> TestOutcome:
         raise NotImplementedError
+
+
+@attr.ib(frozen=True, slots=True)
+class TestLineCoverage:
+    """Describes the lines that were executed during a given test execution."""
+    test: str = attr.ib()
+    outcome: TestOutcome = attr.ib()
+    lines: Set[FileLine] = attr.ib()
