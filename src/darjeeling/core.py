@@ -157,3 +157,8 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
             return FileLineSet()
         coverage_locations = self.__mapping.values()
         return coverage_locations[0].union(coverage_locations[1:])
+
+    def covering_tests(self, location: FileLine) -> Set[str]:
+        """Returns the names of the tests that cover a given location."""
+        return set(name for (name, cov) in self.__mapping.items()
+                   if location in cov)
