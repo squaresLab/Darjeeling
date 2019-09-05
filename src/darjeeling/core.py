@@ -127,3 +127,11 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
     def __len__(self) -> int:
         """Returns the number of tests represented in this map."""
         return len(self.__mapping)
+
+    def __getitem__(self, name: str) -> TestCoverage:
+        """Returns the coverage for a test given by its name."""
+        return self.__mapping[name]
+
+    def __iter__(self) -> Iterator[str]:
+        """Returns an iterator over the names of the tests in this map."""
+        yield from self.__mapping
