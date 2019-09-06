@@ -32,7 +32,7 @@ class SpectraRow:
     nf: int
 
 
-class Spectra:
+class Spectra(Mapping[FileLine, SpectraRow]):
     """
     A summary of the number of passing and failing tests covering each program
     location.
