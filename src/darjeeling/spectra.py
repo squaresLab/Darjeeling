@@ -44,14 +44,14 @@ class Spectra(Mapping[FileLine, SpectraRow]):
         tally_fail: MutableMapping[FileLine, int] = {}
         tally_pass: MutableMapping[FileLine, int] = {}
 
-        for test in coverage:
-            if test.outcome.successful:
+        for test_coverage in cov.values():
+            if test_coverage.outcome.successful:
                 tally = tally_pass
                 num_pass += 1
             else:
                 tally = tally_fail
                 num_fail += 1
-            for line in coverage[test]:
+            for line in test_coverage:
                 tally[line] = tally.get(line, 0) + 1
 
         return Spectra(num_pass, num_fail, tally_fail, tally_pass)
