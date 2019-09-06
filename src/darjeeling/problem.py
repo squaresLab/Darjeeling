@@ -278,7 +278,7 @@ class Problem:
         yield from self.__tests_passing
 
     @property
-    def coverage(self) -> Mapping[str, TestCoverage]:
+    def coverage(self) -> TestCoverageMap:
         """
         Line coverage information for each test within the test suite for the
         program under repair.
