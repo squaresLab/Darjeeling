@@ -19,7 +19,7 @@ import logging
 import functools
 
 from .problem import Problem
-from .core import FileLine, FileLineMap, TestCoverageMap
+from .core import FileLine, FileLineMap, FileLineSet, TestCoverageMap
 from .spectra import Spectra
 from .exceptions import NoImplicatedLines, BadConfigurationException
 from .config import LocalizationConfig
@@ -133,6 +133,9 @@ class Localization:
                 continue
             self.__line_to_score[line] = score
 
+        self._lines: Sequence[FileLine] = tuple(self.__line_to_score)
+        self._files: Set[str] = set(line.filename for line in self._lines)
+
         num_implicated: int = len(self.__line_to_score)
         if num_implicated == 0:
             raise NoImplicatedLines
@@ -150,8 +153,8 @@ class Localization:
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Localization):
             return False
-        lines_self: Set[FileLine] = set(self)
-        lines_other: Set[FileLine] = set(other)
+        lines_self: Set[FileLine] = set(self._lines)
+        lines_other: Set[FileLine] = set(other._lines)
         if lines_self != lines_other:
             return False
         return all(self[l] == other[l] for l in lines_self)
@@ -263,19 +266,19 @@ class Localization:
         i = max(bisect.bisect_left(self.__cdf, mu) - 1, 0)
         assert i >= 0
         assert i < len(self.__cdf)
-        return self.__lines[i]
+        return self._lines[i]
 
     def __len__(self) -> int:
         """Returns a count of the number of suspicious lines."""
-        return len(self.__lines)
+        return len(self._lines)
 
     @property
     def files(self) -> List[str]:
         """A list of files that contain suspicious lines."""
-        return list(self.__files)
+        return list(self._files)
 
     def __repr__(self) -> str:
         # FIXME order!
         repr_scores = ["  {}: {:.2f}".format(str(l), self[l])
-                       for l in sorted(self.__lines)]
+                       for l in sorted(self._lines)]
         return 'Localization(\n{})'.format(';\n'.join(repr_scores))
