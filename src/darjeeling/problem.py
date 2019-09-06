@@ -205,7 +205,7 @@ class Problem:
         Restricts the scope of the repair to the intersection of the current
         set of implicated lines and a provided set of lines.
         """
-        self.__coverage = self.__coverage.restrict_to_lines(lines)
+        self.__coverage = self.__coverage.restrict_to_locations(lines)
         self._dump_coverage()
         self.__remove_redundant_sources()
         self.validate()
