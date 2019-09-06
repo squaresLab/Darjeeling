@@ -143,7 +143,7 @@ class Localization:
         # FIXME use np.array
         # compute cumulative distribution function
         sm = sum(self.__line_to_score.values())
-        pdf: List[float] = [s / sm for s in self.__line_to_score]
+        pdf: List[float] = [s / sm for s in self.__line_to_score.values()]
         self.__cdf: List[float] = [0.0] + pdf[:-1]
         cum = 0.0
         for i in range(1, num_implicated):
