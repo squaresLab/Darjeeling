@@ -2,7 +2,8 @@
 __all__ = ('Config', 'OptimizationsConfig', 'SchemaConfig',
            'TransformationsConfig')
 
-from typing import Optional, Collection, Tuple
+from typing import Optional, Collection, Tuple, Dict, Any
+import sys
 import random
 import datetime
 
@@ -44,7 +45,7 @@ class SchemaConfig:
     @staticmethod
     def from_yml(yml) -> 'SchemaConfig':
         if not isinstance(yml, dict):
-            m = "expected an object but was a {}".format(type(d).__name__)
+            m = "expected an object but was a {}".format(type(yml).__name__)
             m = "illegal schema description: {}".format(m)
             raise BadConfigurationException(m)
         if not 'type' in yml:
