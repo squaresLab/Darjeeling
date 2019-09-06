@@ -56,6 +56,12 @@ class Config:
             m = "number of threads must be greater than or equal to 1."
             raise BadConfigurationException(m)
 
+    @limit_time_minutes.validator
+    def validate_limit_time_minutes(self, attribute, value):
+        if value < 1:
+            m = "time limit must be greater than or equal to one minute"
+            raise BadConfigurationException(m)
+
     @staticmethod
     def from_yml(yml: Dict[str, Any],
                  *,
@@ -72,6 +78,8 @@ class Config:
         BadConfigurationException
             If an illegal configuration is provided.
         """
+        has_limits = 'resource-limits' in yml
+
         if 'snapshot' not in yml:
             raise BadConfigurationException("'snapshot' property is missing")
         if not isinstance(yml['snapshot'], str):
@@ -113,6 +121,15 @@ class Config:
             m = "unsupported language [{}]. {}"
             m = m.format(yml['language'], supported)
             raise BadConfigurationException(m)
+
+        has_cand_override = limit_candidates is not None
+        has_candidate_limit = \
+            has_limits and 'candidates' in yml['resource-limits']
+        if not has_candidate_override and has_candidate_limit:
+            if not isinstance(yml['resource-limits']['candidates'], int):
+                m = "'candidates' property in 'resource-limits' section should be an int"
+                raise BadConfigurationException(m)
+            limit_candidates = yml['resource-limits']['candidates']
 
         opts = OptimizationsConfig.from_yml(yml.get('optimizations', {}))
 
