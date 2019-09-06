@@ -11,7 +11,7 @@ from .core import Language
 from .exceptions import BadConfigurationException, LanguageNotSupported
 
 
-@attr.s
+@attr.s(frozen=True)
 class Config:
     """A configuration for Darjeeling.
 
@@ -172,7 +172,7 @@ class Config:
                       optimizations=opts)
 
 
-@attr.s
+@attr.s(frozen=True)
 class OptimizationsConfig:
     """Specifies which optimizations should be applied during search."""
     use_scope_checking: bool = attr.ib(default=False)
@@ -197,7 +197,7 @@ class OptimizationsConfig:
             only_insert_executed_code=yml.get('only-insert-executed-code', True))
 
 
-@attr.s
+@attr.s(frozen=True)
 class SchemaConfig:
     name: str = attr.ib()
 
@@ -215,7 +215,7 @@ class SchemaConfig:
         return SchemaConfig(name=name)
 
 
-@attr.s
+@attr.s(frozen=True)
 class TransformationsConfig:
     """Specifies which transformations should be applied by the search."""
     schemas: Collection[SchemaConfig] = attr.ib(converter=tuple)
