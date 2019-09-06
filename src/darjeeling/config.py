@@ -59,8 +59,7 @@ class SchemaConfig:
 @attr.s(frozen=True)
 class TransformationsConfig:
     """Specifies which transformations should be applied by the search."""
-    schemas: Collection[SchemaConfig] = \
-        attr.ib(converter=tuple, default=tuple())
+    schemas: Collection[SchemaConfig] = attr.ib(default=tuple())
 
     @staticmethod
     def from_yml(yml) -> 'TransformationsConfig':
@@ -71,7 +70,8 @@ class TransformationsConfig:
             m = "'schemas' property should be a list"
             raise BadConfigurationException(m)
 
-        schemas = tuple(SchemaConfig.from_yml(y) for y in yml['schemas'])
+        schemas: Collection[SchemaConfig] = \
+            tuple(SchemaConfig.from_yml(y) for y in yml['schemas'])
         return TransformationsConfig(schemas)
 
 
