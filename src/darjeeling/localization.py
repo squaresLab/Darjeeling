@@ -172,9 +172,7 @@ class Localization:
                 if val > 0.0}
 
     def to_file(self, fn: str) -> None:
-        """
-        Dumps this fault localization to a given file.
-        """
+        """Dumps this fault localization to a given file."""
         logger.debug("writing localization to file: %s", fn)
         jsn = self.to_dict()
         with open(fn, 'w') as f:
