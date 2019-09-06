@@ -138,7 +138,7 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
         yield from self.__mapping
 
     @property
-    def passing(self) -> TestCoverageMap:
+    def passing(self) -> 'TestCoverageMap':
         """Returns a variant of this mapping restricted to passing tests."""
         contents = {name: coverage for (name, coverage)
                     in self.__mapping.values()
@@ -146,7 +146,7 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
         return TestCoverageMap(contents)
 
     @property
-    def failing(self) -> TestCoverageMap:
+    def failing(self) -> 'TestCoverageMap':
         """Returns a variant of this mapping restricted to failing tests."""
         contents = {name: coverage for (name, coverage)
                     in self.__mapping.values()
