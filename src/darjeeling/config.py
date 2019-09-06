@@ -128,7 +128,7 @@ class Config:
             m = m.format(yml['language'], supported)
             raise BadConfigurationException(m)
 
-        has_cand_override = limit_candidates is not None
+        has_candidate_override = limit_candidates is not None
         has_candidate_limit = \
             has_limits and 'candidates' in yml['resource-limits']
         if not has_candidate_override and has_candidate_limit:
