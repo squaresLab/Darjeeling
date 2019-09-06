@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __all__ = ('Spectra', 'SpectraRow')
 
-from typing import Mapping, MutableMapping, Dict, Set
+from typing import Mapping, MutableMapping, Dict, Set, Iterator
 
 import attr
 
