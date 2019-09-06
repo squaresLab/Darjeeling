@@ -15,7 +15,7 @@ import kaskara
 from bugzoo.core import FileLine
 from bugzoo import Bug as Snapshot
 
-from .core import Language
+from .core import Language, TestCoverageMap
 from .test import BugZooTestSuite
 from .candidate import Candidate
 from .searcher import Searcher
@@ -93,7 +93,7 @@ class Session:
 
         # compute coverage
         logger.info("computing coverage information...")
-        coverage = client_bugzoo.bugs.coverage(snapshot)
+        coverage = TestCoverageMap.from_bugzoo(client_bugzoo.bugs.coverage(snapshot))  # noqa: pycodestyle
         logger.info("computed coverage information")
 
         # compute localization
