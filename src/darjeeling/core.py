@@ -138,6 +138,15 @@ class TestCoverage:
         lines = FileLineSet(l for l in self.lines if l.filename in files)
         return TestCoverage(self.test, self.outcome, lines)
 
+    def restrict_to_locations(self,
+                              locations: Iterable[FileLine]
+                              ) -> 'TestCoverage':
+        """
+        Returns a variant of this coverage, restricted to given locations.
+        """
+        lines = self.lines.intersection(locations)
+        return TestCoverage(self.test, self.outcome, lines)
+
 
 class TestCoverageMap(Mapping[str, TestCoverage]):
     """Contains coverage information for each test within a test suite."""
@@ -199,3 +208,14 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
         """
         return TestCoverageMap({test: cov.restrict_to_files(files)
                                 for (test, cov) in self.values()})
+
+    def restrict_to_locations(self,
+                              locations: Iterable[FileLine]
+                              ) -> 'TestCoverageMap':
+        """
+        Returns a variant of this map with its coverage restricted to a given
+        set of locations.
+        """
+        return TestCoverageMap({test: cov.restrict_to_locations(locations)
+                                for (test, cov) in self.values()})
+
