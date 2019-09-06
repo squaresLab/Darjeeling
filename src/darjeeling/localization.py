@@ -24,6 +24,7 @@ from bugzoo.core.coverage import TestSuiteCoverage
 from .problem import Problem
 from .core import FileLine
 from .exceptions import NoImplicatedLines, BadConfigurationException
+from .config import LocalizationConfig
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
@@ -59,12 +60,6 @@ def tarantula(ep: int, np: int, ef: int, nf: int) -> float:
 
 
 class Localization:
-    @staticmethod
-    def from_problem(problem: Problem,
-                     metric: Metric
-                     ) -> 'Localization':
-        return Localization.from_coverage(problem.coverage, metric)
-
     @staticmethod
     def from_coverage(coverage: TestSuiteCoverage,
                       metric: Metric
