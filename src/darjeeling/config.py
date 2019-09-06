@@ -62,6 +62,12 @@ class Config:
             m = "time limit must be greater than or equal to one minute"
             raise BadConfigurationException(m)
 
+    @property
+    def limit_time(self) -> Optional[datetime.timedelta]:
+        if self.limit_time_minutes:
+            return datetime.timedelta(minutes=self.limit_time_minutes)
+        return None
+
     @staticmethod
     def from_yml(yml: Dict[str, Any],
                  *,
