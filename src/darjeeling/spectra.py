@@ -80,3 +80,7 @@ class Spectra:
     def __iter__(self) -> Iterator[FileLine]:
         """Returns an iterator over the locations in this spectra."""
         yield from self.__locations
+
+    def __len__(self) -> int:
+        """Returns a count of the number of locations in this spectra."""
+        return len(self.__locations)
