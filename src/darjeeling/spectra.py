@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 __all__ = ('Spectra', 'SpectraRow')
 
-from typing import Mapping, MutableMapping, Dict
+from typing import Mapping, MutableMapping, Dict, Set
 
 import attr
 
-from .core import TestCoverageMap, FileLine, FileLineMap
+from .core import TestCoverageMap, FileLine, FileLineMap, FileLineSet
 
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
@@ -64,8 +64,10 @@ class Spectra:
                  ) -> None:
         self.__num_pass = num_pass
         self.__num_fail = num_fail
-        self.__tally_pass: FileLineMap[int] = FileLineMap(tally_pass)
-        self.__tally_fail: FileLineMap[int] = FileLineMap(tally_fail)
+        self.__tally_pass: Mapping[FileLine, int] = FileLineMap(tally_pass)
+        self.__tally_fail: Mapping[FileLine, int] = FileLineMap(tally_fail)
+        self.__locations: Set[FileLine] = \
+            FileLineSet.from_iter(tally_pass).union(tally_fail)
 
     def __getitem__(self, loc: FileLine) -> SpectraRow:
         """Retrieves the spectra information for a given location."""
@@ -74,3 +76,7 @@ class Spectra:
         np = self.__num_pass - ep
         nf = self.__num_fail - ef
         return LineSpectra(ep, ef, np, nf)
+
+    def __iter__(self) -> Iterator[FileLine]:
+        """Returns an iterator over the locations in this spectra."""
+        yield from self.__locations
