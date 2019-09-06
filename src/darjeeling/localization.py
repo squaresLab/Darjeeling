@@ -246,9 +246,9 @@ class Localization:
         lines = [l for l in self if l.filename in restricted_files]
         return self.restricted_to_lines(lines)
 
-    def restricted_to_lines(self,
-                            lines: Iterable[FileLine]
-                            ) -> 'Localization':
+    def restrict_to_lines(self,
+                          lines: Iterable[FileLine]
+                          ) -> 'Localization':
         """
         Returns a variant of this fault localization that is restricted to a
         given set of lines.
