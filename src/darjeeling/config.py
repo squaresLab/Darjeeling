@@ -137,12 +137,23 @@ class Config:
                 raise BadConfigurationException(m)
             limit_candidates = yml['resource-limits']['candidates']
 
+        has_time_override = limit_time_minutes is not None
+        has_time_limit = \
+            has_limits and 'time-minutes' in yml['resource-limits']
+        if has_time_override and has_time_limit:
+            if not isinstance(yml['resource-limits']['time-minutes'], int):
+                m = "'time-minutes' property in 'resource-limits' section should be an int"  # noqa: pycodestyle
+                raise BadConfigurationException(m)
+            limit_time_minutes = yml['resource-limits']['time-minutes']
+
         opts = OptimizationsConfig.from_yml(yml.get('optimizations', {}))
 
         return Config(snapshot=snapshot,
                       language=language,
                       seed=seed,
                       threads=threads,
+                      limit_time_minutes=limit_time_minutes,
+                      limit_candidates=limit_candidates,
                       optimizations=opts)
 
 
