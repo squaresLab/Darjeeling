@@ -75,7 +75,7 @@ class Spectra(Mapping[FileLine, SpectraRow]):
         ef = self.__tally_fail.get(loc, 0)
         np = self.__num_pass - ep
         nf = self.__num_fail - ef
-        return LineSpectra(ep, ef, np, nf)
+        return SpectraRow(ep, ef, np, nf)
 
     def __iter__(self) -> Iterator[FileLine]:
         """Returns an iterator over the locations in this spectra."""
