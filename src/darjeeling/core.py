@@ -156,10 +156,10 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
     @property
     def locations(self) -> Set[FileLine]:
         """Returns the set of all locations that are covered in this map."""
+        locs = FileLineSet()
         if not self.__mapping:
-            return FileLineSet()
-        coverage_locations = self.__mapping.values()
-        return coverage_locations[0].union(coverage_locations[1:])
+            return locs
+        return locs.union(self.__mapping.values())
 
     def covering_tests(self, location: FileLine) -> Set[str]:
         """Returns the names of the tests that cover a given location."""
