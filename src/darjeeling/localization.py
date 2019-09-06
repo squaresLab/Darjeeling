@@ -10,7 +10,7 @@ __all__ = (
 )
 
 from typing import (Dict, Callable, List, Iterator, FrozenSet, Sequence, Any,
-                    Iterable, Optional, Mapping)
+                    Iterable, Optional, Mapping, Set)
 import math
 import json
 import random
@@ -150,8 +150,8 @@ class Localization:
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Localization):
             return False
-        lines_self = set(self)
-        lines_other = set(other)
+        lines_self: Set[FileLine] = set(self)
+        lines_other: Set[FileLine] = set(other)
         if lines_self != lines_other:
             return False
         return all(self[l] == other[l] for l in lines_self)
