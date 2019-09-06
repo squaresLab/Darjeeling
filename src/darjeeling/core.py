@@ -1,7 +1,8 @@
 __all__ = ('Replacement', 'FileLine', 'FileLocationRange', 'Location',
            'TestCoverage', 'TestCoverageMap')
 
-from typing import (TypeVar, Sequence, Iterator, Optional, Dict, Generic, Set)
+from typing import (TypeVar, Sequence, Iterator, Optional, Dict, Generic, Set,
+                    Mapping)
 from collections import OrderedDict
 from enum import Enum
 import abc
