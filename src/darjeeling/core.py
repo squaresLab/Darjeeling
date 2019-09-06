@@ -8,6 +8,7 @@ from enum import Enum
 import abc
 
 import attr
+from bugzoo.core import TestSuiteCoverage as BugZooTestSuiteCoverage
 from bugzoo import Container
 from bugzoo import Client as BugZooClient
 from bugzoo.core import FileLine, FileLineMap, FileLineSet
@@ -121,6 +122,10 @@ class TestCoverage:
 
 class TestCoverageMap(Mapping[str, TestCoverage]):
     """Contains coverage information for each test within a test suite."""
+    @staticmethod
+    def from_bugzoo(bz_cov: BugZooTestSuiteCoverage) -> 'TestCoverageMap':
+        raise NotImplementedError
+
     def __init__(self, mapping: Mapping[str, TestCoverage]):
         self.__mapping: OrderedDict[str, TestCoverage] = OrderedDict()
         for test_name in sorted(mapping):
