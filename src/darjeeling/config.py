@@ -183,7 +183,7 @@ class Config:
 
     @limit_time_minutes.validator
     def validate_limit_time_minutes(self, attribute, value):
-        if value < 1:
+        if value is not None and value < 1:
             m = "time limit must be greater than or equal to one minute"
             raise BadConfigurationException(m)
 
