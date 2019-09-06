@@ -10,9 +10,10 @@ import abc
 import attr
 from bugzoo import Container
 from bugzoo import Client as BugZooClient
+from bugzoo.core import FileLine, FileLineMap, FileLineSet
 from boggart.core.replacement import Replacement
-from boggart.core.location import FileLocationRange, FileLine, Location, \
-                                  LocationRange, FileLocation, FileLineSet
+from boggart.core.location import (FileLocationRange,
+                                   Location, LocationRange, FileLocation)
 
 from .exceptions import LanguageNotSupported
 
