@@ -203,7 +203,9 @@ class Localization:
         """
         return line in self.__line_to_score
 
-    def exclude_files(self, files_to_exclude: List[str]) -> 'Localization':
+    def exclude_files(self,
+                      files_to_exclude: Iterable[str]
+                      ) -> 'Localization':
         """
         Returns a variant of this fault localization that does not contain
         lines from any of the specified files.
