@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __all__ = ('Config', 'OptimizationsConfig')
 
-from typing import Optional
+from typing import Optional, Collection, Tuple
 import random
 import datetime
 
@@ -37,6 +37,7 @@ class Config:
     """
     snapshot: str = attr.ib()
     language: Language = attr.ib()
+    transformations: TransformationsConfig = attr.ib()
     seed: int = attr.ib(default=0)
     optimizations: OptimizationsConfig = attr.ib(factory=OptimizationsConfig)
     terminate_early: bool = attr.ib(default=True)
@@ -155,12 +156,8 @@ class Config:
         if not isinstance(yml['transformations'], dict):
             m = "'transformations' section should be an object"
             raise BadConfigurationException(m)
-
-
-        schemas = \
-            [schema_from_dict(d) for d in yml['transformations']['schemas']]
-
-
+        transformations = \
+            TransformationsConfig.from_yml(yml['transformations'})
 
         return Config(snapshot=snapshot,
                       language=language,
@@ -169,6 +166,7 @@ class Config:
                       terminate_early=terminate_early,
                       limit_time_minutes=limit_time_minutes,
                       limit_candidates=limit_candidates,
+                      transformations=transformations,
                       optimizations=opts)
 
 
@@ -218,7 +216,8 @@ class SchemaConfig:
 @attr.s(frozen=True)
 class TransformationsConfig:
     """Specifies which transformations should be applied by the search."""
-    schemas: Collection[SchemaConfig] = attr.ib(converter=tuple)
+    schemas: Collection[SchemaConfig] = \
+        attr.ib(converter=tuple, default=tuple())
 
     @staticmethod
     def from_yml(yml) -> 'TransformationsConfig':
