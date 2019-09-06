@@ -9,8 +9,8 @@ __all__ = (
     'jaccard'
 )
 
-from typing import Dict, Callable, List, Iterator, FrozenSet, Sequence, Any, \
-    Iterable, Optional
+from typing import (Dict, Callable, List, Iterator, FrozenSet, Sequence, Any,
+                    Iterable, Optional, Mapping)
 import math
 import json
 import random
@@ -18,11 +18,9 @@ import bisect
 import logging
 import functools
 
-from bugzoo.core.spectra import Spectra
-from bugzoo.core.coverage import TestSuiteCoverage
-
 from .problem import Problem
-from .core import FileLine
+from .core import FileLine, FileLineMap, TestCoverageMap
+from .spectra import Spectra
 from .exceptions import NoImplicatedLines, BadConfigurationException
 from .config import LocalizationConfig
 
@@ -61,24 +59,22 @@ def tarantula(ep: int, np: int, ef: int, nf: int) -> float:
 
 class Localization:
     @staticmethod
-    def from_coverage(coverage: TestSuiteCoverage,
+    def from_coverage(coverage: TestCoverageMap,
                       metric: Metric
                       ) -> 'Localization':
         spectra = Spectra.from_coverage(coverage)
         return Localization.from_spectra(spectra, metric)
 
     @staticmethod
-    def from_spectra(spectra: Spectra,
-                     metric: Metric
-                     ) -> 'Localization':
-        scores = {}  # type: Dict[FileLine, float]
+    def from_spectra(spectra: Spectra, metric: Metric) -> 'Localization':
+        scores: FileLineMap[float] = FileLineMap()
         for line in spectra:
             row = spectra[line]
             scores[line] = metric(row.ep, row.np, row.ef, row.nf)
         return Localization(scores)
 
     @staticmethod
-    def from_config(coverage: TestSuiteCoverage,
+    def from_config(coverage: TestCoverageMap,
                     cfg: LocalizationConfig
                     ) -> 'Localization':
         # find the suspiciousness metric
@@ -122,36 +118,34 @@ class Localization:
         logger.debug("loaded localization from file: %s", fn)
         return localization
 
-    def __init__(self, scores: Dict[FileLine, float]) -> None:
+    def __init__(self, scores: Mapping[FileLine, float]) -> None:
         """
         Raises:
             NoImplicatedLines: if no lines are determined to be suspicious.
             ValueError: if a line is assigned a negative suspiciousness.
         """
-        self.__line_to_score = scores.copy()
-        self.__lines = []  # type: List[FileLine]
-        self.__scores = []  # type: List[float]
+        self.__line_to_score: FileLineMap[float] = FileLineMap()
         for line in sorted(scores):
             score = scores[line]
             if score < 0.0:
                 raise ValueError("suspiciousness values must be non-negative.")
             if score == 0.0:
                 continue
-            self.__lines.append(line)
-            self.__scores.append(score)
-        self.__files = [line.filename for line in self.__lines]
+            self.__line_to_score[line] = score
 
-        if not self.__lines:
+        num_implicated: int = len(self.__line_to_score)
+        if num_implicated == 0:
             raise NoImplicatedLines
 
+        # FIXME use np.array
         # compute cumulative distribution function
-        sm = sum(self.__scores)
-        pdf = [s / sm for s in self.__scores]
-        self.__cdf = [0.0]  # type: List[float]
-        cum = pdf[0]
-        for p in pdf[1:]:
-            self.__cdf.append(cum)
-            cum += p
+        sm = sum(self.__line_to_score.values())
+        pdf: List[float] = [s / sm for s in self.__line_to_score]
+        self.__cdf: List[float] = [0.0] + pdf[:-1]
+        cum = 0.0
+        for i in range(1, num_implicated):
+            cum = self.__cdf[i] + cum
+            self.__cdf[i] = cum
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Localization):
