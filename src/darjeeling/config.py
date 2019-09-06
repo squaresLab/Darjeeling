@@ -23,13 +23,13 @@ class LocalizationConfig:
 
     @restrict_to_files.validator
     def validate_restrict_to_files(self, attribute, value):
-        if restrict_to_files is not None and not restrict_to_files:
+        if value is not None and not value:
             m = "cannot restrict to empty set of files"
             raise BadConfigurationException(m)
 
     @restrict_to_files.validator
     def validate_restrict_to_lines(self, attribute, value):
-        if restrict_to_lines is not None and not restrict_to_lines:
+        if value is not None and not value:
             m = "cannot restrict to empty set of lines"
             raise BadConfigurationException(m)
 
