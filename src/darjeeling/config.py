@@ -160,6 +160,8 @@ class Config:
     snapshot: str = attr.ib()
     language: Language = attr.ib()
     transformations: TransformationsConfig = attr.ib()
+    yml_localization = attr.ib()  # FIXME migrate
+    yml_search = attr.ib()  # FIXME migrate
     seed: int = attr.ib(default=0)
     optimizations: OptimizationsConfig = attr.ib(factory=OptimizationsConfig)
     terminate_early: bool = attr.ib(default=True)
@@ -281,6 +283,11 @@ class Config:
         transformations = \
             TransformationsConfig.from_yml(yml['transformations'])
 
+        if 'localization' not in yml:
+            m = "'localization' section is missing"
+            raise BadConfigurationException(m)
+        localization = LocalizationConfig.from_yml(yml['localization'])
+
         return Config(snapshot=snapshot,
                       language=language,
                       seed=seed,
@@ -289,4 +296,6 @@ class Config:
                       limit_time_minutes=limit_time_minutes,
                       limit_candidates=limit_candidates,
                       transformations=transformations,
+                      yml_localization=yml['localization'],
+                      yml_search=yml['algorithm'],
                       optimizations=opts)
