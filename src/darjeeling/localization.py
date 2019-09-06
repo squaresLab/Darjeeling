@@ -79,19 +79,9 @@ class Localization:
 
     @staticmethod
     def from_config(coverage: TestSuiteCoverage,
-                    cfg: Dict[str, Any]
+                    cfg: LocalizationConfig
                     ) -> 'Localization':
-        if not isinstance(cfg, dict):
-            m = "'localization' section should be an object"
-            raise BadConfigurationException(m)
-        if not 'metric' in cfg:
-            m = "'metric' property is missing from 'localization' section"
-            raise BadConfigurationException(m)
-        if not isinstance(cfg['metric'], str):
-            m = "'metric' property in 'localization' should be a string"
-            raise BadConfigurationException(m)
-
-        name_metric = cfg['metric']  # type: str
+        # find the suspiciousness metric
         try:
             supported_metrics = {
                 'genprog': genprog,
@@ -102,50 +92,20 @@ class Localization:
             }
             logger.info("supported suspiciousness metrics: %s",
                         ', '.join(supported_metrics.keys()))
-            metric = supported_metrics[name_metric]
+            metric = supported_metrics[cfg.metric]
         except KeyError:
-            m = "suspiciousness metric not supported: {}".format(name_metric)
+            m = "suspiciousness metric not supported: {}"
+            m = m.format(cfg.metric)
             raise BadConfigurationException(m)
-        logger.info("using suspiciousness metric: %s", name_metric)
+        logger.info("using suspiciousness metric: %s", cfg.metric)
 
-        # build base localization using given metric
         loc = Localization.from_coverage(coverage, metric)
-
-        # exclude specified files
-        exclude_files = cfg.get('exclude-files', [])  # type: List[str]
-        loc = loc.exclude_files(exclude_files)
-
-        # exclude specified lines
-        exclude_lines_arg = \
-            cfg.get('exclude-lines', {})  # type: Dict[str, List[int]]
-        exclude_lines = []  # type: List[FileLine]
-        for fn in exclude_lines_arg:
-            for line_num in exclude_lines_arg[fn]:
-                exclude_lines.append(FileLine(fn, line_num))
-        loc = loc.exclude_lines(exclude_lines)
-
-        # restrict to specified files
-        restrict_to_files = cfg.get('restrict-to-files',
-                                    None)  # type: Optional[List[str]]
-        if restrict_to_files is []:
-            m = "cannot restrict to empty set of files"
-            raise BadConfigurationException(m)
-        if restrict_to_files is not None:
-            loc = loc.restrict_to_files(restrict_to_files)
-
-        # restrict to specified lines
-        restrict_lines_arg = cfg.get('restrict-to-lines',
-                                     None)  # type: Optional[Dict[str, List[int]]]
-        if restrict_lines_arg is []:
-            m = "cannot restrict to empty set of lines"
-            raise BadConfigurationException(m)
-        if restrict_lines_arg is not None:
-            restrict_to_lines = []  # type: List[FileLine]
-            for fn in restrict_lines_arg:
-                for line_num in restrict_lines_arg[fn]:
-                    restrict_to_lines.append(FileLine(fn, line_num))
-            loc = loc.restricted_to_lines(restrict_to_lines)
-
+        loc = loc.exclude_files(cfg.exclude_files)
+        loc = loc.exclude_lines(cfg.exclude_lines)
+        if cfg.restrict_to_files:
+            loc = loc.restrict_to_files(cfg.restrict_to_files)
+        if cfg.restrict_to_lines:
+            loc = loc.restrict_to_lines(cfg.restrict_to_lines)
         return loc
 
     @staticmethod
