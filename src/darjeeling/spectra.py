@@ -5,7 +5,7 @@ from typing import Mapping, MutableMapping, Dict
 
 import attr
 
-from .core import TestCoverageMap, FileLine
+from .core import TestCoverageMap, FileLine, FileLineMap
 
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
@@ -57,14 +57,20 @@ class Spectra:
         return Spectra(num_pass, num_fail, tally_fail, tally_pass)
 
     def __init__(self,
-                 num_passing: int,
-                 num_failing: int,
-                 tally_passing: Mapping[FileLine, int],
-                 tally_failing: Mapping[FileLine, int]
+                 num_pass: int,
+                 num_fail: int,
+                 tally_pass: Mapping[FileLine, int],
+                 tally_fail: Mapping[FileLine, int]
                  ) -> None:
-        self.__num_passing = num_passing
-        self.__num_failing = num_failing
-        self.__tally_passing: Dict[str, Dict[int, int]] = \
-            FileLine.compactify(tally_passing)
-        self.__tally_failing: Dict[str, Dict[int, int]] = \
-            FileLine.compactify(tally_failing)
+        self.__num_pass = num_pass
+        self.__num_fail = num_fail
+        self.__tally_pass: FileLineMap[int] = FileLineMap(tally_pass)
+        self.__tally_fail: FileLineMap[int] = FileLineMap(tally_fail)
+
+    def __getitem__(self, loc: FileLine) -> SpectraRow:
+        """Retrieves the spectra information for a given location."""
+        ep = self.__tally_pass.get(loc, 0)
+        ef = self.__tally_fail.get(loc, 0)
+        np = self.__num_pass - ep
+        nf = self.__num_fail - ef
+        return LineSpectra(ep, ef, np, nf)
