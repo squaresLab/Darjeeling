@@ -169,7 +169,7 @@ def test_exclude_files():
     assert len(loc.exclude_files(['bar.c', 'foo.c'])) == 1
 
 
-def test_restricted_to_lines():
+def test_restrict_to_lines():
     loc = Localization.from_dict({
         'foo.c:1': 1.0,
         'foo.c:2': 0.5,
@@ -177,17 +177,17 @@ def test_restricted_to_lines():
     })
 
     restricted_to = {l('foo.c:1'), l('foo.c:2')}
-    assert set(loc.restricted_to_lines(restricted_to)) == restricted_to
+    assert set(loc.restrict_to_lines(restricted_to)) == restricted_to
 
     restricted_to = {l('foo.c:1'), l('foo.c:2'), l('bar.c:7')}
-    assert set(loc.restricted_to_lines(restricted_to)) == {
+    assert set(loc.restrict_to_lines(restricted_to)) == {
             l('foo.c:1'), l('foo.c:2')}
 
     restricted_to = {l('foo.c:1')}
-    assert set(loc.restricted_to_lines(restricted_to)) == restricted_to
+    assert set(loc.restrict_to_lines(restricted_to)) == restricted_to
 
     with pytest.raises(darjeeling.exceptions.NoImplicatedLines):
-        loc.restricted_to_lines({})
+        loc.restrict_to_lines({})
 
 
 def test_exclude_lines():
