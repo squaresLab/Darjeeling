@@ -1,6 +1,9 @@
-__all__ = ['Replacement', 'FileLine', 'FileLocationRange', 'Location']
+__all__ = ('Replacement', 'FileLine', 'FileLocationRange', 'Location',
+           'TestCoverage', 'TestCoverageMap')
 
-from typing import TypeVar, Sequence, Iterator, Optional, Dict, Generic
+from typing import (TypeVar, Sequence, Iterator, Optional, Dict, Generic, Set,
+                    Mapping)
+from collections import OrderedDict
 from enum import Enum
 import abc
 
@@ -36,14 +39,14 @@ class Test:
 
 
 @attr.s(frozen=True, slots=True)
-class TestOutcome(object):
+class TestOutcome:
     """Records the outcome of a test execution."""
     successful = attr.ib(type=bool)
     time_taken = attr.ib(type=float)
 
 
 @attr.s(frozen=True, slots=True)
-class BuildOutcome(object):
+class BuildOutcome:
     """Records the outcome of a build attempt."""
     successful = attr.ib(type=bool)
     time_taken = attr.ib(type=float)
@@ -96,3 +99,69 @@ class TestSuite(Generic[T]):
     @abc.abstractmethod
     def execute(self, container: Container, test: T) -> TestOutcome:
         raise NotImplementedError
+
+
+@attr.s(frozen=True, slots=True)
+class TestCoverage:
+    """Describes the lines that were executed during a given test execution."""
+    test: str = attr.ib()
+    outcome: TestOutcome = attr.ib()
+    lines: Set[FileLine] = attr.ib()
+
+    def __contains__(self, elem: object) -> bool:
+        return elem in self.lines
+
+    def __iter__(self) -> Iterator[FileLine]:
+        yield from self.lines
+
+    def __len__(self) -> int:
+        return len(self.lines)
+
+
+class TestCoverageMap(Mapping[str, TestCoverage]):
+    """Contains coverage information for each test within a test suite."""
+    def __init__(self, mapping: Mapping[str, TestCoverage]):
+        self.__mapping: OrderedDict[str, TestCoverage] = OrderedDict()
+        for test_name in sorted(mapping):
+            self.__mapping[test_name] = mapping[test_name]
+
+    def __len__(self) -> int:
+        """Returns the number of tests represented in this map."""
+        return len(self.__mapping)
+
+    def __getitem__(self, name: str) -> TestCoverage:
+        """Returns the coverage for a test given by its name."""
+        return self.__mapping[name]
+
+    def __iter__(self) -> Iterator[str]:
+        """Returns an iterator over the names of the tests in this map."""
+        yield from self.__mapping
+
+    @property
+    def passing(self) -> 'TestCoverageMap':
+        """Returns a variant of this mapping restricted to passing tests."""
+        contents = {name: coverage for (name, coverage)
+                    in self.__mapping.values()
+                    if coverage.outcome.successful}
+        return TestCoverageMap(contents)
+
+    @property
+    def failing(self) -> 'TestCoverageMap':
+        """Returns a variant of this mapping restricted to failing tests."""
+        contents = {name: coverage for (name, coverage)
+                    in self.__mapping.values()
+                    if not coverage.outcome.successful}
+        return TestCoverageMap(contents)
+
+    @property
+    def locations(self) -> Set[FileLine]:
+        """Returns the set of all locations that are covered in this map."""
+        locs = FileLineSet()
+        if not self.__mapping:
+            return locs
+        return locs.union(self.__mapping.values())
+
+    def covering_tests(self, location: FileLine) -> Set[str]:
+        """Returns the names of the tests that cover a given location."""
+        return set(name for (name, cov) in self.__mapping.items()
+                   if location in cov)
