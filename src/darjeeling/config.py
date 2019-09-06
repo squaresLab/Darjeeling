@@ -148,10 +148,25 @@ class Config:
 
         opts = OptimizationsConfig.from_yml(yml.get('optimizations', {}))
 
+        # fetch the transformation schemas
+        if 'transformations' not in yml:
+            m = "'transformations' section is missing"
+            raise BadConfigurationException(m)
+        if not isinstance(yml['transformations'], dict):
+            m = "'transformations' section should be an object"
+            raise BadConfigurationException(m)
+
+
+        schemas = \
+            [schema_from_dict(d) for d in yml['transformations']['schemas']]
+
+
+
         return Config(snapshot=snapshot,
                       language=language,
                       seed=seed,
                       threads=threads,
+                      terminate_early=terminate_early,
                       limit_time_minutes=limit_time_minutes,
                       limit_candidates=limit_candidates,
                       optimizations=opts)
@@ -183,6 +198,36 @@ class OptimizationsConfig:
 
 
 @attr.s
+class SchemaConfig:
+    name: str = attr.ib()
+
+    @staticmethod
+    def from_yml(yml) -> 'SchemaConfig':
+        if not isinstance(yml, dict):
+            m = "expected an object but was a {}".format(type(d).__name__)
+            m = "illegal schema description: {}".format(m)
+            raise BadConfigurationException(m)
+        if not 'type' in yml:
+            m = "missing 'type' property in schema description"
+            raise BadConfigurationException(m)
+
+        name: str = yml['type']
+        return SchemaConfig(name=name)
+
+
+@attr.s
 class TransformationsConfig:
     """Specifies which transformations should be applied by the search."""
-    schemas: Collection[TransformationsConfig] = attr.ib(converter=tuple)
+    schemas: Collection[SchemaConfig] = attr.ib(converter=tuple)
+
+    @staticmethod
+    def from_yml(yml) -> 'TransformationsConfig':
+        if not 'schemas' in yml:
+            m = "'schemas' property missing in 'transformations' section"
+            raise BadConfigurationException(m)
+        if not isinstance(yml['schemas'], list):
+            m = "'schemas' property should be a list"
+            raise BadConfigurationException(m)
+
+        schemas = tuple(SchemaConfig.from_yml(y) for y in yml['schemas'])
+        return TransformationsConfig(schemas)
