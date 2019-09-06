@@ -100,8 +100,8 @@ class TestSuite(Generic[T]):
         raise NotImplementedError
 
 
-@attr.ib(frozen=True, slots=True)
-class TestCoverage(Set[FileLine]):
+@attr.s(frozen=True, slots=True)
+class TestCoverage:
     """Describes the lines that were executed during a given test execution."""
     test: str = attr.ib()
     outcome: TestOutcome = attr.ib()
@@ -113,8 +113,8 @@ class TestCoverage(Set[FileLine]):
     def __iter__(self) -> Iterator[FileLine]:
         yield from self.lines
 
-    def __contains__(self, l: FileLine) -> bool:
-        return l in self.lines
+    def __len__(self) -> int:
+        return len(self.lines)
 
 
 class TestCoverageMap(Mapping[str, TestCoverage]):
