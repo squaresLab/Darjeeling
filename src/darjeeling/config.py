@@ -1,16 +1,74 @@
 # -*- coding: utf-8 -*-
 __all__ = ('Config', 'OptimizationsConfig', 'SchemaConfig',
-           'TransformationsConfig')
+           'TransformationsConfig', 'LocalizationConfig')
 
-from typing import Optional, Collection, Tuple, Dict, Any
+from typing import (Optional, Collection, Tuple, Dict, Any, List, Set)
 import sys
 import random
 import datetime
 
 import attr
 
-from .core import Language
+from .core import Language, FileLine, FileLineSet
 from .exceptions import BadConfigurationException, LanguageNotSupported
+
+
+@attr.s(frozen=True)
+class LocalizationConfig:
+    metric: str = attr.ib()  # FIXME validate
+    exclude_files: Collection[str] = attr.ib(factory=frozenset)
+    exclude_lines: Collection[FileLine] = attr.ib(factory=frozenset)
+    restrict_to_files: Optional[Collection[str]] = attr.ib(default=None)
+    restrict_to_lines: Optional[Collection[FileLine]] = attr.ib(default=None)
+
+    @restrict_to_files.validator
+    def validate_restrict_to_files(self, attribute, value):
+        if restrict_to_files is not None and not restrict_to_files:
+            m = "cannot restrict to empty set of files"
+            raise BadConfigurationException(m)
+
+    @restrict_to_files.validator
+    def validate_restrict_to_lines(self, attribute, value):
+        if restrict_to_lines is not None and not restrict_to_lines:
+            m = "cannot restrict to empty set of lines"
+            raise BadConfigurationException(m)
+
+    @staticmethod
+    def from_yml(yml) -> 'LocalizationConfig':
+        if not isinstance(yml, dict):
+            m = "'localization' section should be an object"
+            raise BadConfigurationException(m)
+        if not 'metric' in yml:
+            m = "'metric' property is missing from 'localization' section"
+            raise BadConfigurationException(m)
+        if not isinstance(yml['metric'], str):
+            m = "'metric' property in 'localization' should be a string"
+            raise BadConfigurationException(m)
+
+        metric: str = yml['metric']
+        exclude_files: Collection[str] = yml.get('exclude-files', [])
+        restrict_to_files = yml.get('restrict-to-files')
+
+        exclude_lines_arg: Dict[str, List[int]] = yml.get('exclude-lines', {})
+        exclude_lines: Set[FileLine] = set()
+        for fn in exclude_lines_arg:
+            for line_num in exclude_lines_arg[fn]:
+                exclude_lines.add(FileLine(fn, line_num))
+
+        restrict_lines_arg = yml.get('restrict-to-lines')
+        restrict_to_lines: Optional[Set[FileLine]] = None
+        if restrict_lines_arg is not None:
+            restrict_to_lines = FileLineSet()
+            assert restrict_to_lines is not None  # mypy is stupid
+            for fn in restrict_lines_arg:
+                for line_num in restrict_lines_arg[fn]:
+                    restrict_to_lines.add(FileLine(fn, line_num))
+
+        return LocalizationConfig(metric=metric,
+                                  exclude_files=exclude_files,
+                                  exclude_lines=exclude_lines,
+                                  restrict_to_files=restrict_to_files,
+                                  restrict_to_lines=restrict_to_lines)
 
 
 @attr.s(frozen=True)
