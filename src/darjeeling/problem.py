@@ -25,7 +25,7 @@ from .core import Language, Test
 from .source import ProgramSourceManager
 from .util import get_file_contents
 from .exceptions import NoFailingTests, NoImplicatedLines, BuildFailure
-from .settings import Settings
+from .config import OptimizationsConfig
 from .test import TestSuite, BugZooTestSuite
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
@@ -46,7 +46,7 @@ class Problem:
                  *,
                  analysis: Optional[Analysis] = None,
                  client_rooibos: Optional[RooibosClient] = None,
-                 settings: Optional[Settings] = None,
+                 settings: Optional[OptimizationsConfig] = None,
                  restrict_to_files: Optional[List[str]] = None
                  ) -> None:
         """Constructs a Darjeeling problem description.
@@ -67,7 +67,7 @@ class Problem:
         self.__client_bugzoo = bz
         self.__coverage = coverage
         self.__analysis = analysis
-        self.__settings = settings if settings else Settings()
+        self.__settings = settings if settings else OptimizationsConfig()
         self.__test_suite = test_suite
         self._dump_coverage()
 
@@ -244,7 +244,7 @@ class Problem:
         return self.__client_bugzoo
 
     @property
-    def settings(self) -> Settings:
+    def settings(self) -> OptimizationsConfig:
         return self.__settings
 
     @property

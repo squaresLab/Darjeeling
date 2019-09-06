@@ -24,6 +24,7 @@ from bugzoo.core.coverage import TestSuiteCoverage
 from .problem import Problem
 from .core import FileLine
 from .exceptions import NoImplicatedLines, BadConfigurationException
+from .config import LocalizationConfig
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
@@ -60,12 +61,6 @@ def tarantula(ep: int, np: int, ef: int, nf: int) -> float:
 
 class Localization:
     @staticmethod
-    def from_problem(problem: Problem,
-                     metric: Metric
-                     ) -> 'Localization':
-        return Localization.from_coverage(problem.coverage, metric)
-
-    @staticmethod
     def from_coverage(coverage: TestSuiteCoverage,
                       metric: Metric
                       ) -> 'Localization':
@@ -84,19 +79,9 @@ class Localization:
 
     @staticmethod
     def from_config(coverage: TestSuiteCoverage,
-                    cfg: Dict[str, Any]
+                    cfg: LocalizationConfig
                     ) -> 'Localization':
-        if not isinstance(cfg, dict):
-            m = "'localization' section should be an object"
-            raise BadConfigurationException(m)
-        if not 'metric' in cfg:
-            m = "'metric' property is missing from 'localization' section"
-            raise BadConfigurationException(m)
-        if not isinstance(cfg['metric'], str):
-            m = "'metric' property in 'localization' should be a string"
-            raise BadConfigurationException(m)
-
-        name_metric = cfg['metric']  # type: str
+        # find the suspiciousness metric
         try:
             supported_metrics = {
                 'genprog': genprog,
@@ -107,50 +92,20 @@ class Localization:
             }
             logger.info("supported suspiciousness metrics: %s",
                         ', '.join(supported_metrics.keys()))
-            metric = supported_metrics[name_metric]
+            metric = supported_metrics[cfg.metric]
         except KeyError:
-            m = "suspiciousness metric not supported: {}".format(name_metric)
+            m = "suspiciousness metric not supported: {}"
+            m = m.format(cfg.metric)
             raise BadConfigurationException(m)
-        logger.info("using suspiciousness metric: %s", name_metric)
+        logger.info("using suspiciousness metric: %s", cfg.metric)
 
-        # build base localization using given metric
         loc = Localization.from_coverage(coverage, metric)
-
-        # exclude specified files
-        exclude_files = cfg.get('exclude-files', [])  # type: List[str]
-        loc = loc.exclude_files(exclude_files)
-
-        # exclude specified lines
-        exclude_lines_arg = \
-            cfg.get('exclude-lines', {})  # type: Dict[str, List[int]]
-        exclude_lines = []  # type: List[FileLine]
-        for fn in exclude_lines_arg:
-            for line_num in exclude_lines_arg[fn]:
-                exclude_lines.append(FileLine(fn, line_num))
-        loc = loc.exclude_lines(exclude_lines)
-
-        # restrict to specified files
-        restrict_to_files = cfg.get('restrict-to-files',
-                                    None)  # type: Optional[List[str]]
-        if restrict_to_files is []:
-            m = "cannot restrict to empty set of files"
-            raise BadConfigurationException(m)
-        if restrict_to_files is not None:
-            loc = loc.restrict_to_files(restrict_to_files)
-
-        # restrict to specified lines
-        restrict_lines_arg = cfg.get('restrict-to-lines',
-                                     None)  # type: Optional[Dict[str, List[int]]]
-        if restrict_lines_arg is []:
-            m = "cannot restrict to empty set of lines"
-            raise BadConfigurationException(m)
-        if restrict_lines_arg is not None:
-            restrict_to_lines = []  # type: List[FileLine]
-            for fn in restrict_lines_arg:
-                for line_num in restrict_lines_arg[fn]:
-                    restrict_to_lines.append(FileLine(fn, line_num))
-            loc = loc.restricted_to_lines(restrict_to_lines)
-
+        loc = loc.exclude_files(cfg.exclude_files)
+        loc = loc.exclude_lines(cfg.exclude_lines)
+        if cfg.restrict_to_files:
+            loc = loc.restrict_to_files(cfg.restrict_to_files)
+        if cfg.restrict_to_lines:
+            loc = loc.restrict_to_lines(cfg.restrict_to_lines)
         return loc
 
     @staticmethod
@@ -217,9 +172,7 @@ class Localization:
                 if val > 0.0}
 
     def to_file(self, fn: str) -> None:
-        """
-        Dumps this fault localization to a given file.
-        """
+        """Dumps this fault localization to a given file."""
         logger.debug("writing localization to file: %s", fn)
         jsn = self.to_dict()
         with open(fn, 'w') as f:
@@ -248,13 +201,15 @@ class Localization:
         """
         return line in self.__line_to_score
 
-    def exclude_files(self, files_to_exclude: List[str]) -> 'Localization':
+    def exclude_files(self,
+                      files_to_exclude: Iterable[str]
+                      ) -> 'Localization':
         """
         Returns a variant of this fault localization that does not contain
         lines from any of the specified files.
         """
         lines = [l for l in self if l.filename not in files_to_exclude]
-        return self.restricted_to_lines(lines)
+        return self.restrict_to_lines(lines)
 
     def exclude_lines(self, lines: Iterable[FileLine]) -> 'Localization':
         """
@@ -279,17 +234,19 @@ class Localization:
             del scores[line]
         return Localization(scores)
 
-    def restrict_to_files(self, restricted_files: List[str]) -> 'Localization':
+    def restrict_to_files(self,
+                          restricted_files: Iterable[str]
+                          ) -> 'Localization':
         """
         Returns a variant of this fault localization that is restricted to
         lines that belong to a given set of files.
         """
         lines = [l for l in self if l.filename in restricted_files]
-        return self.restricted_to_lines(lines)
+        return self.restrict_to_lines(lines)
 
-    def restricted_to_lines(self,
-                            lines: Sequence[FileLine]
-                            ) -> 'Localization':
+    def restrict_to_lines(self,
+                          lines: Iterable[FileLine]
+                          ) -> 'Localization':
         """
         Returns a variant of this fault localization that is restricted to a
         given set of lines.
