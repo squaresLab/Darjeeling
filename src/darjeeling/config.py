@@ -160,7 +160,7 @@ class Config:
     snapshot: str = attr.ib()
     language: Language = attr.ib()
     transformations: TransformationsConfig = attr.ib()
-    yml_localization = attr.ib()  # FIXME migrate
+    localization: LocalizationConfig = attr.ib()
     yml_search = attr.ib()  # FIXME migrate
     seed: int = attr.ib(default=0)
     optimizations: OptimizationsConfig = attr.ib(factory=OptimizationsConfig)
@@ -296,6 +296,6 @@ class Config:
                       limit_time_minutes=limit_time_minutes,
                       limit_candidates=limit_candidates,
                       transformations=transformations,
-                      yml_localization=yml['localization'],
+                      localization=localization,
                       yml_search=yml['algorithm'],
                       optimizations=opts)
