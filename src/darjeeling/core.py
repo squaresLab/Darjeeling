@@ -176,7 +176,7 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
     def passing(self) -> 'TestCoverageMap':
         """Returns a variant of this mapping restricted to passing tests."""
         contents = {name: coverage for (name, coverage)
-                    in self.__mapping.values()
+                    in self.__mapping.items()
                     if coverage.outcome.successful}
         return TestCoverageMap(contents)
 
@@ -184,7 +184,7 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
     def failing(self) -> 'TestCoverageMap':
         """Returns a variant of this mapping restricted to failing tests."""
         contents = {name: coverage for (name, coverage)
-                    in self.__mapping.values()
+                    in self.__mapping.items()
                     if not coverage.outcome.successful}
         return TestCoverageMap(contents)
 
@@ -207,7 +207,7 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
         set of files.
         """
         return TestCoverageMap({test: cov.restrict_to_files(files)
-                                for (test, cov) in self.values()})
+                                for (test, cov) in self.items()})
 
     def restrict_to_locations(self,
                               locations: Iterable[FileLine]
@@ -217,5 +217,5 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
         set of locations.
         """
         return TestCoverageMap({test: cov.restrict_to_locations(locations)
-                                for (test, cov) in self.values()})
+                                for (test, cov) in self.items()})
 
