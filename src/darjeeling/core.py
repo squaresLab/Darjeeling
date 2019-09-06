@@ -9,6 +9,7 @@ import abc
 
 import attr
 from bugzoo.core import TestSuiteCoverage as BugZooTestSuiteCoverage
+from bugzoo.core import TestCoverage as BugZooTestCoverage
 from bugzoo import Container
 from bugzoo import Client as BugZooClient
 from bugzoo.core import FileLine, FileLineMap, FileLineSet
@@ -110,6 +111,12 @@ class TestCoverage:
     outcome: TestOutcome = attr.ib()
     lines: Set[FileLine] = attr.ib()
 
+    @staticmethod
+    def from_bugzoo(coverage: BugZooTestCoverage) -> 'TestCoverage':
+        return BugZooTestCoverage(test=coverage.test,
+                                  outcome=coverage.outcome,  # FIXME
+                                  lines=coverage.lines)
+
     def __contains__(self, elem: object) -> bool:
         return elem in self.lines
 
@@ -123,8 +130,9 @@ class TestCoverage:
 class TestCoverageMap(Mapping[str, TestCoverage]):
     """Contains coverage information for each test within a test suite."""
     @staticmethod
-    def from_bugzoo(bz_cov: BugZooTestSuiteCoverage) -> 'TestCoverageMap':
-        raise NotImplementedError
+    def from_bugzoo(coverage: BugZooTestSuiteCoverage) -> 'TestCoverageMap':
+        return TestCoverageMap({test_name: TestCoverage.from_bugzoo(coverage)
+                                for (test_name, test_cov) in coverage})
 
     def __init__(self, mapping: Mapping[str, TestCoverage]):
         self.__mapping: OrderedDict[str, TestCoverage] = OrderedDict()
