@@ -119,7 +119,7 @@ class TestCoverage:
 
     @staticmethod
     def from_bugzoo(coverage: BugZooTestCoverage) -> 'TestCoverage':
-        return BugZooTestCoverage(
+        return TestCoverage(
             test=coverage.test,
             outcome=TestOutcome.from_bugzoo(coverage.outcome),
             lines=coverage.lines)
@@ -138,8 +138,8 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
     """Contains coverage information for each test within a test suite."""
     @staticmethod
     def from_bugzoo(coverage: BugZooTestSuiteCoverage) -> 'TestCoverageMap':
-        return TestCoverageMap({test_name: TestCoverage.from_bugzoo(coverage)
-                                for (test_name, test_cov) in coverage})
+        return TestCoverageMap({test_name: TestCoverage.from_bugzoo(test_cov)
+                                for (test_name, test_cov) in coverage.items()})
 
     def __init__(self, mapping: Mapping[str, TestCoverage]):
         self.__mapping: OrderedDict[str, TestCoverage] = OrderedDict()
