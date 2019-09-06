@@ -98,9 +98,8 @@ class Session:
 
         # compute localization
         logger.info("computing fault localization...")
-
         localization = \
-            Localization.from_config(coverage, cfg.yml_localization)
+            Localization.from_config(coverage, cfg.localization)
         logger.info("computed fault localization:\n%s", localization)
 
         # determine implicated files and lines
