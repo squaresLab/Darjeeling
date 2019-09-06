@@ -18,6 +18,7 @@ import yaml
 
 from ..problem import Problem
 from ..version import __version__ as VERSION
+from ..config import Config
 from ..session import Session
 from ..exceptions import BadConfigurationException
 from ..util import duration_str
@@ -163,19 +164,20 @@ class BaseController(cement.Controller):
         with open(filename, 'r') as f:
             yml = yaml.safe_load(f)
 
+        # load the configuration file
+        cfg = Config.from_yml(yml,
+                              threads=threads,
+                              seed=seed,
+                              terminate_early=terminate_early,
+                              limit_candidates=limit_candidates,
+                              limit_time_minutes=limit_time_minutes)
+
         # connect to BugZoo
         logger.info("connecting to BugZoo server")
         with bugzoo.server.ephemeral(timeout_connection=120) as client_bugzoo:
             logger.info("connected to BugZoo server")
             try:
-                session = Session.from_yml(
-                    client_bugzoo,
-                    yml,
-                    threads=threads,
-                    seed=seed,
-                    terminate_early=terminate_early,
-                    limit_candidates=limit_candidates,
-                    limit_time_minutes=limit_time_minutes)
+                session = Session.from_config(client_bugzoo, cfg)
             except BadConfigurationException as err:
                 logger.error(str(err))
                 sys.exit(1)
