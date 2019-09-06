@@ -10,6 +10,7 @@ import abc
 import attr
 from bugzoo.core import TestSuiteCoverage as BugZooTestSuiteCoverage
 from bugzoo.core import TestCoverage as BugZooTestCoverage
+from bugzoo.core import TestOutcome as BugZooTestOutcome
 from bugzoo import Container
 from bugzoo import Client as BugZooClient
 from bugzoo.core import FileLine, FileLineMap, FileLineSet
@@ -46,6 +47,11 @@ class TestOutcome:
     """Records the outcome of a test execution."""
     successful = attr.ib(type=bool)
     time_taken = attr.ib(type=float)
+
+    @staticmethod
+    def from_bugzoo(outcome: BugZooTestOutcome) -> 'TestOutcome':
+        return TestOutcome(successful=outcome.passed,
+                           time_taken=outcome.duration)
 
 
 @attr.s(frozen=True, slots=True)
@@ -113,9 +119,10 @@ class TestCoverage:
 
     @staticmethod
     def from_bugzoo(coverage: BugZooTestCoverage) -> 'TestCoverage':
-        return BugZooTestCoverage(test=coverage.test,
-                                  outcome=coverage.outcome,  # FIXME
-                                  lines=coverage.lines)
+        return BugZooTestCoverage(
+            test=coverage.test,
+            outcome=TestOutcome.from_bugzoo(coverage.outcome),
+            lines=coverage.lines)
 
     def __contains__(self, elem: object) -> bool:
         return elem in self.lines
