@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-__all__ = ('Config', 'OptimizationsConfig')
+__all__ = ('Config', 'OptimizationsConfig', 'SchemaConfig',
+           'TransformationsConfig')
 
 from typing import Optional, Collection, Tuple
 import random
@@ -9,6 +10,68 @@ import attr
 
 from .core import Language
 from .exceptions import BadConfigurationException, LanguageNotSupported
+
+
+@attr.s(frozen=True)
+class OptimizationsConfig:
+    """Specifies which optimizations should be applied during search."""
+    use_scope_checking: bool = attr.ib(default=False)
+    use_syntax_scope_checking: bool = attr.ib(default=True)
+    ignore_dead_code: bool = attr.ib(default=False)
+    ignore_equivalent_appends: bool = attr.ib(default=False)
+    ignore_untyped_returns: bool = attr.ib(default=False)
+    ignore_string_equivalent_snippets: bool = attr.ib(default=False)
+    ignore_decls: bool = attr.ib(default=True)
+    only_insert_executed_code = attr.ib(default=False)
+
+    @staticmethod
+    def from_yml(yml) -> 'OptimizationsConfig':
+        return OptimizationsConfig(
+            use_scope_checking=yml.get('use-scope-checking', True),
+            use_syntax_scope_checking=yml.get('use-syntax-scope-checking', True),
+            ignore_dead_code=yml.get('ignore-dead-code', True),
+            ignore_equivalent_appends=yml.get('ignore-equivalent-prepends', True),
+            ignore_untyped_returns=yml.get('ignore-untyped-returns', True),
+            ignore_string_equivalent_snippets=yml.get('ignore-string-equivalent-snippets', True),
+            ignore_decls=yml.get('ignore-decls', True),
+            only_insert_executed_code=yml.get('only-insert-executed-code', True))
+
+
+@attr.s(frozen=True)
+class SchemaConfig:
+    name: str = attr.ib()
+
+    @staticmethod
+    def from_yml(yml) -> 'SchemaConfig':
+        if not isinstance(yml, dict):
+            m = "expected an object but was a {}".format(type(d).__name__)
+            m = "illegal schema description: {}".format(m)
+            raise BadConfigurationException(m)
+        if not 'type' in yml:
+            m = "missing 'type' property in schema description"
+            raise BadConfigurationException(m)
+
+        name: str = yml['type']
+        return SchemaConfig(name=name)
+
+
+@attr.s(frozen=True)
+class TransformationsConfig:
+    """Specifies which transformations should be applied by the search."""
+    schemas: Collection[SchemaConfig] = \
+        attr.ib(converter=tuple, default=tuple())
+
+    @staticmethod
+    def from_yml(yml) -> 'TransformationsConfig':
+        if not 'schemas' in yml:
+            m = "'schemas' property missing in 'transformations' section"
+            raise BadConfigurationException(m)
+        if not isinstance(yml['schemas'], list):
+            m = "'schemas' property should be a list"
+            raise BadConfigurationException(m)
+
+        schemas = tuple(SchemaConfig.from_yml(y) for y in yml['schemas'])
+        return TransformationsConfig(schemas)
 
 
 @attr.s(frozen=True)
@@ -168,65 +231,3 @@ class Config:
                       limit_candidates=limit_candidates,
                       transformations=transformations,
                       optimizations=opts)
-
-
-@attr.s(frozen=True)
-class OptimizationsConfig:
-    """Specifies which optimizations should be applied during search."""
-    use_scope_checking: bool = attr.ib(default=False)
-    use_syntax_scope_checking: bool = attr.ib(default=True)
-    ignore_dead_code: bool = attr.ib(default=False)
-    ignore_equivalent_appends: bool = attr.ib(default=False)
-    ignore_untyped_returns: bool = attr.ib(default=False)
-    ignore_string_equivalent_snippets: bool = attr.ib(default=False)
-    ignore_decls: bool = attr.ib(default=True)
-    only_insert_executed_code = attr.ib(default=False)
-
-    @staticmethod
-    def from_yml(yml) -> 'OptimizationsConfig':
-        return OptimizationsConfig(
-            use_scope_checking=yml.get('use-scope-checking', True),
-            use_syntax_scope_checking=yml.get('use-syntax-scope-checking', True),
-            ignore_dead_code=yml.get('ignore-dead-code', True),
-            ignore_equivalent_appends=yml.get('ignore-equivalent-prepends', True),
-            ignore_untyped_returns=yml.get('ignore-untyped-returns', True),
-            ignore_string_equivalent_snippets=yml.get('ignore-string-equivalent-snippets', True),
-            ignore_decls=yml.get('ignore-decls', True),
-            only_insert_executed_code=yml.get('only-insert-executed-code', True))
-
-
-@attr.s(frozen=True)
-class SchemaConfig:
-    name: str = attr.ib()
-
-    @staticmethod
-    def from_yml(yml) -> 'SchemaConfig':
-        if not isinstance(yml, dict):
-            m = "expected an object but was a {}".format(type(d).__name__)
-            m = "illegal schema description: {}".format(m)
-            raise BadConfigurationException(m)
-        if not 'type' in yml:
-            m = "missing 'type' property in schema description"
-            raise BadConfigurationException(m)
-
-        name: str = yml['type']
-        return SchemaConfig(name=name)
-
-
-@attr.s(frozen=True)
-class TransformationsConfig:
-    """Specifies which transformations should be applied by the search."""
-    schemas: Collection[SchemaConfig] = \
-        attr.ib(converter=tuple, default=tuple())
-
-    @staticmethod
-    def from_yml(yml) -> 'TransformationsConfig':
-        if not 'schemas' in yml:
-            m = "'schemas' property missing in 'transformations' section"
-            raise BadConfigurationException(m)
-        if not isinstance(yml['schemas'], list):
-            m = "'schemas' property should be a list"
-            raise BadConfigurationException(m)
-
-        schemas = tuple(SchemaConfig.from_yml(y) for y in yml['schemas'])
-        return TransformationsConfig(schemas)
