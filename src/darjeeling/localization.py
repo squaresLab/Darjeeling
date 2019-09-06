@@ -67,7 +67,7 @@ class Localization:
 
     @staticmethod
     def from_spectra(spectra: Spectra, metric: Metric) -> 'Localization':
-        scores: FileLineMap[float] = FileLineMap()
+        scores: FileLineMap[float] = FileLineMap({})
         for line in spectra:
             row = spectra[line]
             scores[line] = metric(row.ep, row.np, row.ef, row.nf)
@@ -124,7 +124,7 @@ class Localization:
             NoImplicatedLines: if no lines are determined to be suspicious.
             ValueError: if a line is assigned a negative suspiciousness.
         """
-        self.__line_to_score: FileLineMap[float] = FileLineMap()
+        self.__line_to_score: FileLineMap[float] = FileLineMap({})
         for line in sorted(scores):
             score = scores[line]
             if score < 0.0:
