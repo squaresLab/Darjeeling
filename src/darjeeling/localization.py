@@ -211,7 +211,7 @@ class Localization:
         lines from any of the specified files.
         """
         lines = [l for l in self if l.filename not in files_to_exclude]
-        return self.restricted_to_lines(lines)
+        return self.restrict_to_lines(lines)
 
     def exclude_lines(self, lines: Iterable[FileLine]) -> 'Localization':
         """
@@ -244,7 +244,7 @@ class Localization:
         lines that belong to a given set of files.
         """
         lines = [l for l in self if l.filename in restricted_files]
-        return self.restricted_to_lines(lines)
+        return self.restrict_to_lines(lines)
 
     def restrict_to_lines(self,
                           lines: Iterable[FileLine]
