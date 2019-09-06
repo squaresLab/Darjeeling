@@ -220,7 +220,7 @@ class Config:
             m = "'transformations' section should be an object"
             raise BadConfigurationException(m)
         transformations = \
-            TransformationsConfig.from_yml(yml['transformations'})
+            TransformationsConfig.from_yml(yml['transformations'])
 
         return Config(snapshot=snapshot,
                       language=language,
