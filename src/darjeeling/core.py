@@ -2,7 +2,7 @@ __all__ = ('Replacement', 'FileLine', 'FileLocationRange', 'Location',
            'TestCoverage', 'TestCoverageMap')
 
 from typing import (TypeVar, Sequence, Iterator, Optional, Dict, Generic, Set,
-                    Mapping)
+                    Mapping, Iterable)
 from collections import OrderedDict
 from enum import Enum
 import abc
@@ -186,3 +186,11 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
         """Returns the names of the tests that cover a given location."""
         return set(name for (name, cov) in self.__mapping.items()
                    if location in cov)
+
+    def restrict_to_files(self, files: Iterable[str]) -> 'TestCoverageMap':
+        """
+        Returns a variant of this map that only contains coverage for a given
+        set of files.
+        """
+        return TestCoverageMap({test: cov.restrict_to_files(files)
+                                for (test, cov) in self.values()})

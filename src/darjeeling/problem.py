@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from typing import List, Optional, Dict, Iterator, Callable, Set, Iterable
+from typing import (List, Optional, Dict, Iterator, Callable, Set, Iterable,
+                    Mapping)
 from timeit import default_timer as timer
 import tempfile
 import logging
@@ -15,13 +16,12 @@ from bugzoo.core.fileline import FileLine, FileLineSet
 from bugzoo.core.container import Container
 from bugzoo.core.bug import Bug
 from bugzoo.core.patch import Patch
-from bugzoo.core.coverage import TestSuiteCoverage
 from bugzoo.core.test import TestCase
 from bugzoo.compiler import CompilationOutcome as BuildOutcome
 from bugzoo.util import indent
 from kaskara.analysis import Analysis
 
-from .core import Language, Test
+from .core import Language, Test, TestCoverage, TestCoverageMap
 from .source import ProgramSourceManager
 from .util import get_file_contents
 from .exceptions import NoFailingTests, NoImplicatedLines, BuildFailure
@@ -41,7 +41,7 @@ class Problem:
                  bz: bugzoo.BugZoo,
                  bug: Bug,
                  language: Language,
-                 coverage: TestSuiteCoverage,
+                 coverage: TestCoverageMap,
                  test_suite: TestSuite,
                  *,
                  analysis: Optional[Analysis] = None,
@@ -65,7 +65,7 @@ class Problem:
         self.__language = language
         self.__client_rooibos = client_rooibos
         self.__client_bugzoo = bz
-        self.__coverage = coverage
+        self.__coverage: TestCoverageMap = coverage
         self.__analysis = analysis
         self.__settings = settings if settings else OptimizationsConfig()
         self.__test_suite = test_suite
@@ -78,7 +78,7 @@ class Problem:
         for test_name in sorted(self.__coverage):
             test = test_suite[test_name]
             test_coverage = self.__coverage[test_name]
-            if test_coverage.outcome.passed:
+            if test_coverage.outcome.successful:
                 self.__tests_passing.append(test)
             else:
                 self.__tests_failing.append(test)
@@ -95,10 +95,10 @@ class Problem:
         def ordering(x: TestCase, y: TestCase) -> int:
             cov_x = self.__coverage[x.name]
             cov_y = self.__coverage[y.name]
-            pass_x = cov_x.outcome.passed
-            pass_y = cov_y.outcome.passed
-            time_x = cov_x.outcome.duration
-            time_y = cov_y.outcome.duration
+            pass_x = cov_x.outcome.successful
+            pass_y = cov_y.outcome.successful
+            time_x = cov_x.outcome.time_taken
+            time_y = cov_y.outcome.time_taken
 
             # prioritise failing tests over non-failing tests
             if pass_x and not pass_y:
@@ -141,9 +141,9 @@ class Problem:
 
     def __remove_redundant_sources(self) -> None:
         logger.debug("reducing memory footprint by discarding extraneous data")
-        source_files = set(self.__sources.files)  # type: Set[str]
-        covered_files = set(self.__coverage.lines.files)  # type: Set[str]
-        extraneous_files = covered_files - source_files
+        source_files: Set[str] = set(self.__sources.files)
+        covered_files: Set[str] = set(l.filename for l in self.__coverage.locations)
+        extraneous_files: Set[str] = covered_files - source_files
         for fn in extraneous_files:
             del self.__sources[fn]
         logger.debug("finished reducing memory footprint")
@@ -178,9 +178,6 @@ class Problem:
                 outcome = mgr_ctr.build(container)
             else:
                 outcome = builder(container)
-            # logger.debug("build outcome for %s:\n%s",
-            #              candidate,
-            #              outcome.response.output)
             # ensure the container is destroyed
             if not outcome.successful:
                 raise BuildFailure
@@ -197,7 +194,7 @@ class Problem:
         provided files.
         """
         logger.info("restricting repair to files: %s", filenames)
-        self.__coverage = self.__coverage.restricted_to_files(filenames)
+        self.__coverage = self.__coverage.restrict_to_files(filenames)
         logger.info("successfully restricted repair to given files.")
         self._dump_coverage()
         self.__remove_redundant_sources()
@@ -208,7 +205,7 @@ class Problem:
         Restricts the scope of the repair to the intersection of the current
         set of implicated lines and a provided set of lines.
         """
-        self.__coverage = self.__coverage.restricted_to_lines(lines)
+        self.__coverage = self.__coverage.restrict_to_lines(lines)
         self._dump_coverage()
         self.__remove_redundant_sources()
         self.validate()
@@ -281,7 +278,7 @@ class Problem:
         yield from self.__tests_passing
 
     @property
-    def coverage(self) -> TestSuiteCoverage:
+    def coverage(self) -> Mapping[str, TestCoverage]:
         """
         Line coverage information for each test within the test suite for the
         program under repair.
