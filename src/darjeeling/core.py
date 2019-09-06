@@ -133,6 +133,11 @@ class TestCoverage:
     def __len__(self) -> int:
         return len(self.lines)
 
+    def restrict_to_files(self, files: Iterable[str]) -> 'TestCoverage':
+        """Returns a variant of this coverage, restricted to given files."""
+        lines = FileLineSet(l for l in self.lines if l.filename in files)
+        return TestCoverage(self.test, self.outcome, lines)
+
 
 class TestCoverageMap(Mapping[str, TestCoverage]):
     """Contains coverage information for each test within a test suite."""
