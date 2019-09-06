@@ -178,7 +178,7 @@ class Localization:
         Returns an iterator over the suspicious lines contained within this
         fault localization.
         """
-        yield from self.__lines
+        yield from self.__line_to_score
 
     def __getitem__(self, line: FileLine) -> float:
         """
