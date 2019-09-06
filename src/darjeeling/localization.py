@@ -234,7 +234,9 @@ class Localization:
             del scores[line]
         return Localization(scores)
 
-    def restrict_to_files(self, restricted_files: List[str]) -> 'Localization':
+    def restrict_to_files(self,
+                          restricted_files: Iterable[str]
+                          ) -> 'Localization':
         """
         Returns a variant of this fault localization that is restricted to
         lines that belong to a given set of files.
@@ -243,7 +245,7 @@ class Localization:
         return self.restricted_to_lines(lines)
 
     def restricted_to_lines(self,
-                            lines: Sequence[FileLine]
+                            lines: Iterable[FileLine]
                             ) -> 'Localization':
         """
         Returns a variant of this fault localization that is restricted to a
