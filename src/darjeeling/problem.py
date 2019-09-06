@@ -291,11 +291,11 @@ class Problem:
         Returns an iterator over the lines that are implicated by the
         description of this problem.
         """
-        return self.__coverage.failing.lines.__iter__()
+        yield from self.__coverage.failing.locations
 
     @property
     def implicated_files(self) -> Iterator[str]:
-        return self.__coverage.failing.lines.files
+        yield from (l.filename for l in self.__coverage.failing.locations)
 
     @property
     def sources(self) -> ProgramSourceManager:
