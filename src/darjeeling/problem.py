@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+__all__ = ('Problem',)
+
 from typing import (List, Optional, Dict, Iterator, Callable, Set, Iterable,
                     Mapping, Sequence)
 from timeit import default_timer as timer
@@ -25,7 +27,7 @@ from .source import ProgramSourceManager
 from .util import get_file_contents
 from .exceptions import NoFailingTests, NoImplicatedLines, BuildFailure
 from .config import OptimizationsConfig
-from .test import TestSuite, BugZooTestSuite
+from .test import TestSuite
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)

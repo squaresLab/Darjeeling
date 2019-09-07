@@ -8,9 +8,9 @@ import bugzoo
 from .core import TestOutcome, TestSuite
 
 
-@attr.s(frozen=True)
+@attr.s(frozen=True, slots=True, auto_attribs=True)
 class BugZooTest:
-    _test: bugzoo.core.TestCase = attr.ib()
+    _test: bugzoo.core.TestCase
 
     @property
     def name(self) -> str:
