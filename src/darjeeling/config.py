@@ -234,7 +234,7 @@ class Config:
             seed = yml['seed']
         # no seed override or provided in config; use current date/time
         elif seed is None:
-            random.seed(datetime.now())
+            random.seed(datetime.datetime.now())
             seed = random.randint(0, sys.maxsize)
 
         # determine the language

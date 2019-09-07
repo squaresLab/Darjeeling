@@ -54,7 +54,7 @@ class Spectra(Mapping[FileLine, SpectraRow]):
             for line in test_coverage:
                 tally[line] = tally.get(line, 0) + 1
 
-        return Spectra(num_pass, num_fail, tally_fail, tally_pass)
+        return Spectra(num_pass, num_fail, tally_pass, tally_fail)
 
     def __init__(self,
                  num_pass: int,

@@ -133,6 +133,20 @@ class TestCoverage:
     def __len__(self) -> int:
         return len(self.lines)
 
+    def restrict_to_files(self, files: Iterable[str]) -> 'TestCoverage':
+        """Returns a variant of this coverage, restricted to given files."""
+        lines = FileLineSet(l for l in self.lines if l.filename in files)
+        return TestCoverage(self.test, self.outcome, lines)
+
+    def restrict_to_locations(self,
+                              locations: Iterable[FileLine]
+                              ) -> 'TestCoverage':
+        """
+        Returns a variant of this coverage, restricted to given locations.
+        """
+        lines = self.lines.intersection(locations)
+        return TestCoverage(self.test, self.outcome, lines)
+
 
 class TestCoverageMap(Mapping[str, TestCoverage]):
     """Contains coverage information for each test within a test suite."""
@@ -162,7 +176,7 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
     def passing(self) -> 'TestCoverageMap':
         """Returns a variant of this mapping restricted to passing tests."""
         contents = {name: coverage for (name, coverage)
-                    in self.__mapping.values()
+                    in self.__mapping.items()
                     if coverage.outcome.successful}
         return TestCoverageMap(contents)
 
@@ -170,17 +184,17 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
     def failing(self) -> 'TestCoverageMap':
         """Returns a variant of this mapping restricted to failing tests."""
         contents = {name: coverage for (name, coverage)
-                    in self.__mapping.values()
+                    in self.__mapping.items()
                     if not coverage.outcome.successful}
         return TestCoverageMap(contents)
 
     @property
     def locations(self) -> Set[FileLine]:
         """Returns the set of all locations that are covered in this map."""
-        locs = FileLineSet()
+        locs: Set[FileLine] = FileLineSet()
         if not self.__mapping:
             return locs
-        return locs.union(self.__mapping.values())
+        return locs.union(*self.values())
 
     def covering_tests(self, location: FileLine) -> Set[str]:
         """Returns the names of the tests that cover a given location."""
@@ -193,4 +207,15 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
         set of files.
         """
         return TestCoverageMap({test: cov.restrict_to_files(files)
-                                for (test, cov) in self.values()})
+                                for (test, cov) in self.items()})
+
+    def restrict_to_locations(self,
+                              locations: Iterable[FileLine]
+                              ) -> 'TestCoverageMap':
+        """
+        Returns a variant of this map with its coverage restricted to a given
+        set of locations.
+        """
+        return TestCoverageMap({test: cov.restrict_to_locations(locations)
+                                for (test, cov) in self.items()})
+

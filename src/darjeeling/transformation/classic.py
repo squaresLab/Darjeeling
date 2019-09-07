@@ -82,7 +82,7 @@ class StatementTransformation(Transformation):
         viable = snippets.in_file(filename)  # type: Iterator[Snippet]
 
         if problem.settings.only_insert_executed_code:
-            executed = problem.coverage.lines
+            executed = problem.coverage.locations
             viable = filter(lambda s: any(l in executed for l in s.lines),
                             viable)
 

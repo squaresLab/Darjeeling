@@ -205,7 +205,7 @@ class Problem:
         Restricts the scope of the repair to the intersection of the current
         set of implicated lines and a provided set of lines.
         """
-        self.__coverage = self.__coverage.restrict_to_lines(lines)
+        self.__coverage = self.__coverage.restrict_to_locations(lines)
         self._dump_coverage()
         self.__remove_redundant_sources()
         self.validate()
@@ -278,7 +278,7 @@ class Problem:
         yield from self.__tests_passing
 
     @property
-    def coverage(self) -> Mapping[str, TestCoverage]:
+    def coverage(self) -> TestCoverageMap:
         """
         Line coverage information for each test within the test suite for the
         program under repair.
@@ -291,11 +291,11 @@ class Problem:
         Returns an iterator over the lines that are implicated by the
         description of this problem.
         """
-        return self.__coverage.failing.lines.__iter__()
+        yield from self.__coverage.failing.locations
 
     @property
     def implicated_files(self) -> Iterator[str]:
-        return self.__coverage.failing.lines.files
+        yield from (l.filename for l in self.__coverage.failing.locations)
 
     @property
     def sources(self) -> ProgramSourceManager:

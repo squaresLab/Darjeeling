@@ -226,10 +226,7 @@ class Localization:
         Returns a variant of this fault localization that does not contain a
         given line.
         """
-        scores = self.__line_to_score.copy()
-        if line in scores:
-            del scores[line]
-        return Localization(scores)
+        return self.exclude_lines([line])
 
     def restrict_to_files(self,
                           restricted_files: Iterable[str]
