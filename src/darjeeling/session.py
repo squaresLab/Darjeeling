@@ -15,7 +15,8 @@ import kaskara
 from bugzoo.core import FileLine
 from bugzoo import Bug as Snapshot
 
-from .core import Language, TestCoverageMap
+from .core import Language, TestCoverageMap, TestSuite
+from .coverage import coverage_for_snapshot
 from .test import BugZooTestSuite
 from .candidate import Candidate
 from .searcher import Searcher
@@ -91,9 +92,12 @@ class Session:
             m = "snapshot not installed: {}".format(snapshot)
             raise BadConfigurationException(m)
 
+        # build test suite
+        test_suite = BugZooTestSuite.from_bug(client_bugzoo, snapshot)
+
         # compute coverage
         logger.info("computing coverage information...")
-        coverage = TestCoverageMap.from_bugzoo(client_bugzoo.bugs.coverage(snapshot))  # noqa: pycodestyle
+        coverage = coverage_for_snapshot(client_bugzoo, snapshot, test_suite)
         logger.info("computed coverage information")
 
         # compute localization
@@ -110,9 +114,6 @@ class Session:
         analysis = kaskara.Analysis.build(client_bugzoo,
                                           snapshot,
                                           files)
-
-        # build test suite
-        test_suite = BugZooTestSuite.from_bug(client_bugzoo, snapshot)
 
         # build problem
         problem = Problem(bz=client_bugzoo,

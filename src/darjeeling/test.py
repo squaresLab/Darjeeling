@@ -24,8 +24,8 @@ class BugZooTestSuite(TestSuite):
 
     def execute(self,
                 container: bugzoo.Container,
-                test: bugzoo.core.TestCase
+                test: BugZooTest
                 ) -> TestOutcome:
         bz = self._bugzoo
-        bz_outcome = bz.containers.test(container, test)
+        bz_outcome = bz.containers.test(container, test._test)
         return TestOutcome(bz_outcome.passed, bz_outcome.duration)
