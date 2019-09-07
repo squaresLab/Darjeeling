@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-__all__ = ('coverage_for_snapshot',)
+__all__ = ('coverage_for_snapshot', 'coverage_for_container')
 
 from bugzoo import (Client as BugZooClient,
                     Bug as Snapshot,
@@ -14,6 +14,13 @@ def coverage_for_snapshot(bz: BugZooClient,
                           ) -> TestCoverageMap:
     container: BugZooContainer = bz.containers.provision(snapshot)
     try:
-        raise NotImplementedError
+        return coverage_for_container(bz, container, tests)
     finally:
         del bz.containers[container.uid]
+
+
+def coverage_for_container(bz: BugZooClient,
+                           container: BugZooContainer,
+                           tests: TestSuite
+                           ) -> TestCoverageMap:
+    raise NotImplementedError
