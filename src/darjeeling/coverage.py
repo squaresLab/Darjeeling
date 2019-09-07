@@ -40,4 +40,4 @@ def coverage_for_test(bz: BugZooClient,
                       ) -> TestCoverage:
     outcome: TestOutcome = tests.execute(container, test)
     lines: Set[FileLine] = bz.containers.extract_coverage(container)
-    return TestCoverage(name=test.name, outcome=outcome, lines=lines)
+    return TestCoverage(test=test.name, outcome=outcome, lines=lines)
