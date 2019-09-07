@@ -11,7 +11,6 @@ __all__ = (
 
 from typing import (Dict, Callable, List, Iterator, FrozenSet, Sequence, Any,
                     Iterable, Optional, Mapping, Set)
-from copy import deepcopy
 import math
 import json
 import random
