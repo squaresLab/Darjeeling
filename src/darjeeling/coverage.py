@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
-__all__ = ('coverage_for_snapshot', 'coverage_for_container')
+__all__ = ('coverage_for_snapshot', 'coverage_for_container',
+           'coverage_for_test')
+
+from typing import Set
+import functools
 
 from bugzoo import (Client as BugZooClient,
                     Bug as Snapshot,
@@ -23,4 +27,16 @@ def coverage_for_container(bz: BugZooClient,
                            container: BugZooContainer,
                            tests: TestSuite
                            ) -> TestCoverageMap:
-    raise NotImplementedError
+    bz.containers.instrument(container)
+    coverage = functools.partial(coverage_for_test, bz, container, tests)
+    return TestCoverageMap({test.name: coverage(test) for test in tests})
+
+
+def coverage_for_test(bz: BugZooClient,
+                      container: BugZooContainer,
+                      tests: TestSuite,
+                      test: Test
+                      ) -> TestCoverage:
+    outcome: TestOutcome = tests.execute(container, test)
+    lines: Set[FileLine] = bz.containers.extract_coverage(container)
+    return TestCoverage(name=test.name, outcome=outcome, lines=lines)
