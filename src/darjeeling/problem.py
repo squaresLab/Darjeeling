@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from typing import (List, Optional, Dict, Iterator, Callable, Set, Iterable,
-                    Mapping)
+                    Mapping, Sequence)
 from timeit import default_timer as timer
 import tempfile
 import logging
@@ -16,12 +16,11 @@ from bugzoo.core.fileline import FileLine, FileLineSet
 from bugzoo.core.container import Container
 from bugzoo.core.bug import Bug
 from bugzoo.core.patch import Patch
-from bugzoo.core.test import TestCase
 from bugzoo.compiler import CompilationOutcome as BuildOutcome
 from bugzoo.util import indent
 from kaskara.analysis import Analysis
 
-from .core import Language, Test, TestCoverage, TestCoverageMap
+from .core import Language, Test, TestSuite, TestCoverage, TestCoverageMap
 from .source import ProgramSourceManager
 from .util import get_file_contents
 from .exceptions import NoFailingTests, NoImplicatedLines, BuildFailure
@@ -73,15 +72,12 @@ class Problem:
 
         # use coverage to determine the passing and failing tests
         logger.debug("using test execution used to generate coverage to determine passing and failing tests")
-        self.__tests_failing = []  # type: List[TestCase]
-        self.__tests_passing = []  # type: List[TestCase]
-        for test_name in sorted(self.__coverage):
-            test = test_suite[test_name]
-            test_coverage = self.__coverage[test_name]
-            if test_coverage.outcome.successful:
-                self.__tests_passing.append(test)
-            else:
-                self.__tests_failing.append(test)
+        self.__tests_failing: Sequence[Test] = \
+            tuple(test_suite[name] for name in sorted(self.__coverage)
+                  if not self.__coverage[name].outcome.successful)
+        self.__tests_passing: Sequence[Test] = \
+            tuple(test_suite[name] for name in sorted(self.__coverage)
+                  if self.__coverage[name].outcome.successful)
 
         logger.info("determined passing and failing tests")
         logger.info("* passing tests: %s",
@@ -92,7 +88,7 @@ class Problem:
             raise NoFailingTests
 
         # perform test ordering
-        def ordering(x: TestCase, y: TestCase) -> int:
+        def ordering(x: Test, y: Test) -> int:
             cov_x = self.__coverage[x.name]
             cov_y = self.__coverage[y.name]
             pass_x = cov_x.outcome.successful
