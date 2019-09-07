@@ -91,6 +91,10 @@ class Session:
             m = "snapshot not installed: {}".format(snapshot)
             raise BadConfigurationException(m)
 
+        # build test suite
+        test_suite = BugZooTestSuite.from_bug(client_bugzoo, snapshot)
+
+        # FIXME create from scratch!
         # compute coverage
         logger.info("computing coverage information...")
         coverage = TestCoverageMap.from_bugzoo(client_bugzoo.bugs.coverage(snapshot))  # noqa: pycodestyle
@@ -110,9 +114,6 @@ class Session:
         analysis = kaskara.Analysis.build(client_bugzoo,
                                           snapshot,
                                           files)
-
-        # build test suite
-        test_suite = BugZooTestSuite.from_bug(client_bugzoo, snapshot)
 
         # build problem
         problem = Problem(bz=client_bugzoo,
