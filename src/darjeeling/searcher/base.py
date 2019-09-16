@@ -39,12 +39,11 @@ class _SearcherMeta(abc.ABCMeta):
     def __init__(cls, name, bases, namespace) -> None:
         super().__init__(name, bases, namespace)
 
-        assert isinstance(cls, Searcher)
         if not inspect.isabstract(cls):
             if 'NAME' not in namespace:
                 msg = f"Searcher ({name}) missing 'NAME' attribute"
                 raise TypeError(msg)
-            _registry[namespace['NAME']] = cls
+            _registry[namespace['NAME']] = cls  # type: ignore
 
     def lookup(cls, name: str) -> Type['Searcher']:
         return _registry[name]
