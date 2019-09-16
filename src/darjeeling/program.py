@@ -37,7 +37,7 @@ class Program:
 
         snapshot = bz.bugs[cfg.snapshot]
 
-        if not client_bugzoo.bugs.is_installed(snapshot):
+        if not bz.bugs.is_installed(snapshot):
             m = f"snapshot not installed: {cfg.snapshot}"
             raise BadConfigurationException(m)
 
