@@ -2,6 +2,7 @@
 from typing import Iterable, Iterator, Optional, List, Tuple, Any, Dict, \
     Type, Union
 from mypy_extensions import NoReturn
+import abc
 import logging
 import datetime
 import threading
@@ -28,7 +29,7 @@ logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
 
-class Searcher:
+class Searcher(metaclass=abc.ABCMeta):
     @staticmethod
     def from_dict(d: Dict[str, Any],
                   problem: Problem,
