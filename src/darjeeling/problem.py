@@ -73,6 +73,7 @@ class Problem:
 
         # use coverage to determine the passing and failing tests
         logger.debug("using test execution used to generate coverage to determine passing and failing tests")
+        test_suite = program.tests
         self.__tests_failing: Sequence[Test] = \
             tuple(test_suite[name] for name in sorted(self.__coverage)
                   if not self.__coverage[name].outcome.successful)
