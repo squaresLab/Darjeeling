@@ -81,19 +81,8 @@ class Session:
             m = "no resource limits were specified; resource use will be unbounded"  # noqa: pycodestyle
             logger.warn(m)
 
-        # fetch the BugZoo snapshot and ensure that it's installed
-        if not cfg.snapshot in client_bugzoo.bugs:
-            m = "snapshot not found: {}".format(cfg.snapshot)
-            raise BadConfigurationException(m)
-
-        snapshot = client_bugzoo.bugs[cfg.snapshot]
-
-        if not client_bugzoo.bugs.is_installed(snapshot):
-            m = "snapshot not installed: {}".format(snapshot)
-            raise BadConfigurationException(m)
-
-        # build test suite
-        test_suite = BugZooTestSuite.from_bug(client_bugzoo, snapshot)
+        # build program
+        program = Program.from_config(client_bugzoo, cfg)
 
         # compute coverage
         logger.info("computing coverage information...")
@@ -117,9 +106,8 @@ class Session:
 
         # build problem
         problem = Problem(bz=client_bugzoo,
-                          bug=snapshot,
                           language=cfg.language,
-                          test_suite=test_suite,
+                          program=program,
                           coverage=coverage,
                           analysis=analysis,
                           settings=cfg.optimizations)
