@@ -43,7 +43,7 @@ class SearcherMeta(abc.ABCMeta):
                 raise TypeError(msg)
             _registry[namespace['NAME']] = cls
 
-    def lookup(cls, name: str) -> 'Searcher':
+    def lookup(cls, name: str) -> Type['Searcher']:
         return _registry[name]
 
     def __iter__(cls) -> Iterator[str]:
@@ -65,28 +65,19 @@ class Searcher(metaclass=SearcherMeta):
                   candidate_limit: Optional[int] = None,
                   time_limit: Optional[datetime.timedelta] = None
                   ) -> 'Searcher':
-        # TODO fix via metaclass
-        from .exhaustive import ExhaustiveSearcher
-        from .genetic import GeneticSearcher
         try:
             typ = d['type']
         except KeyError:
             m = "'type' property missing from 'algorithm' section"
             raise BadConfigurationException(m)
-
-        SEARCHERS = {
-            'exhaustive': ExhaustiveSearcher,
-            'genetic': GeneticSearcher
-        }  # type: Dict[str, Type[Searcher]]
         try:
-            kls = SEARCHERS[typ]  # type: Type[Searcher]
+            cls: Type[Searcher] = Searcher.lookup(typ)
         except KeyError:
-            m = "unsupported 'type' property used in 'algorithm' section: {}"
-            m = m.format(typ)
-            m += " [supported types: {}]".format(', '.join(SEARCHERS.keys()))
+            m = f"unsupported 'type' property in 'algorithm' section: {typ}"
+            m += " [supported types: {}]".format(', '.join(Searcher))
             raise BadConfigurationException(m)
 
-        return kls.from_dict(d, problem, tx,
+        return cls.from_dict(d, problem, tx,
                              threads=threads,
                              candidate_limit=candidate_limit,
                              time_limit=time_limit)
