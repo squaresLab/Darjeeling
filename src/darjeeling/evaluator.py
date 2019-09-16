@@ -262,7 +262,7 @@ class Evaluator:
             self.__num_running -= 1
         return (candidate, outcome)
 
-    def submit(self, candidate: Candidate) -> Future[Evaluation]:
+    def submit(self, candidate: Candidate) -> 'Future[Evaluation]':
         """Schedules a candidate patch evaluation."""
         with self.__lock:
             self.__num_running += 1
