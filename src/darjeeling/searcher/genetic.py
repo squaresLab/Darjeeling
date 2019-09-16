@@ -22,6 +22,17 @@ logger.setLevel(logging.DEBUG)
 Population = List[Candidate]
 
 
+@attr.s(frozen=True, slots=True, auto_attribs=True)
+class GeneticSearcherConfig(SearcherConfig):
+    """A configuration for a genetic search."""
+    num_generations: int = attr.ib(default=10)
+    population_size: int = attr.ib(default=40)
+    rate_mutation: float = attr.ib(default=1.0)
+    rate_crossover: float = attr.ib(default=1.0)
+    tournament_size: int = attr.ib(default=2)
+    sample_size: Optional[Union[int, float]] = attr.ib(default=None)
+
+
 class GeneticSearcher(Searcher):
     NAME = 'genetic'
 
