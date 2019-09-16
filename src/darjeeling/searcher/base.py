@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+__all__ = ('Searcher',)
+
 from typing import Iterable, Iterator, Optional, List, Tuple, Any, Dict, \
     Type, Union
 from mypy_extensions import NoReturn
