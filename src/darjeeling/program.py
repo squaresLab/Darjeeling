@@ -17,6 +17,7 @@ from .exceptions import BadConfigurationException
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
 class Program:
+    _bugzoo: BugZooClient
     snapshot: Snapshot
     tests: TestSuite
 
@@ -43,7 +44,7 @@ class Program:
 
         tests = BugZooTestSuite.from_bug(bz, snapshot)
 
-        return Program(snapshot, tests)
+        return Program(bz, snapshot, tests)
 
     def execute(self, container: Container, test: Test) -> TestOutcome:
         """Executes a given test in a container."""
@@ -51,5 +52,28 @@ class Program:
 
     @contextlib.contextmanager
     def build(self, patch: Patch) -> Iterator[Container]:
-        """Builds a container for a given patch."""
-        raise NotImplementedError
+        """Builds a container for a given patch.
+
+        Yields
+        ------
+        Container
+            A ready-to-use container that contains a built version of the
+            patched source code.
+
+        Raises
+        ------
+        BuildFailure
+            If the program failed to build.
+        """
+        mgr_ctr = self._bugzoo.containers
+        container = None
+        try:
+            container = mgr_ctr.provision(self.snapshot)
+            mgr_ctr.patch(container, patch)
+            outcome = mgr_ctr.build(container)
+            if not outcome.successful:
+                raise BuildFailure
+            yield container
+        finally:
+            if container is not None:
+                del mgr_ctr[container.uid]
