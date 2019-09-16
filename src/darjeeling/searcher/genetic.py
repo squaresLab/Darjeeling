@@ -1,4 +1,5 @@
-__all__ = ['GeneticSearcher']
+# -*- coding: utf-8 -*-
+__all__ = ('GeneticSearcher',)
 
 from typing import Iterator, List, Optional, Dict, Any, Union
 import concurrent.futures
