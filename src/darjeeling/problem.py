@@ -23,6 +23,7 @@ from bugzoo.util import indent
 from kaskara.analysis import Analysis
 
 from .core import Language, Test, TestSuite, TestCoverage, TestCoverageMap
+from .program import Program
 from .source import ProgramSourceManager
 from .util import get_file_contents
 from .exceptions import NoFailingTests, NoImplicatedLines, BuildFailure
@@ -40,10 +41,9 @@ class Problem:
     """
     def __init__(self,
                  bz: bugzoo.BugZoo,
-                 bug: Bug,
                  language: Language,
                  coverage: TestCoverageMap,
-                 test_suite: TestSuite,
+                 program: Program,
                  *,
                  analysis: Optional[Analysis] = None,
                  client_rooibos: Optional[RooibosClient] = None,
@@ -62,18 +62,18 @@ class Problem:
             NoImplicatedLines: if no lines are implicated by the coverage
                 information and the provided suspiciousness metric.
         """
-        self.__bug = bug
         self.__language = language
         self.__client_rooibos = client_rooibos
         self.__client_bugzoo = bz
         self.__coverage: TestCoverageMap = coverage
         self.__analysis = analysis
         self.__settings = settings if settings else OptimizationsConfig()
-        self.__test_suite = test_suite
+        self.__program = program
         self._dump_coverage()
 
         # use coverage to determine the passing and failing tests
         logger.debug("using test execution used to generate coverage to determine passing and failing tests")
+        test_suite = program.tests
         self.__tests_failing: Sequence[Test] = \
             tuple(test_suite[name] for name in sorted(self.__coverage)
                   if not self.__coverage[name].outcome.successful)
@@ -114,7 +114,7 @@ class Problem:
 
         logger.info("ordering test cases")
         self.__tests_ordered = \
-            sorted(test_suite,
+            sorted(program.tests,
                    key=functools.cmp_to_key(ordering)) # type: List[Test]
         logger.info("test order: %s",
                     ', '.join(t.name for t in self.__tests_ordered))
@@ -128,7 +128,7 @@ class Problem:
             source_files &= set(restrict_to_files)
         self.__sources = ProgramSourceManager(bz,
                                               client_rooibos,
-                                              bug,
+                                              program.snapshot,
                                               files=source_files)
         logger.debug("stored contents of source code files (took %.1f seconds)",
                      timer() - t_start)
@@ -170,7 +170,7 @@ class Problem:
         mgr_ctr = self.__client_bugzoo.containers
         container = None
         try:
-            container = mgr_ctr.provision(self.__bug)
+            container = mgr_ctr.provision(self.bug)
             mgr_ctr.patch(container, patch)
             if builder is None:
                 outcome = mgr_ctr.build(container)
@@ -231,6 +231,10 @@ class Problem:
             raise NoImplicatedLines
 
     @property
+    def program(self) -> Program:
+        return self.__program
+
+    @property
     def language(self) -> Language:
         return self.__language
 
@@ -256,7 +260,7 @@ class Problem:
     @property
     def bug(self) -> Bug:
         """A description of the bug, provided by BugZoo."""
-        return self.__bug
+        return self.__program.snapshot
 
     @property
     def tests(self) -> Iterator[Test]:
@@ -265,7 +269,7 @@ class Problem:
 
     @property
     def test_suite(self) -> TestSuite:
-        return self.__test_suite
+        return self.__program.tests
 
     @property
     def failing_tests(self) -> Iterator[Test]:

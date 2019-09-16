@@ -20,6 +20,7 @@ from .coverage import coverage_for_snapshot
 from .test import BugZooTestSuite
 from .candidate import Candidate
 from .searcher import Searcher
+from .program import Program
 from .problem import Problem
 from .config import Config, OptimizationsConfig
 from .snippet import SnippetDatabase
@@ -81,23 +82,12 @@ class Session:
             m = "no resource limits were specified; resource use will be unbounded"  # noqa: pycodestyle
             logger.warn(m)
 
-        # fetch the BugZoo snapshot and ensure that it's installed
-        if not cfg.snapshot in client_bugzoo.bugs:
-            m = "snapshot not found: {}".format(cfg.snapshot)
-            raise BadConfigurationException(m)
-
-        snapshot = client_bugzoo.bugs[cfg.snapshot]
-
-        if not client_bugzoo.bugs.is_installed(snapshot):
-            m = "snapshot not installed: {}".format(snapshot)
-            raise BadConfigurationException(m)
-
-        # build test suite
-        test_suite = BugZooTestSuite.from_bug(client_bugzoo, snapshot)
+        # build program
+        program = Program.from_config(client_bugzoo, cfg)
 
         # compute coverage
         logger.info("computing coverage information...")
-        coverage = coverage_for_snapshot(client_bugzoo, snapshot, test_suite)
+        coverage = coverage_for_snapshot(client_bugzoo, program.snapshot, program.tests)
         logger.info("computed coverage information")
 
         # compute localization
@@ -112,14 +102,13 @@ class Session:
 
         # compute analysis
         analysis = kaskara.Analysis.build(client_bugzoo,
-                                          snapshot,
+                                          program.snapshot,
                                           files)
 
         # build problem
         problem = Problem(bz=client_bugzoo,
-                          bug=snapshot,
                           language=cfg.language,
-                          test_suite=test_suite,
+                          program=program,
                           coverage=coverage,
                           analysis=analysis,
                           settings=cfg.optimizations)
