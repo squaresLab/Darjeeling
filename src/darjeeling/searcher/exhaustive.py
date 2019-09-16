@@ -13,6 +13,10 @@ from ..transformation import Transformation
 from ..exceptions import SearchExhausted
 
 
+class ExhaustiveSearcherConfig(SearcherConfig):
+    """A configuration for exhaustive search."""
+
+
 class ExhaustiveSearcher(Searcher):
     NAME = 'exhaustive'
 
