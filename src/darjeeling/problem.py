@@ -23,6 +23,7 @@ from bugzoo.util import indent
 from kaskara.analysis import Analysis
 
 from .core import Language, Test, TestSuite, TestCoverage, TestCoverageMap
+from .program import Program
 from .source import ProgramSourceManager
 from .util import get_file_contents
 from .exceptions import NoFailingTests, NoImplicatedLines, BuildFailure
@@ -44,6 +45,7 @@ class Problem:
                  language: Language,
                  coverage: TestCoverageMap,
                  test_suite: TestSuite,
+                 program: Program,
                  *,
                  analysis: Optional[Analysis] = None,
                  client_rooibos: Optional[RooibosClient] = None,
@@ -70,6 +72,7 @@ class Problem:
         self.__analysis = analysis
         self.__settings = settings if settings else OptimizationsConfig()
         self.__test_suite = test_suite
+        self.__program = program
         self._dump_coverage()
 
         # use coverage to determine the passing and failing tests
@@ -229,6 +232,10 @@ class Problem:
                     '\n* '.join(files))
         if len(lines) == 0:
             raise NoImplicatedLines
+
+    @property
+    def program(self) -> Program:
+        return self.__program
 
     @property
     def language(self) -> Language:
