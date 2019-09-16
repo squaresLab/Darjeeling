@@ -41,7 +41,7 @@ class _SearcherMeta(abc.ABCMeta):
 
         if not inspect.isabstract(cls):
             if 'NAME' not in namespace:
-                msg = f"Searcher ({name}) missing 'NAME' attribute"
+                msg = f"Searcher class ({name}) missing 'NAME' attribute"
                 raise TypeError(msg)
             _registry[namespace['NAME']] = cls  # type: ignore
 
