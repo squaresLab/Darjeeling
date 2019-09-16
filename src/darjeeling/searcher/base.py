@@ -28,8 +28,20 @@ from ..util import Stopwatch
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
+_registry: Dict[str, Type['Searcher']] = {}
 
-class Searcher(metaclass=abc.ABCMeta):
+
+class SearcherMeta(abc.ABCMeta):
+    def __iter__(cls) -> Iterator[str]:
+        """Returns an iterator over the names of registered searchers."""
+        yield from _registry
+
+    def __len__(cls) -> int:
+        """Returns the number of registered searchers."""
+        return len(_registry)
+
+
+class Searcher(metaclass=SearcherMeta):
     @staticmethod
     def from_dict(d: Dict[str, Any],
                   problem: Problem,
