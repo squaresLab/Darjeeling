@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+__all__ = ('ExhaustiveSearcher',)
+
 from typing import Iterable, Optional, Iterator, Dict, Any, List
 import datetime
 
@@ -11,6 +14,8 @@ from ..exceptions import SearchExhausted
 
 
 class ExhaustiveSearcher(Searcher):
+    NAME = 'exhaustive'
+
     @staticmethod
     def from_dict(d: Dict[str, Any],
                   problem: Problem,

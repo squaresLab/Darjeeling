@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
+__all__ = ('Searcher',)
+
 from typing import Iterable, Iterator, Optional, List, Tuple, Any, Dict, \
     Type, Union
 from mypy_extensions import NoReturn
+import abc
 import logging
 import datetime
 import threading
+import inspect
 import time
 import signal
 
@@ -27,8 +31,33 @@ from ..util import Stopwatch
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
+_registry: Dict[str, Type['Searcher']] = {}
 
-class Searcher:
+
+class _SearcherMeta(abc.ABCMeta):
+    """Metaclass for searchers, used for dynamic registration/lookup."""
+    def __init__(cls, name, bases, namespace) -> None:
+        super().__init__(name, bases, namespace)
+
+        if not inspect.isabstract(cls):
+            if 'NAME' not in namespace:
+                msg = f"Searcher class ({name}) missing 'NAME' attribute"
+                raise TypeError(msg)
+            _registry[namespace['NAME']] = cls  # type: ignore
+
+    def lookup(cls, name: str) -> Type['Searcher']:
+        return _registry[name]
+
+    def __iter__(cls) -> Iterator[str]:
+        """Returns an iterator over the names of registered searchers."""
+        yield from _registry
+
+    def __len__(cls) -> int:
+        """Returns the number of registered searchers."""
+        return len(_registry)
+
+
+class Searcher(metaclass=_SearcherMeta):
     @staticmethod
     def from_dict(d: Dict[str, Any],
                   problem: Problem,
@@ -38,28 +67,19 @@ class Searcher:
                   candidate_limit: Optional[int] = None,
                   time_limit: Optional[datetime.timedelta] = None
                   ) -> 'Searcher':
-        # TODO fix via metaclass
-        from .exhaustive import ExhaustiveSearcher
-        from .genetic import GeneticSearcher
         try:
             typ = d['type']
         except KeyError:
             m = "'type' property missing from 'algorithm' section"
             raise BadConfigurationException(m)
-
-        SEARCHERS = {
-            'exhaustive': ExhaustiveSearcher,
-            'genetic': GeneticSearcher
-        }  # type: Dict[str, Type[Searcher]]
         try:
-            kls = SEARCHERS[typ]  # type: Type[Searcher]
+            cls: Type[Searcher] = Searcher.lookup(typ)
         except KeyError:
-            m = "unsupported 'type' property used in 'algorithm' section: {}"
-            m = m.format(typ)
-            m += " [supported types: {}]".format(', '.join(SEARCHERS.keys()))
+            m = f"unsupported 'type' property in 'algorithm' section: {typ}"
+            m += " [supported types: {}]".format(', '.join(Searcher))
             raise BadConfigurationException(m)
 
-        return kls.from_dict(d, problem, tx,
+        return cls.from_dict(d, problem, tx,
                              threads=threads,
                              candidate_limit=candidate_limit,
                              time_limit=time_limit)
@@ -189,8 +209,9 @@ class Searcher:
         """
         return datetime.timedelta(seconds=self.__stopwatch.duration)
 
+    @abc.abstractmethod
     def run(self) -> Iterator[Candidate]:
-        raise NotImplementedError
+        ...
 
     def evaluate(self, candidate: Candidate) -> None:
         if self.time_limit and self.time_running > self.time_limit:
