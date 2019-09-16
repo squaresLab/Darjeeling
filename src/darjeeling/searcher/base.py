@@ -32,11 +32,12 @@ logger.setLevel(logging.DEBUG)
 _registry: Dict[str, Type['Searcher']] = {}
 
 
-class SearcherMeta(abc.ABCMeta):
+class _SearcherMeta(abc.ABCMeta):
     """Metaclass for searchers, used for dynamic registration/lookup."""
     def __init__(cls, name, bases, namespace) -> None:
         super().__init__(name, bases, namespace)
 
+        assert isinstance(cls, Searcher)
         if not inspect.isabstract(cls):
             if 'NAME' not in namespace:
                 msg = f"Searcher ({name}) missing 'NAME' attribute"
@@ -55,7 +56,7 @@ class SearcherMeta(abc.ABCMeta):
         return len(_registry)
 
 
-class Searcher(metaclass=SearcherMeta):
+class Searcher(metaclass=_SearcherMeta):
     @staticmethod
     def from_dict(d: Dict[str, Any],
                   problem: Problem,
