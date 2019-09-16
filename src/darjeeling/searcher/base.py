@@ -190,8 +190,9 @@ class Searcher(metaclass=abc.ABCMeta):
         """
         return datetime.timedelta(seconds=self.__stopwatch.duration)
 
+    @abc.abstractmethod
     def run(self) -> Iterator[Candidate]:
-        raise NotImplementedError
+        ...
 
     def evaluate(self, candidate: Candidate) -> None:
         if self.time_limit and self.time_running > self.time_limit:
