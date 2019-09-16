@@ -44,6 +44,7 @@ class Evaluator:
                  ) -> None:
         self.__bugzoo = client_bugzoo
         self.__problem = problem
+        self.__program = problem.program
         self.__test_suite = problem.test_suite
         self.__executor = \
             concurrent.futures.ThreadPoolExecutor(max_workers=num_workers)
@@ -202,37 +203,36 @@ class Evaluator:
         logger.debug("building candidate: %s", candidate)
         timer_build = Stopwatch()
         timer_build.start()
-        container = None  # type: Optional[Candidate]
         try:
-            container = self.__problem.build_patch(patch)
-            outcome_build = BuildOutcome(True, timer_build.duration)
-            logger.debug("built candidate: %s", candidate)
-            logger.debug("executing tests for candidate: %s", candidate)
-            for test in tests:
-                if self.__terminate_early and known_bad_patch:
-                    break
-                test_outcome = self._run_test(container, candidate, test)
-                test_outcomes = \
-                    test_outcomes.with_outcome(test.name, test_outcome)
-                known_bad_patch |= not test_outcome.successful
-
-            # if there is no evidence that this patch fails any tests, execute
-            # all remaining tests to determine whether or not this patch is
-            # an acceptable repair
-            #
-            # FIXME check if outcome is redundant!
-            if not known_bad_patch:
-                for test in remainder:
-                    if known_bad_patch:
+            with self.__program.build(patch) as container:
+                outcome_build = BuildOutcome(True, timer_build.duration)
+                logger.debug("built candidate: %s", candidate)
+                logger.debug("executing tests for candidate: %s", candidate)
+                for test in tests:
+                    if self.__terminate_early and known_bad_patch:
                         break
                     test_outcome = self._run_test(container, candidate, test)
                     test_outcomes = \
                         test_outcomes.with_outcome(test.name, test_outcome)
                     known_bad_patch |= not test_outcome.successful
 
-            return CandidateOutcome(outcome_build,
-                                    test_outcomes,
-                                    not known_bad_patch)
+                # if there is no evidence that this patch fails any tests,
+                # execute all remaining tests to determine whether or not
+                # this patch is an acceptable repair
+                #
+                # FIXME check if outcome is redundant!
+                if not known_bad_patch:
+                    for test in remainder:
+                        if known_bad_patch:
+                            break
+                        test_outcome = self._run_test(container, candidate, test)
+                        test_outcomes = \
+                            test_outcomes.with_outcome(test.name, test_outcome)
+                        known_bad_patch |= not test_outcome.successful
+
+                return CandidateOutcome(outcome_build,
+                                        test_outcomes,
+                                        not known_bad_patch)
         except BuildFailure:
             logger.debug("failed to build candidate: %s", candidate)
             outcome_build = BuildOutcome(False, timer_build.duration)
@@ -245,9 +245,6 @@ class Evaluator:
             raise
         finally:
             logger.info("evaluated candidate: %s", candidate)
-            if container:
-                del bz.containers[container.id]
-                logger.debug("destroyed container for candidate: %s", candidate)
 
     def evaluate(self, candidate: Candidate) -> Evaluation:
         """Evaluates a given candidate patch."""
@@ -265,7 +262,7 @@ class Evaluator:
             self.__num_running -= 1
         return (candidate, outcome)
 
-    def submit(self, candidate: Candidate) -> 'Future[Evaluation]':
+    def submit(self, candidate: Candidate) -> Future[Evaluation]:
         """Schedules a candidate patch evaluation."""
         with self.__lock:
             self.__num_running += 1
