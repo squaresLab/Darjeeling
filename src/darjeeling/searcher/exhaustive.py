@@ -6,7 +6,7 @@ import datetime
 
 from bugzoo import Client as BugZooClient
 
-from .base import Searcher
+from .base import Searcher, SearcherConfig
 from ..candidate import Candidate, all_single_edit_patches
 from ..problem import Problem
 from ..transformation import Transformation

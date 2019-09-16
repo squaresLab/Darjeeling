@@ -10,7 +10,7 @@ import datetime
 import bugzoo
 from bugzoo.client import Client as BugZooClient
 
-from .base import Searcher
+from .base import Searcher, SearcherConfig
 from ..candidate import Candidate
 from ..transformation import Transformation
 from ..problem import Problem
