@@ -23,6 +23,8 @@ Population = List[Candidate]
 
 
 class GeneticSearcher(Searcher):
+    NAME = 'genetic'
+
     @staticmethod
     def from_dict(d: Dict[str, Any],
                   problem: Problem,

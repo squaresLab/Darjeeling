@@ -14,6 +14,8 @@ from ..exceptions import SearchExhausted
 
 
 class ExhaustiveSearcher(Searcher):
+    NAME = 'exhaustive'
+
     @staticmethod
     def from_dict(d: Dict[str, Any],
                   problem: Problem,
