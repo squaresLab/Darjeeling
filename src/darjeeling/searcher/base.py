@@ -6,6 +6,7 @@ import abc
 import logging
 import datetime
 import threading
+import inspect
 import time
 import signal
 
@@ -32,6 +33,19 @@ _registry: Dict[str, Type['Searcher']] = {}
 
 
 class SearcherMeta(abc.ABCMeta):
+    """Metaclass for searchers, used for dynamic registration/lookup."""
+    def __init__(cls, name, bases, namespace) -> None:
+        super().__init__(name, bases, namespace)
+
+        if not inspect.isabstract(cls):
+            if 'NAME' not in namespace:
+                msg = f"Searcher ({name}) missing 'NAME' attribute"
+                raise TypeError(msg)
+            _registry[namespace['NAME']] = cls
+
+    def lookup(cls, name: str) -> 'Searcher':
+        return _registry[name]
+
     def __iter__(cls) -> Iterator[str]:
         """Returns an iterator over the names of registered searchers."""
         yield from _registry
