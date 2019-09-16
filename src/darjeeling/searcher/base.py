@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-__all__ = ('Searcher',)
+__all__ = ('Searcher', 'SearcherConfig')
 
 from typing import Iterable, Iterator, Optional, List, Tuple, Any, Dict, \
     Type, Union
@@ -32,6 +32,10 @@ logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
 _registry: Dict[str, Type['Searcher']] = {}
+
+
+class SearcherConfig(metaclass=abc.ABCMeta):
+    """Describes a search algorithm configuration."""
 
 
 class _SearcherMeta(abc.ABCMeta):
