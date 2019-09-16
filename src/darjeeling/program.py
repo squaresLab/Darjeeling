@@ -32,13 +32,13 @@ class Program:
             If the given BugZoo snapshot is not installed.
         """
         if not cfg.snapshot in bz.bugs:
-            m = "snapshot not found: {}".format(cfg.snapshot)
+            m = f"snapshot not found: {cfg.snapshot}"
             raise BadConfigurationException(m)
 
         snapshot = bz.bugs[cfg.snapshot]
 
         if not client_bugzoo.bugs.is_installed(snapshot):
-            m = "snapshot not installed: {}".format(snapshot)
+            m = f"snapshot not installed: {cfg.snapshot}"
             raise BadConfigurationException(m)
 
         tests = BugZooTestSuite.from_bug(bz, snapshot)
