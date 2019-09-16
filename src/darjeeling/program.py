@@ -12,7 +12,7 @@ import attr
 from .core import Test, TestOutcome, TestSuite
 from .test import BugZooTestSuite
 from .config import Config
-from .exceptions import BadConfigurationException
+from .exceptions import BadConfigurationException, BuildFailure
 
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
