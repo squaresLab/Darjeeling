@@ -146,45 +146,6 @@ class Problem:
             del self.__sources[fn]
         logger.debug("finished reducing memory footprint")
 
-    def build_patch(self,
-                    patch: Patch,
-                    builder: Optional[Callable[[Container], BuildOutcome]] = None
-                    ) -> Container:
-        """
-        Provisions a container for a given patch and prepares it by building
-        the source code.
-
-        Parameters:
-            patch: the patch for which a container should be built.
-            builder: used to optionally provide a custom function for building
-                the code inside the container. If no custom builder is
-                provided, then the default one will be used instead.
-
-        Returns:
-            a ready-to-use container that contains a built version of the
-            patched source code.
-
-        Raises:
-            BuildFailure: if the program failed to build.
-        """
-        mgr_ctr = self.__client_bugzoo.containers
-        container = None
-        try:
-            container = mgr_ctr.provision(self.bug)
-            mgr_ctr.patch(container, patch)
-            if builder is None:
-                outcome = mgr_ctr.build(container)
-            else:
-                outcome = builder(container)
-            # ensure the container is destroyed
-            if not outcome.successful:
-                raise BuildFailure
-        except Exception:
-            if container is not None:
-                del mgr_ctr[container.uid]
-            raise
-        return container
-
     def restrict_to_files(self, filenames: List[str]) -> None:
         """
         Restricts the scope of the repair to the intersection of the files
