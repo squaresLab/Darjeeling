@@ -47,7 +47,7 @@ class Program:
 
     def execute(self, container: Container, test: Test) -> TestOutcome:
         """Executes a given test in a container."""
-        raise NotImplementedError
+        return self.tests.execute(container, test)
 
     @contextlib.contextmanager
     def build(self, patch: Patch) -> Iterator[Container]:
