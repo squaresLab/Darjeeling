@@ -7,10 +7,11 @@ import logging
 import random
 import datetime
 
+import attr
 import bugzoo
 from bugzoo.client import Client as BugZooClient
 
-from .base import Searcher
+from .base import Searcher, SearcherConfig
 from ..candidate import Candidate
 from ..transformation import Transformation
 from ..problem import Problem
@@ -20,6 +21,19 @@ logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
 Population = List[Candidate]
+
+
+@attr.s(frozen=True, slots=True)
+class GeneticSearcherConfig(SearcherConfig):
+    """A configuration for a genetic search."""
+    NAME = 'genetic'
+
+    num_generations: int = attr.ib(default=10)
+    population_size: int = attr.ib(default=40)
+    rate_mutation: float = attr.ib(default=1.0)
+    rate_crossover: float = attr.ib(default=1.0)
+    tournament_size: int = attr.ib(default=2)
+    sample_size: Optional[Union[int, float]] = attr.ib(default=None)
 
 
 class GeneticSearcher(Searcher):
