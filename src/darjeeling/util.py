@@ -55,34 +55,26 @@ class DynamicallyRegistered:
     _registry: ClassVar[Dict[str, Type]]
     _registered_class_names: ClassVar[Set[str]]
 
-    @classmethod
-    def lookup(cls, name: str):
-        msg = f"class '{cls.__name__}' has no attribute 'lookup'"
-        if not hasattr(cls, '_registration_type_name'):
-            raise AttributeError(msg)
-        if cls.__name__ != cls._registration_type_name:
-            raise AttributeError(msg)
-        return cls._registry[name]
+    @staticmethod
+    def _build_root(cls) -> None:
+        cls._registration_type_name = cls.__name__
+        cls._registry = {}
+        cls._registered_class_names = set()
 
-    @classmethod
-    def __iter__(cls) -> Iterator[str]:
-        """Returns an iterator over the names in the registry."""
-        msg = f"class '{cls.__name__}' has no attribute '__iter__'"
-        if not hasattr(cls, '_registration_type_name'):
-            raise AttributeError(msg)
-        if cls.__name__ != cls._registration_type_name:
-            raise AttributeError(msg)
-        yield from cls._registry
+        def __len__() -> int:
+            return cls._registry
 
-    @classmethod
-    def __len__(cls) -> int:
-        """Returns the number of registered classes."""
-        msg = f"class '{cls.__name__}' has no attribute '__len__'"
-        if not hasattr(cls, '_registration_type_name'):
-            raise AttributeError(msg)
-        if cls.__name__ != cls._registration_type_name:
-            raise AttributeError(msg)
-        return len(cls._registry)
+        def __iter__() -> Iterator[str]:
+            yield from cls._registry
+
+        def lookup(name: str):
+            return cls._registry[name]
+
+        cls.__len__ = staticmethod(__len__)
+        cls.__iter__ = staticmethod(__iter__)
+        cls.lookup = staticmethod(lookup)
+
+        logger.debug("enabled dynamic registration for %s", cls)
 
     def __init_subclass__(cls, *args, **kwargs) -> None:
         full_class_name = cls.__qualname__
@@ -95,11 +87,7 @@ class DynamicallyRegistered:
             raise TypeError(msg)
 
         if is_root_type:
-            cls._registration_type_name = cls.__name__
-            cls._registry = {}
-            cls._registered_class_names = set()
-            logger.debug("enabled dynamic registration for %s", cls)
-            return
+            return DynamicallyRegistered._build_root(cls)
 
         if is_abstract:
             return
