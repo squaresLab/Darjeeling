@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 import warnings
 import inspect
+import logging
 from typing import List, Union, Tuple, ClassVar, Dict, Type, Set
 from timeit import default_timer as timer
+
+logger = logging.getLogger(__name__)  # type: logging.Logger
+logger.setLevel(logging.DEBUG)
 
 
 def duration_tuple(secs: Union[int, float]) -> Tuple[int, int, int, int]:
