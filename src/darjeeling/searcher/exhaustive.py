@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __all__ = ('ExhaustiveSearcher',)
 
-from typing import ClassVar, Iterable, Optional, Iterator, Dict, Any, List
+from typing import Iterable, Optional, Iterator, Dict, Any, List
 import datetime
 
 from bugzoo import Client as BugZooClient
