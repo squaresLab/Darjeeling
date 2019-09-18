@@ -34,7 +34,7 @@ logger.setLevel(logging.DEBUG)
 _registry: Dict[str, Type['Searcher']] = {}
 
 
-class SearcherConfig: #(metaclass=abc.ABCMeta):
+class SearcherConfig(metaclass=abc.ABCMeta):
     """Describes a search algorithm configuration."""
     NAME: ClassVar[str]
     _base_registration_type: ClassVar[Type['SearcherConfig']]
