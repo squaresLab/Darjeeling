@@ -26,7 +26,7 @@ from ..exceptions import BuildFailure, \
     TimeLimitReached, \
     CandidateLimitReached, \
     BadConfigurationException
-from ..util import Stopwatch
+from ..util import Stopwatch, DynamicallyRegistered
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
@@ -34,51 +34,8 @@ logger.setLevel(logging.DEBUG)
 _registry: Dict[str, Type['Searcher']] = {}
 
 
-class SearcherConfig(metaclass=abc.ABCMeta):
+class SearcherConfig(DynamicallyRegistered):
     """Describes a search algorithm configuration."""
-    NAME: ClassVar[str]
-    _base_registration_type: ClassVar[Type['SearcherConfig']]
-    _registry: ClassVar[Dict[str, Type['SearcherConfig']]] = {}
-    _registered_class_names: Set[str] = set()
-
-    @classmethod
-    def lookup(cls, name: str) -> Type['SearcherConfig']:
-        return cls._registry[name]
-
-    def __init_subclass__(cls: Type['SearcherConfig'], *args, **kwargs) -> None:
-        has_name = hasattr(cls, 'NAME')
-        if inspect.isabstract(cls):
-            if has_name:
-                msg = f'Illegal "NAME" attribute is abstract class: {cls}'
-                raise TypeError(msg)
-            else:
-                return
-
-        if not has_name:
-            msg = f"Missing attribute 'NAME' in class definition: {cls}"
-            raise TypeError(msg)
-
-        # The use of class decorators may cause __init_subclass__ to be called
-        # several times for a given class. To avoid unexpected behaviour, we
-        # keep track of the names of the classes that have been registered, and
-        # we check whether a given class has been registered on the basis of
-        # its name. Note that we _must_ update the registration to point to the
-        # new class (since it's a different object).
-        name: str = cls.NAME
-        full_class_name = cls.__qualname__
-        name_is_registered = name in cls._registry
-        class_is_registered = full_class_name in cls._registered_class_names
-        if name_is_registered and not class_is_registered:
-            msg = f"Class already registered under given name [{name}]: {cls}"
-            raise TypeError(msg)
-
-        cls._registry[name] = cls
-
-        if class_is_registered:
-            logger.debug("updated registration for decorated class: %s", cls)
-        else:
-            logger.debug("added registration for class: %s", cls)
-            cls._registered_class_names.add(full_class_name)
 
 
 class _SearcherMeta(abc.ABCMeta):
