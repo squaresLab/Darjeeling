@@ -2,7 +2,7 @@
 import warnings
 import inspect
 import logging
-from typing import List, Union, Tuple, ClassVar, Dict, Type, Set
+from typing import List, Union, Tuple, ClassVar, Dict, Type, Set, Iterator
 from timeit import default_timer as timer
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
@@ -57,8 +57,32 @@ class DynamicallyRegistered:
 
     @classmethod
     def lookup(cls, name: str):
-        # TODO should only be exposed by the base type
+        msg = f"class '{cls.__name__}' has no attribute 'lookup'"
+        if not hasattr(cls, '_registration_type_name'):
+            raise AttributeError(msg)
+        if cls.__name__ != cls._registration_type_name:
+            raise AttributeError(msg)
         return cls._registry[name]
+
+    @classmethod
+    def __iter__(cls) -> Iterator[str]:
+        """Returns an iterator over the names in the registry."""
+        msg = f"class '{cls.__name__}' has no attribute '__iter__'"
+        if not hasattr(cls, '_registration_type_name'):
+            raise AttributeError(msg)
+        if cls.__name__ != cls._registration_type_name:
+            raise AttributeError(msg)
+        yield from cls._registry
+
+    @classmethod
+    def __len__(cls) -> int:
+        """Returns the number of registered classes."""
+        msg = f"class '{cls.__name__}' has no attribute '__len__'"
+        if not hasattr(cls, '_registration_type_name'):
+            raise AttributeError(msg)
+        if cls.__name__ != cls._registration_type_name:
+            raise AttributeError(msg)
+        return len(cls._registry)
 
     def __init_subclass__(cls, *args, **kwargs) -> None:
         full_class_name = cls.__qualname__
