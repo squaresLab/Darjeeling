@@ -7,6 +7,7 @@ import logging
 import random
 import datetime
 
+import attr
 import bugzoo
 from bugzoo.client import Client as BugZooClient
 
@@ -25,6 +26,8 @@ Population = List[Candidate]
 @attr.s(frozen=True, slots=True, auto_attribs=True)
 class GeneticSearcherConfig(SearcherConfig):
     """A configuration for a genetic search."""
+    NAME = 'genetic'
+
     num_generations: int = attr.ib(default=10)
     population_size: int = attr.ib(default=40)
     rate_mutation: float = attr.ib(default=1.0)

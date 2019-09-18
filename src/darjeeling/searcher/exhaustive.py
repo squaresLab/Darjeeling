@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __all__ = ('ExhaustiveSearcher',)
 
-from typing import Iterable, Optional, Iterator, Dict, Any, List
+from typing import ClassVar, Iterable, Optional, Iterator, Dict, Any, List
 import datetime
 
 from bugzoo import Client as BugZooClient
@@ -15,6 +15,7 @@ from ..exceptions import SearchExhausted
 
 class ExhaustiveSearcherConfig(SearcherConfig):
     """A configuration for exhaustive search."""
+    NAME = 'exhaustive'
 
 
 class ExhaustiveSearcher(Searcher):
