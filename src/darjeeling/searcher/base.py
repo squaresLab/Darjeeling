@@ -26,7 +26,7 @@ from ..exceptions import BuildFailure, \
     TimeLimitReached, \
     CandidateLimitReached, \
     BadConfigurationException
-from ..util import Stopwatch, DynamicallyRegistered
+from ..util import Stopwatch, dynamically_registered
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
@@ -34,11 +34,32 @@ logger.setLevel(logging.DEBUG)
 _registry: Dict[str, Type['Searcher']] = {}
 
 
-class SearcherConfig(DynamicallyRegistered):
+@dynamically_registered()
+class SearcherConfig:
     """Describes a search algorithm configuration."""
+    @staticmethod
+    def __iter__() -> Iterator[str]:
+        ...
+
+    @staticmethod
+    def __len__() -> int:
+        ...
+
+    @staticmethod
+    def lookup(name: str) -> Type['SearcherConfig']:
+        ...
 
 
-class Searcher(DynamicallyRegistered, meta=abc.ABCMeta):
+@dynamically_registered(iterator=None)
+class Searcher(abc.ABC):
+    @staticmethod
+    def __len__() -> int:
+        ...
+
+    @staticmethod
+    def lookup(name: str) -> Type['Searcher']:
+        ...
+
     @staticmethod
     def from_dict(d: Dict[str, Any],
                   problem: Problem,
@@ -57,7 +78,7 @@ class Searcher(DynamicallyRegistered, meta=abc.ABCMeta):
             cls: Type[Searcher] = Searcher.lookup(typ)
         except KeyError:
             m = f"unsupported 'type' property in 'algorithm' section: {typ}"
-            m += " [supported types: {}]".format(', '.join(Searcher))
+            #m += " [supported types: {}]".format(', '.join(Searcher))
             raise BadConfigurationException(m)
 
         return cls.from_dict(d, problem, tx,
