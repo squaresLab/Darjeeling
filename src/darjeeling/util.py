@@ -2,7 +2,7 @@
 import warnings
 import inspect
 import logging
-from typing import List, Union, Tuple, ClassVar, Dict, Type, Set, Iterator, Optional
+from typing import List, Union, Tuple, Any, Dict, Type, Set, Iterator, Optional
 from timeit import default_timer as timer
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
@@ -58,8 +58,8 @@ def _dynamically_registered(cls,
     logger.debug("Adding dynamic registration to class: %s", cls)
     logger.debug("Registered via attribute: %s", register_on)
 
-    registry = {}
-    registered_class_names = set()
+    registry: Dict[str, Any] = {}
+    registered_class_names: Set[str] = set()
 
     def method_hook_subclass(subcls, *args, **kwargs) -> None:
         has_name = hasattr(subcls, register_on)
