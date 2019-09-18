@@ -55,17 +55,13 @@ def dynamically_registered(cls,
                            lookup: Optional[str] = 'lookup',
                            register_on: str = 'NAME'
                            ):
-    print(f"Adding dynamic registration to class: {cls}")
     logger.debug("Adding dynamic registration to class: %s", cls)
     logger.debug("Registered via attribute: %s", register_on)
 
-    cls._registry = {}
-    cls._registered_class_names = set()
+    registry = {}
+    registered_class_names = set()
 
     def method_hook_subclass(subcls, *args, **kwargs) -> None:
-        print(f"REGISTER SUBCLASS: {subcls}")
-        print(f"BASE REGISTRATION CLASS: {cls} [{id(cls._registry)}]")
-        print(f"REGISTRY: {cls._registry} [{id(cls._registry)}]")
         has_name = hasattr(subcls, register_on)
         is_abstract = inspect.isabstract(subcls)
         if has_name and is_abstract:
@@ -84,14 +80,13 @@ def dynamically_registered(cls,
         # its name. Note that we _must_ update the registration to point to the
         # new class (since it's a different object).
         name: str = getattr(subcls, register_on)
-        name_is_registered = name in cls._registry
-        subcls_is_registered = subcls.__qualname__ in cls._registered_class_names
+        name_is_registered = name in registry
+        subcls_is_registered = subcls.__qualname__ in registered_class_names
         if name_is_registered and not subcls_is_registered:
             msg = f"Class already registered as '{name}': {subcls}"
             raise TypeError(msg)
 
-        cls._registry[name] = subcls
-        print(f"REGISTERED: {cls._registry}")
+        registry[name] = subcls
 
         if subcls_is_registered:
             logger.debug("updated [%s] registration for decorated class: %s",
@@ -99,7 +94,7 @@ def dynamically_registered(cls,
         else:
             logger.debug("added [%s] registration for class: %s",
                          cls.__name__, subcls)
-            cls._registered_class_names.add(subcls.__qualname__)
+            registered_class_names.add(subcls.__qualname__)
 
     def method_length() -> int:
         return len(cls._registry)
@@ -113,7 +108,7 @@ def dynamically_registered(cls,
     if length:
         logger.debug("Adding length method [%s] to class [%s]", length, cls)
         setattr(cls, length, staticmethod(method_length))
-    if False: # iterator:
+    if False: # FIXME iterator:
         logger.debug("Adding iterator method [%s] to class [%s]",
                      iterator, cls)
         setattr(cls, iterator, staticmethod(method_iterator))
