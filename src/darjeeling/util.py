@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import warnings
 import inspect
-from typing import List, Union, Tuple, ClassVar
+from typing import List, Union, Tuple, ClassVar, Dict, Type, Set
 from timeit import default_timer as timer
 
 
