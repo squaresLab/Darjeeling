@@ -38,30 +38,7 @@ class SearcherConfig(DynamicallyRegistered):
     """Describes a search algorithm configuration."""
 
 
-class _SearcherMeta(abc.ABCMeta):
-    """Metaclass for searchers, used for dynamic registration/lookup."""
-    def __init__(cls, name, bases, namespace) -> None:
-        super().__init__(name, bases, namespace)
-
-        if not inspect.isabstract(cls):
-            if 'NAME' not in namespace:
-                msg = f"Searcher class ({name}) missing 'NAME' attribute"
-                raise TypeError(msg)
-            _registry[namespace['NAME']] = cls  # type: ignore
-
-    def lookup(cls, name: str) -> Type['Searcher']:
-        return _registry[name]
-
-    def __iter__(cls) -> Iterator[str]:
-        """Returns an iterator over the names of registered searchers."""
-        yield from _registry
-
-    def __len__(cls) -> int:
-        """Returns the number of registered searchers."""
-        return len(_registry)
-
-
-class Searcher(metaclass=_SearcherMeta):
+class Searcher(DynamicallyRegistered, meta=abc.ABCMeta):
     @staticmethod
     def from_dict(d: Dict[str, Any],
                   problem: Problem,
