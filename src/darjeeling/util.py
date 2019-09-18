@@ -48,13 +48,13 @@ def get_lines(fn: str) -> List[str]:
     return [l.rstrip('\n') for l in get_file_contents(fn).splitlines()]
 
 
-def dynamically_registered(cls,
-                           *,
-                           length: Optional[str] = '__len__',
-                           iterator: Optional[str] = '__iter__',
-                           lookup: Optional[str] = 'lookup',
-                           register_on: str = 'NAME'
-                           ):
+def _dynamically_registered(cls,
+                            *,
+                            length: Optional[str] = '__len__',
+                            iterator: Optional[str] = '__iter__',
+                            lookup: Optional[str] = 'lookup',
+                            register_on: str = 'NAME'
+                            ):
     logger.debug("Adding dynamic registration to class: %s", cls)
     logger.debug("Registered via attribute: %s", register_on)
 
@@ -97,18 +97,18 @@ def dynamically_registered(cls,
             registered_class_names.add(subcls.__qualname__)
 
     def method_length() -> int:
-        return len(cls._registry)
+        return len(registry)
 
     def method_iterator() -> Iterator[str]:
-        yield from cls._registry
+        yield from registry
 
     def method_lookup(name: str):
-        return cls._registry[name]
+        return registry[name]
 
     if length:
         logger.debug("Adding length method [%s] to class [%s]", length, cls)
         setattr(cls, length, staticmethod(method_length))
-    if False: # FIXME iterator:
+    if iterator:
         logger.debug("Adding iterator method [%s] to class [%s]",
                      iterator, cls)
         setattr(cls, iterator, staticmethod(method_iterator))
@@ -120,6 +120,22 @@ def dynamically_registered(cls,
 
     logger.debug("Added dynamic registration to class: %s", cls)
     return cls
+
+
+def dynamically_registered(register_on: str = 'NAME',
+                           *,
+                           length: Optional[str] = '__len__',
+                           iterator: Optional[str] = '__iter__',
+                           lookup: Optional[str] = 'lookup',
+                           ):
+    def decorator(cls):
+        return _dynamically_registered(cls,
+                                       register_on=register_on,
+                                       length=length,
+                                       iterator=iterator,
+                                       lookup=lookup)
+
+    return decorator
 
 
 class Stopwatch(object):
