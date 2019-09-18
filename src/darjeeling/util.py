@@ -53,16 +53,20 @@ def dynamically_registered(cls,
                            length: Optional[str] = '__len__',
                            iterator: Optional[str] = '__iter__',
                            lookup: Optional[str] = 'lookup',
-                           name: str = 'NAME'
+                           register_on: str = 'NAME'
                            ):
+    print(f"Adding dynamic registration to class: {cls}")
     logger.debug("Adding dynamic registration to class: %s", cls)
-    logger.debug("Registered via attribute: %s", name)
+    logger.debug("Registered via attribute: %s", register_on)
 
-    registry = {}
-    registered_class_names = set()
+    cls._registry = {}
+    cls._registered_class_names = set()
 
     def method_hook_subclass(subcls, *args, **kwargs) -> None:
-        has_name = hasattr(subcls, name)
+        print(f"REGISTER SUBCLASS: {subcls}")
+        print(f"BASE REGISTRATION CLASS: {cls} [{id(cls._registry)}]")
+        print(f"REGISTRY: {cls._registry} [{id(cls._registry)}]")
+        has_name = hasattr(subcls, register_on)
         is_abstract = inspect.isabstract(subcls)
         if has_name and is_abstract:
             msg = f'Illegal "NAME" attribute in abstract class: {subcls}'
@@ -70,7 +74,7 @@ def dynamically_registered(cls,
         if is_abstract:
             return
         if not has_name:
-            msg = f"Missing attribute 'NAME' in class definition: {subcls}"
+            msg = f"Missing attribute '{register_on}' in class definition: {subcls}"
             raise TypeError(msg)
 
         # The use of class decorators may cause __init_subclass__ to be called
@@ -79,14 +83,15 @@ def dynamically_registered(cls,
         # we check whether a given class has been registered on the basis of
         # its name. Note that we _must_ update the registration to point to the
         # new class (since it's a different object).
-        subcls_name: str = getattr(subcls, name)
-        name_is_registered = subcls_name in registry
-        subcls_is_registered = subcls.__qualname__ in registered_class_names
+        name: str = getattr(subcls, register_on)
+        name_is_registered = name in cls._registry
+        subcls_is_registered = subcls.__qualname__ in cls._registered_class_names
         if name_is_registered and not subcls_is_registered:
             msg = f"Class already registered as '{name}': {subcls}"
             raise TypeError(msg)
 
-        registry[name] = subcls
+        cls._registry[name] = subcls
+        print(f"REGISTERED: {cls._registry}")
 
         if subcls_is_registered:
             logger.debug("updated [%s] registration for decorated class: %s",
@@ -94,16 +99,16 @@ def dynamically_registered(cls,
         else:
             logger.debug("added [%s] registration for class: %s",
                          cls.__name__, subcls)
-            registered_class_names.add(subcls.__qualname__)
+            cls._registered_class_names.add(subcls.__qualname__)
 
     def method_length() -> int:
-        return len(registry)
+        return len(cls._registry)
 
     def method_iterator() -> Iterator[str]:
-        yield from registry
+        yield from cls._registry
 
     def method_lookup(name: str):
-        return registry[name]
+        return cls._registry[name]
 
     if length:
         logger.debug("Adding length method [%s] to class [%s]", length, cls)
@@ -120,78 +125,6 @@ def dynamically_registered(cls,
 
     logger.debug("Added dynamic registration to class: %s", cls)
     return cls
-
-
-class DynamicallyRegistered:
-    """Provides dynamic registration and lookup of classes to a base class."""
-    NAME: ClassVar[str]
-    _registration_type_name: ClassVar[str]
-    _registry: ClassVar[Dict[str, Type]]
-    _registered_class_names: ClassVar[Set[str]]
-
-    @staticmethod
-    def _build_root(cls) -> None:
-        cls._registration_type_name = cls.__name__
-        cls._registry = {}
-        cls._registered_class_names = set()
-
-        def __len__() -> int:
-            return cls._registry
-
-        def __iter__() -> Iterator[str]:
-            yield from cls._registry
-
-        def lookup(name: str):
-            return cls._registry[name]
-
-        cls.__len__ = staticmethod(__len__)
-        cls.__iter__ = staticmethod(__iter__)
-        cls.lookup = staticmethod(lookup)
-
-        logger.debug("enabled dynamic registration for %s", cls)
-
-    def __init_subclass__(cls, *args, **kwargs) -> None:
-        full_class_name = cls.__qualname__
-        has_name = hasattr(cls, 'NAME')
-        is_root_type = not hasattr(cls, '_registration_type_name')
-        is_abstract = inspect.isabstract(cls)
-
-        if is_root_type and has_name or is_abstract:
-            msg = f'Illegal "NAME" attribute in abstract or root class: {cls}'
-            raise TypeError(msg)
-
-        if is_root_type:
-            return DynamicallyRegistered._build_root(cls)
-
-        if is_abstract:
-            return
-
-        if not has_name:
-            msg = f"Missing attribute 'NAME' in class definition: {cls}"
-            raise TypeError(msg)
-
-        # The use of class decorators may cause __init_subclass__ to be called
-        # several times for a given class. To avoid unexpected behaviour, we
-        # keep track of the names of the classes that have been registered, and
-        # we check whether a given class has been registered on the basis of
-        # its name. Note that we _must_ update the registration to point to the
-        # new class (since it's a different object).
-        name: str = cls.NAME
-        name_is_registered = name in cls._registry
-        class_is_registered = full_class_name in cls._registered_class_names
-        if name_is_registered and not class_is_registered:
-            msg = f"Class already registered under given name [{name}]: {cls}"
-            raise TypeError(msg)
-
-        cls._registry[name] = cls
-
-        if class_is_registered:
-            logger.debug("updated [%s] registration for decorated class: %s",
-                         cls._registration_type_name, cls)
-        else:
-            logger.debug("added [%s] registration for class: %s",
-                         cls._registration_type_name, cls)
-            cls._registered_class_names.add(full_class_name)
 
 
 class Stopwatch(object):
