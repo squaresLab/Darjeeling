@@ -23,7 +23,7 @@ logger.setLevel(logging.DEBUG)
 Population = List[Candidate]
 
 
-@attr.s(frozen=True, slots=True, auto_attribs=True)
+@attr.s(frozen=True, slots=True)
 class GeneticSearcherConfig(SearcherConfig):
     """A configuration for a genetic search."""
     NAME = 'genetic'
