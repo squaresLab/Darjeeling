@@ -52,7 +52,7 @@ class DynamicallyRegistered:
     """Provides dynamic registration and lookup of classes to a base class."""
     NAME: ClassVar[str]
     _registration_type_name: ClassVar[str]
-    _registry: ClassVar[Dict[str, Type['SearcherConfig']]]
+    _registry: ClassVar[Dict[str, Type]]
     _registered_class_names: ClassVar[Set[str]]
 
     @classmethod
