@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 __all__ = ('Config', 'OptimizationsConfig', 'SchemaConfig',
+           'SearcherConfig', 'TestSuiteConfig',
            'TransformationsConfig', 'LocalizationConfig')
 
 from typing import (Optional, Collection, Tuple, Dict, Any, List, Set,
@@ -36,6 +37,29 @@ class SearcherConfig(abc.ABC):
     def from_dict(cls, d: Dict[str, Any]) -> 'SearcherConfig':
         name_type: str = d['type']
         type_: Type[SearcherConfig] = SearcherConfig.lookup(name_type)
+        return type_.from_dict(d)
+
+
+@dynamically_registered(lookup='lookup')
+class TestSuiteConfig(abc.ABC):
+    """Describes a test suite configuration."""
+    @staticmethod
+    def __iter__() -> Iterator[str]:
+        ...
+
+    @staticmethod
+    def __len__() -> int:
+        ...
+
+    @staticmethod
+    def lookup(name: str) -> Type['TestSuiteConfig']:
+        ...
+
+    @classmethod
+    @abc.abstractmethod
+    def from_dict(cls, d: Dict[str, Any]) -> 'TestSuiteConfig':
+        name_type: str = d['type']
+        type_: Type[TestSuiteConfig] = TestSuiteConfig.lookup(name_type)
         return type_.from_dict(d)
 
 
