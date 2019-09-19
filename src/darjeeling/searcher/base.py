@@ -33,14 +33,14 @@ from ..util import Stopwatch, dynamically_registered
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
-T = TypeVar('T')
+T = TypeVar('T', bound=SearcherConfig)
 
 
 @dynamically_registered('CONFIG',
                         lookup='_searcher_for_config_type',
                         iterator=None)
-class Searcher(abc.ABC):
-    CONFIG: ClassVar[Type[SearcherConfig]]
+class Searcher(Generic[T], abc.ABC):
+    CONFIG: ClassVar[Type[T]]
 
     @staticmethod
     def _searcher_for_config_type(type_cfg: Type[SearcherConfig]
@@ -51,7 +51,7 @@ class Searcher(abc.ABC):
     @classmethod
     @abc.abstractmethod
     def from_config(cls,
-                    cfg: SearcherConfig,
+                    cfg: T,
                     problem: Problem,
                     tx: List[Transformation],
                     *,
