@@ -130,10 +130,10 @@ class Session:
                     len(tx))
 
         # build the search strategy
-        searcher = Searcher.from_dict(cfg.yml_search, problem, tx,
-                                      threads=cfg.threads,
-                                      candidate_limit=cfg.limit_candidates,
-                                      time_limit=cfg.limit_time)
+        searcher = Searcher.from_config(cfg.search, problem, tx,
+                                        threads=cfg.threads,
+                                        candidate_limit=cfg.limit_candidates,
+                                        time_limit=cfg.limit_time)
 
         # build session
         return Session(dir_patches=dir_patches,
