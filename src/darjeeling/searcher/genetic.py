@@ -11,7 +11,8 @@ import attr
 import bugzoo
 from bugzoo.client import Client as BugZooClient
 
-from .base import Searcher, SearcherConfig
+from .base import Searcher
+from ..config import SearcherConfig
 from ..candidate import Candidate
 from ..transformation import Transformation
 from ..problem import Problem
@@ -34,6 +35,21 @@ class GeneticSearcherConfig(SearcherConfig):
     rate_crossover: float = attr.ib(default=1.0)
     tournament_size: int = attr.ib(default=2)
     sample_size: Optional[Union[int, float]] = attr.ib(default=None)
+
+    @classmethod
+    def from_dict(cls, d: Dict[str, Any]) -> 'SearcherConfig':
+        num_generations: int = d.get('generations', 10)
+        population_size: int = d.get('population', 40)
+        rate_mutation: float = d.get('mutation-rate', 1.0)
+        rate_crossover: float = d.get('crossover-rate', 1.0)
+        tournament_size: int = d.get('tournament-size', 2)
+        sample_size: Optional[Union[int, float]] = d.get('test-sample-size')
+        return GeneticSearcherConfig(num_generations=num_generations,
+                                     population_size=population_size,
+                                     rate_mutation=rate_mutation,
+                                     rate_crossover=rate_crossover,
+                                     tournament_size=tournament_size,
+                                     sample_size=sample_size)
 
 
 class GeneticSearcher(Searcher):
