@@ -53,10 +53,11 @@ class GeneticSearcherConfig(SearcherConfig):
 
 
 class GeneticSearcher(Searcher):
-    NAME = 'genetic'
+    CONFIG = GeneticSearcherConfig
 
-    @staticmethod
-    def from_dict(d: Dict[str, Any],
+    @classmethod
+    def from_dict(cls,
+                  cfg: GeneticSearcherConfig,
                   problem: Problem,
                   transformations: List[Transformation],
                   *,
