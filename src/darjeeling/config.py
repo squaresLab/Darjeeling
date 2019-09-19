@@ -2,7 +2,9 @@
 __all__ = ('Config', 'OptimizationsConfig', 'SchemaConfig',
            'TransformationsConfig', 'LocalizationConfig')
 
-from typing import (Optional, Collection, Tuple, Dict, Any, List, Set)
+from typing import (Optional, Collection, Tuple, Dict, Any, List, Set,
+                    Iterator, Type)
+import abc
 import sys
 import random
 import datetime
@@ -10,7 +12,31 @@ import datetime
 import attr
 
 from .core import Language, FileLine, FileLineSet
+from .util import dynamically_registered
 from .exceptions import BadConfigurationException, LanguageNotSupported
+
+
+@dynamically_registered()
+class SearcherConfig(abc.ABC):
+    """Describes a search algorithm configuration."""
+    @staticmethod
+    def __iter__() -> Iterator[str]:
+        ...
+
+    @staticmethod
+    def __len__() -> int:
+        ...
+
+    @staticmethod
+    def __getitem__(name: str) -> Type['SearcherConfig']:
+        ...
+
+    @classmethod
+    @abc.abstractmethod
+    def from_dict(cls, d: Dict[str, Any]) -> 'SearcherConfig':
+        name_type: str = d['type']
+        type_: Type[SearcherConfig] = SearcherConfig[name_type]
+        return type_.from_dict(d)
 
 
 @attr.s(frozen=True)

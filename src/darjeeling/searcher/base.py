@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-__all__ = ('Searcher', 'SearcherConfig')
+__all__ = ('Searcher',)
 
 from typing import (Iterable, Iterator, Optional, List, Tuple, Any, Dict,
                     Type, Union, ClassVar, Set)
+from typing_extensions import final
 from mypy_extensions import NoReturn
 import abc
 import logging
@@ -31,26 +32,8 @@ from ..util import Stopwatch, dynamically_registered
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
-_registry: Dict[str, Type['Searcher']] = {}
 
-
-@dynamically_registered()
-class SearcherConfig:
-    """Describes a search algorithm configuration."""
-    @staticmethod
-    def __iter__() -> Iterator[str]:
-        ...
-
-    @staticmethod
-    def __len__() -> int:
-        ...
-
-    @staticmethod
-    def lookup(name: str) -> Type['SearcherConfig']:
-        ...
-
-
-@dynamically_registered(iterator=None)
+@dynamically_registered(iterator=None, lookup='lookup')
 class Searcher(abc.ABC):
     @staticmethod
     def __len__() -> int:
