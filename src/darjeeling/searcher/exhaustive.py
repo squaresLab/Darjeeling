@@ -18,6 +18,12 @@ class ExhaustiveSearcherConfig(SearcherConfig):
     """A configuration for exhaustive search."""
     NAME = 'exhaustive'
 
+    def __repr__(self) -> str:
+        return 'ExhaustiveSearcherConfig()'
+
+    def __str__(self) -> str:
+        return repr(self)
+
     @classmethod
     def from_dict(cls, d: Dict[str, Any]) -> 'SearcherConfig':
         return ExhaustiveSearcherConfig()
