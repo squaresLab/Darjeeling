@@ -40,17 +40,9 @@ class SearcherConfig(abc.ABC):
         return type_.from_dict(d)
 
 
-@dynamically_registered(lookup='lookup')
+@dynamically_registered(lookup='lookup', length=None, iterator=None)
 class TestSuiteConfig(abc.ABC):
     """Describes a test suite configuration."""
-    @staticmethod
-    def __iter__() -> Iterator[str]:
-        ...
-
-    @staticmethod
-    def __len__() -> int:
-        ...
-
     @staticmethod
     def lookup(name: str) -> Type['TestSuiteConfig']:
         ...
