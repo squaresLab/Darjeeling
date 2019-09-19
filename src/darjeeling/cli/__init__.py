@@ -171,6 +171,7 @@ class BaseController(cement.Controller):
                               terminate_early=terminate_early,
                               limit_candidates=limit_candidates,
                               limit_time_minutes=limit_time_minutes)
+        logger.info("using configuration: %s", cfg)
 
         # connect to BugZoo
         logger.info("connecting to BugZoo server")

@@ -6,7 +6,8 @@ import datetime
 
 from bugzoo import Client as BugZooClient
 
-from .base import Searcher, SearcherConfig
+from .base import Searcher
+from ..config import SearcherConfig
 from ..candidate import Candidate, all_single_edit_patches
 from ..problem import Problem
 from ..transformation import Transformation
@@ -16,6 +17,16 @@ from ..exceptions import SearchExhausted
 class ExhaustiveSearcherConfig(SearcherConfig):
     """A configuration for exhaustive search."""
     NAME = 'exhaustive'
+
+    def __repr__(self) -> str:
+        return 'ExhaustiveSearcherConfig()'
+
+    def __str__(self) -> str:
+        return repr(self)
+
+    @classmethod
+    def from_dict(cls, d: Dict[str, Any]) -> 'SearcherConfig':
+        return ExhaustiveSearcherConfig()
 
 
 class ExhaustiveSearcher(Searcher):

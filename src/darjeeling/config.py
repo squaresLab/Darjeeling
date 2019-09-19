@@ -2,7 +2,9 @@
 __all__ = ('Config', 'OptimizationsConfig', 'SchemaConfig',
            'TransformationsConfig', 'LocalizationConfig')
 
-from typing import (Optional, Collection, Tuple, Dict, Any, List, Set)
+from typing import (Optional, Collection, Tuple, Dict, Any, List, Set,
+                    Iterator, Type)
+import abc
 import sys
 import random
 import datetime
@@ -10,7 +12,31 @@ import datetime
 import attr
 
 from .core import Language, FileLine, FileLineSet
+from .util import dynamically_registered
 from .exceptions import BadConfigurationException, LanguageNotSupported
+
+
+@dynamically_registered(lookup='lookup')
+class SearcherConfig(abc.ABC):
+    """Describes a search algorithm configuration."""
+    @staticmethod
+    def __iter__() -> Iterator[str]:
+        ...
+
+    @staticmethod
+    def __len__() -> int:
+        ...
+
+    @staticmethod
+    def lookup(name: str) -> Type['SearcherConfig']:
+        ...
+
+    @classmethod
+    @abc.abstractmethod
+    def from_dict(cls, d: Dict[str, Any]) -> 'SearcherConfig':
+        name_type: str = d['type']
+        type_: Type[SearcherConfig] = SearcherConfig.lookup(name_type)
+        return type_.from_dict(d)
 
 
 @attr.s(frozen=True)
@@ -156,12 +182,15 @@ class Config:
     limit_time_minutes: int, optional
         An optional limit on the number of minutes that may be spent
         searching for an acceptable patch.
+    search: SearcherConfig
+        The configuration used by the search algorithm.
     """
     snapshot: str = attr.ib()
     language: Language = attr.ib()
     transformations: TransformationsConfig = attr.ib()
     localization: LocalizationConfig = attr.ib()
     yml_search = attr.ib()  # FIXME migrate
+    search: SearcherConfig = attr.ib()
     seed: int = attr.ib(default=0)
     optimizations: OptimizationsConfig = attr.ib(factory=OptimizationsConfig)
     terminate_early: bool = attr.ib(default=True)
@@ -288,6 +317,11 @@ class Config:
             raise BadConfigurationException(m)
         localization = LocalizationConfig.from_yml(yml['localization'])
 
+        if 'algorithm' not in yml:
+            m = "'algorithm' section is missing"
+            raise BadConfigurationException(m)
+        search = SearcherConfig.from_dict(yml['algorithm'])
+
         return Config(snapshot=snapshot,
                       language=language,
                       seed=seed,
@@ -298,4 +332,5 @@ class Config:
                       transformations=transformations,
                       localization=localization,
                       yml_search=yml['algorithm'],
+                      search=search,
                       optimizations=opts)
