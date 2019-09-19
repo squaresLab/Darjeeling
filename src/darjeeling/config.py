@@ -16,7 +16,7 @@ from .util import dynamically_registered
 from .exceptions import BadConfigurationException, LanguageNotSupported
 
 
-@dynamically_registered()
+@dynamically_registered(lookup='lookup')
 class SearcherConfig(abc.ABC):
     """Describes a search algorithm configuration."""
     @staticmethod
@@ -28,14 +28,14 @@ class SearcherConfig(abc.ABC):
         ...
 
     @staticmethod
-    def __getitem__(name: str) -> Type['SearcherConfig']:
+    def __lookup__(name: str) -> Type['SearcherConfig']:
         ...
 
     @classmethod
     @abc.abstractmethod
     def from_dict(cls, d: Dict[str, Any]) -> 'SearcherConfig':
         name_type: str = d['type']
-        type_: Type[SearcherConfig] = SearcherConfig[name_type]
+        type_: Type[SearcherConfig] = SearcherConfig.lookup(name_type)
         return type_.from_dict(d)
 
 
@@ -182,12 +182,15 @@ class Config:
     limit_time_minutes: int, optional
         An optional limit on the number of minutes that may be spent
         searching for an acceptable patch.
+    search: SearcherConfig
+        The configuration used by the search algorithm.
     """
     snapshot: str = attr.ib()
     language: Language = attr.ib()
     transformations: TransformationsConfig = attr.ib()
     localization: LocalizationConfig = attr.ib()
     yml_search = attr.ib()  # FIXME migrate
+    search: SearcherConfig = attr.ib()
     seed: int = attr.ib(default=0)
     optimizations: OptimizationsConfig = attr.ib(factory=OptimizationsConfig)
     terminate_early: bool = attr.ib(default=True)
@@ -314,6 +317,11 @@ class Config:
             raise BadConfigurationException(m)
         localization = LocalizationConfig.from_yml(yml['localization'])
 
+        if 'algorithm' not in yml:
+            m = "'algorithm' section is missing"
+            raise BadConfigurationException(m)
+        search = SearcherConfig.from_dict(yml['algorithm'])
+
         return Config(snapshot=snapshot,
                       language=language,
                       seed=seed,
@@ -324,4 +332,5 @@ class Config:
                       transformations=transformations,
                       localization=localization,
                       yml_search=yml['algorithm'],
+                      search=search,
                       optimizations=opts)
