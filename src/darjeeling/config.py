@@ -28,7 +28,7 @@ class SearcherConfig(abc.ABC):
         ...
 
     @staticmethod
-    def __lookup__(name: str) -> Type['SearcherConfig']:
+    def lookup(name: str) -> Type['SearcherConfig']:
         ...
 
     @classmethod
