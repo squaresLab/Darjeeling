@@ -52,7 +52,7 @@ class GeneticSearcherConfig(SearcherConfig):
                                      sample_size=sample_size)
 
 
-class GeneticSearcher(Searcher):
+class GeneticSearcher(Searcher[GeneticSearcherConfig]):
     CONFIG = GeneticSearcherConfig
 
     @classmethod
