@@ -9,12 +9,16 @@ import abc
 import sys
 import random
 import datetime
+import logging
 
 import attr
 
 from .core import Language, FileLine, FileLineSet
 from .util import dynamically_registered
 from .exceptions import BadConfigurationException, LanguageNotSupported
+
+logger: logging.Logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 @dynamically_registered(lookup='lookup')
@@ -50,7 +54,6 @@ class TestSuiteConfig(abc.ABC):
     @classmethod
     @abc.abstractmethod
     def from_dict(cls, d: Dict[str, Any]) -> 'TestSuiteConfig':
-        name_type: str = d['type']
         if 'type' not in d:
             logger.debug("using default BugZoo test suite")
             name_type = 'bugzoo'
@@ -205,12 +208,15 @@ class Config:
         searching for an acceptable patch.
     search: SearcherConfig
         The configuration used by the search algorithm.
+    tests: TestSuiteConfig
+        A configuration for the test suite.
     """
     snapshot: str = attr.ib()
     language: Language = attr.ib()
     transformations: TransformationsConfig = attr.ib()
     localization: LocalizationConfig = attr.ib()
     search: SearcherConfig = attr.ib()
+    tests: TestSuiteConfig = attr.ib()
     seed: int = attr.ib(default=0)
     optimizations: OptimizationsConfig = attr.ib(factory=OptimizationsConfig)
     terminate_early: bool = attr.ib(default=True)
@@ -342,6 +348,11 @@ class Config:
             raise BadConfigurationException(m)
         search = SearcherConfig.from_dict(yml['algorithm'])
 
+        if 'tests' in yml and not isinstance(yml['tests'], dict):
+            m = "'tests' section should be an object"
+            raise BadConfigurationException(m)
+        tests = TestSuiteConfig.from_dict(yml.get('tests', {}))
+
         return Config(snapshot=snapshot,
                       language=language,
                       seed=seed,
@@ -351,5 +362,6 @@ class Config:
                       limit_candidates=limit_candidates,
                       transformations=transformations,
                       localization=localization,
+                      tests=tests,
                       search=search,
                       optimizations=opts)

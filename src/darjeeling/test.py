@@ -1,15 +1,24 @@
 # -*- coding: utf-8 -*-
-from typing import Sequence, Iterator, TypeVar
+from typing import Sequence, Iterator, TypeVar, Dict, Any
 from abc import abstractmethod
 
 import attr
 import bugzoo
 
-from .core import TestOutcome, TestSuite
+from .core import TestOutcome, TestSuite, Test
+from .config import TestSuiteConfig
+
+
+class BugZooTestSuiteConfig(TestSuiteConfig):
+    NAME = 'bugzoo'
+
+    @classmethod
+    def from_dict(cls, d: Dict[str, Any]) -> TestSuiteConfig:
+        return BugZooTestSuiteConfig()
 
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
-class BugZooTest:
+class BugZooTest(Test):
     _test: bugzoo.core.TestCase
 
     @property
@@ -17,7 +26,7 @@ class BugZooTest:
         return self._test.name
 
 
-class BugZooTestSuite(TestSuite):
+class BugZooTestSuite(TestSuite[BugZooTest]):
     @staticmethod
     def from_bug(bz: bugzoo.Client, bug: bugzoo.Bug) -> 'BugZooTestSuite':
         return BugZooTestSuite(bz, [BugZooTest(t) for t in bug.tests])
