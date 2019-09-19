@@ -51,6 +51,11 @@ class TestSuiteConfig(abc.ABC):
     @abc.abstractmethod
     def from_dict(cls, d: Dict[str, Any]) -> 'TestSuiteConfig':
         name_type: str = d['type']
+        if 'type' not in d:
+            logger.debug("using default BugZoo test suite")
+            name_type = 'bugzoo'
+        else:
+            name_type = d['type']
         type_: Type[TestSuiteConfig] = TestSuiteConfig.lookup(name_type)
         return type_.from_dict(d)
 
