@@ -52,36 +52,30 @@ class GeneticSearcherConfig(SearcherConfig):
                                      sample_size=sample_size)
 
 
-class GeneticSearcher(Searcher):
-    NAME = 'genetic'
+class GeneticSearcher(Searcher[GeneticSearcherConfig]):
+    CONFIG = GeneticSearcherConfig
 
-    @staticmethod
-    def from_dict(d: Dict[str, Any],
-                  problem: Problem,
-                  transformations: List[Transformation],
-                  *,
-                  threads: int = 1,
-                  candidate_limit: Optional[int] = None,
-                  time_limit: Optional[datetime.timedelta] = None
-                  ) -> 'GeneticSearcher':
-        sample_size = \
-            d.get('test-sample-size')  # type: Optional[Union[int, float]]
-        num_generations = d.get('generations', 10)  # type: int
-        population_size = d.get('population', 40)  # type: int
-        rate_mutation = d.get('mutation-rate', 1.0)  # type: float
-        rate_crossover = d.get('crossover-rate', 1.0)  # type: float
-        tournament_size = d.get('tournament-size', 2)  # type: int
+    @classmethod
+    def from_config(cls,
+                    cfg: GeneticSearcherConfig,
+                    problem: Problem,
+                    transformations: List[Transformation],
+                    *,
+                    threads: int = 1,
+                    candidate_limit: Optional[int] = None,
+                    time_limit: Optional[datetime.timedelta] = None
+                    ) -> 'GeneticSearcher':
         return GeneticSearcher(problem.bugzoo,
                                problem,
                                transformations,
                                threads=threads,
+                               num_generations=cfg.num_generations,
+                               population_size=cfg.population_size,
+                               rate_crossover=cfg.rate_crossover,
+                               rate_mutation=cfg.rate_mutation,
+                               tournament_size=cfg.tournament_size,
+                               test_sample_size=cfg.sample_size,
                                candidate_limit=candidate_limit,
-                               num_generations=num_generations,
-                               population_size=population_size,
-                               rate_crossover=rate_crossover,
-                               rate_mutation=rate_mutation,
-                               tournament_size=tournament_size,
-                               test_sample_size=sample_size,
                                time_limit=time_limit)
 
     def __init__(self,

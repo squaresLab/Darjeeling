@@ -29,18 +29,19 @@ class ExhaustiveSearcherConfig(SearcherConfig):
         return ExhaustiveSearcherConfig()
 
 
-class ExhaustiveSearcher(Searcher):
-    NAME = 'exhaustive'
+class ExhaustiveSearcher(Searcher[ExhaustiveSearcherConfig]):
+    CONFIG = ExhaustiveSearcherConfig
 
-    @staticmethod
-    def from_dict(d: Dict[str, Any],
-                  problem: Problem,
-                  transformations: List[Transformation],
-                  *,
-                  threads: int = 1,
-                  candidate_limit: Optional[int] = None,
-                  time_limit: Optional[datetime.timedelta] = None
-                  ) -> 'ExhaustiveSearcher':
+    @classmethod
+    def from_config(cls,
+                    cfg: ExhaustiveSearcherConfig,
+                    problem: Problem,
+                    transformations: List[Transformation],
+                    *,
+                    threads: int = 1,
+                    candidate_limit: Optional[int] = None,
+                    time_limit: Optional[datetime.timedelta] = None
+                    ) -> 'ExhaustiveSearcher':
         return ExhaustiveSearcher(problem.bugzoo,
                                   problem,
                                   transformations,

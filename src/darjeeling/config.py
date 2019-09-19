@@ -189,7 +189,6 @@ class Config:
     language: Language = attr.ib()
     transformations: TransformationsConfig = attr.ib()
     localization: LocalizationConfig = attr.ib()
-    yml_search = attr.ib()  # FIXME migrate
     search: SearcherConfig = attr.ib()
     seed: int = attr.ib(default=0)
     optimizations: OptimizationsConfig = attr.ib(factory=OptimizationsConfig)
@@ -331,6 +330,5 @@ class Config:
                       limit_candidates=limit_candidates,
                       transformations=transformations,
                       localization=localization,
-                      yml_search=yml['algorithm'],
                       search=search,
                       optimizations=opts)

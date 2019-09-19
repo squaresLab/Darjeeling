@@ -2,7 +2,7 @@
 __all__ = ('Searcher',)
 
 from typing import (Iterable, Iterator, Optional, List, Tuple, Any, Dict,
-                    Type, Union, ClassVar, Set)
+                    Type, TypeVar, Generic, Union, ClassVar, Set)
 from typing_extensions import final
 from mypy_extensions import NoReturn
 import abc
@@ -16,6 +16,7 @@ import signal
 import bugzoo
 
 from ..core import FileLine
+from ..config import SearcherConfig
 from ..candidate import Candidate
 from ..problem import Problem
 from ..outcome import OutcomeManager, CandidateOutcome
@@ -32,42 +33,37 @@ from ..util import Stopwatch, dynamically_registered
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
+T = TypeVar('T', bound=SearcherConfig)
 
-@dynamically_registered(iterator=None, lookup='lookup')
-class Searcher(abc.ABC):
+
+@dynamically_registered('CONFIG',
+                        lookup='_searcher_for_config_type',
+                        iterator=None)
+class Searcher(Generic[T], abc.ABC):
+    CONFIG: ClassVar[Type[T]]
+
     @staticmethod
-    def __len__() -> int:
+    def _searcher_for_config_type(type_cfg: Type[SearcherConfig]
+                                 ) -> Type['Searcher']:
+        """Retrieves associated searcher for a given configuration class."""
         ...
 
-    @staticmethod
-    def lookup(name: str) -> Type['Searcher']:
-        ...
-
-    @staticmethod
-    def from_dict(d: Dict[str, Any],
-                  problem: Problem,
-                  tx: List[Transformation],
-                  *,
-                  threads: int = 1,
-                  candidate_limit: Optional[int] = None,
-                  time_limit: Optional[datetime.timedelta] = None
-                  ) -> 'Searcher':
-        try:
-            typ = d['type']
-        except KeyError:
-            m = "'type' property missing from 'algorithm' section"
-            raise BadConfigurationException(m)
-        try:
-            cls: Type[Searcher] = Searcher.lookup(typ)
-        except KeyError:
-            m = f"unsupported 'type' property in 'algorithm' section: {typ}"
-            #m += " [supported types: {}]".format(', '.join(Searcher))
-            raise BadConfigurationException(m)
-
-        return cls.from_dict(d, problem, tx,
-                             threads=threads,
-                             candidate_limit=candidate_limit,
-                             time_limit=time_limit)
+    @classmethod
+    @abc.abstractmethod
+    def from_config(cls,
+                    cfg: T,
+                    problem: Problem,
+                    tx: List[Transformation],
+                    *,
+                    threads: int = 1,
+                    candidate_limit: Optional[int] = None,
+                    time_limit: Optional[datetime.timedelta] = None
+                    ) -> 'Searcher':
+        type_searcher = Searcher._searcher_for_config_type(cfg.__class__)
+        return type_searcher.from_config(cfg, problem, tx,
+                                         threads=threads,
+                                         candidate_limit=candidate_limit,
+                                         time_limit=time_limit)
 
     def __init__(self,
                  bugzoo: bugzoo.BugZoo,

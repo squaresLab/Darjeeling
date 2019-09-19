@@ -65,7 +65,7 @@ def _dynamically_registered(cls,
         has_name = hasattr(subcls, register_on)
         is_abstract = inspect.isabstract(subcls)
         if has_name and is_abstract:
-            msg = f'Illegal "NAME" attribute in abstract class: {subcls}'
+            msg = f'Illegal "{register_on}" attribute in abstract class: {subcls}'
             raise TypeError(msg)
         if is_abstract:
             return
