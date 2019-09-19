@@ -9,6 +9,7 @@ from .core import TestOutcome, TestSuite, Test
 from .config import TestSuiteConfig
 
 
+@attr.s(frozen=True)
 class BugZooTestSuiteConfig(TestSuiteConfig):
     NAME = 'bugzoo'
 
