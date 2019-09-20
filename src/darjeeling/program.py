@@ -37,13 +37,11 @@ class Program:
             raise BadConfigurationException(m)
 
         snapshot = bz.bugs[cfg.snapshot]
+        tests = TestSuite.from_config(cfg.tests, bz, snapshot)
 
         if not bz.bugs.is_installed(snapshot):
             m = f"snapshot not installed: {cfg.snapshot}"
             raise BadConfigurationException(m)
-
-        # TODO build from config
-        tests = BugZooTestSuite.from_bug(bz, snapshot)
 
         return Program(bz, snapshot, tests)
 

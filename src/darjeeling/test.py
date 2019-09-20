@@ -1,21 +1,40 @@
 # -*- coding: utf-8 -*-
-from typing import Sequence, Iterator, TypeVar, Dict, Any, Sequence, Generic
+from typing import (Sequence, Iterator, TypeVar, Dict, Any, Sequence, Generic,
+                    Type, ClassVar)
 import abc
 
 import attr
 import bugzoo
-from bugzoo import Client as BugZooClient
+from bugzoo import Bug, Client as BugZooClient, Container as BugZooContainer
 
 from .core import TestOutcome, Test
 from .config import TestSuiteConfig
+from .util import dynamically_registered
 
 T = TypeVar('T', bound=Test)
+C = TypeVar('C', bound=TestSuiteConfig)
 
 
-class TestSuite(Generic[T]):
+@dynamically_registered('CONFIG', length=None, iterator=None,
+                        lookup='_for_config_type')
+class TestSuite(Generic[T, C]):
+    CONFIG: ClassVar[Type[C]]
+
     def __init__(self, bz: BugZooClient, tests: Sequence[T]) -> None:
         self.__name_to_test = {t.name: t for t in tests}
         self._bugzoo = bz
+
+    @staticmethod
+    def _for_config_type(type_config: Type[TestSuiteConfig]
+                        ) -> Type['TestSuite']:
+        """Fetches the TestSuite class for a given TestSuiteConfig class."""
+        ...
+
+    @classmethod
+    @abc.abstractmethod
+    def from_config(cls, cfg: C, bz: BugZooClient, bug: Bug) -> 'TestSuite':
+        type_ = TestSuite._for_config_type(cfg.__class__)
+        return type_.from_config(cfg, bz, bug)
 
     def __len__(self) -> int:
         return len(self.__name_to_test)
@@ -27,7 +46,7 @@ class TestSuite(Generic[T]):
         return self.__name_to_test[name]
 
     @abc.abstractmethod
-    def execute(self, container: bugzoo.Container, test: T) -> TestOutcome:
+    def execute(self, container: BugZooContainer, test: T) -> TestOutcome:
         raise NotImplementedError
 
 
@@ -49,10 +68,17 @@ class BugZooTest(Test):
         return self._test.name
 
 
-class BugZooTestSuite(TestSuite[BugZooTest]):
+class BugZooTestSuite(TestSuite[BugZooTest, BugZooTestSuiteConfig]):
+    CONFIG = BugZooTestSuiteConfig
+
     @classmethod
-    def from_bug(cls, bz: bugzoo.Client, bug: bugzoo.Bug) -> 'BugZooTestSuite':
-        return BugZooTestSuite(bz, [BugZooTest(t) for t in bug.tests])
+    def from_config(cls,
+                    cfg: BugZooTestSuiteConfig,
+                    bz: BugZooClient,
+                    bug: Bug
+                    ) -> 'TestSuite':
+        tests = tuple(BugZooTest(t) for t in bug.tests)
+        return BugZooTestSuite(bz, tests)
 
     def execute(self,
                 container: bugzoo.Container,
