@@ -15,9 +15,9 @@ import kaskara
 from bugzoo.core import FileLine
 from bugzoo import Bug as Snapshot
 
-from .core import Language, TestCoverageMap, TestSuite
+from .core import Language, TestCoverageMap
 from .coverage import coverage_for_snapshot
-from .test import BugZooTestSuite
+from .test import BugZooTestSuite, TestSuite
 from .candidate import Candidate
 from .searcher import Searcher
 from .program import Program

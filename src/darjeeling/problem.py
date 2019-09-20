@@ -22,7 +22,7 @@ from bugzoo.compiler import CompilationOutcome as BuildOutcome
 from bugzoo.util import indent
 from kaskara.analysis import Analysis
 
-from .core import Language, Test, TestSuite, TestCoverage, TestCoverageMap
+from .core import Language, Test, TestCoverage, TestCoverageMap
 from .program import Program
 from .source import ProgramSourceManager
 from .util import get_file_contents

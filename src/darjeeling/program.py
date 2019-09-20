@@ -9,8 +9,8 @@ from bugzoo.core.container import Container
 from bugzoo.core.patch import Patch
 import attr
 
-from .core import Test, TestOutcome, TestSuite
-from .test import BugZooTestSuite
+from .core import Test, TestOutcome
+from .test import TestSuite, BugZooTestSuite
 from .config import Config
 from .exceptions import BadConfigurationException, BuildFailure
 
@@ -42,6 +42,7 @@ class Program:
             m = f"snapshot not installed: {cfg.snapshot}"
             raise BadConfigurationException(m)
 
+        # TODO build from config
         tests = BugZooTestSuite.from_bug(bz, snapshot)
 
         return Program(bz, snapshot, tests)

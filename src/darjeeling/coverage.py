@@ -9,8 +9,8 @@ from bugzoo import (Client as BugZooClient,
                     Bug as Snapshot,
                     Container as BugZooContainer)
 
-from .core import (FileLine, TestCoverageMap, TestSuite, Test, TestCoverage,
-                   TestOutcome)
+from .core import FileLine, TestCoverageMap, Test, TestCoverage, TestOutcome
+from .test import TestSuite
 
 
 def coverage_for_snapshot(bz: BugZooClient,

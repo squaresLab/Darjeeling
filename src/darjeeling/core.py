@@ -88,28 +88,6 @@ class TestOutcomeSet(object):
         return TestOutcomeSet(outcomes)
 
 
-T = TypeVar('T', bound=Test)
-
-
-class TestSuite(Generic[T]):
-    def __init__(self, bz: BugZooClient, tests: Sequence[T]) -> None:
-        self.__name_to_test = {t.name: t for t in tests}
-        self._bugzoo = bz
-
-    def __len__(self) -> int:
-        return len(self.__name_to_test)
-
-    def __iter__(self) -> Iterator[Test]:
-        yield from self.__name_to_test.values()
-
-    def __getitem__(self, name: str) -> Test:
-        return self.__name_to_test[name]
-
-    @abc.abstractmethod
-    def execute(self, container: Container, test: T) -> TestOutcome:
-        raise NotImplementedError
-
-
 @attr.s(frozen=True, slots=True)
 class TestCoverage:
     """Describes the lines that were executed during a given test execution."""
