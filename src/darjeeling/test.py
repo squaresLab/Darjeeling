@@ -68,7 +68,7 @@ class BugZooTest(Test):
         return self._test.name
 
 
-class BugZooTestSuite(TestSuite[BugZooTest, BugZooTestSuiteConfig]):
+class BugZooTestSuite(TestSuite): # [BugZooTest, BugZooTestSuiteConfig]):
     CONFIG = BugZooTestSuiteConfig
 
     @classmethod
