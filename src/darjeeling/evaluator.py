@@ -23,7 +23,8 @@ from .outcome import CandidateOutcome, \
                      BuildOutcome
 from .problem import Problem
 from .exceptions import BuildFailure
-from .core import Test, TestSuite
+from .core import Test
+from .test import TestSuite
 from .util import Stopwatch
 
 Evaluation = Tuple[Candidate, CandidateOutcome]

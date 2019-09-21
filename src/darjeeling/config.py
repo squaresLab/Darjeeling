@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 __all__ = ('Config', 'OptimizationsConfig', 'SchemaConfig',
+           'SearcherConfig', 'TestSuiteConfig',
            'TransformationsConfig', 'LocalizationConfig')
 
 from typing import (Optional, Collection, Tuple, Dict, Any, List, Set,
@@ -8,12 +9,16 @@ import abc
 import sys
 import random
 import datetime
+import logging
 
 import attr
 
 from .core import Language, FileLine, FileLineSet
 from .util import dynamically_registered
 from .exceptions import BadConfigurationException, LanguageNotSupported
+
+logger: logging.Logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 @dynamically_registered(lookup='lookup')
@@ -36,6 +41,25 @@ class SearcherConfig(abc.ABC):
     def from_dict(cls, d: Dict[str, Any]) -> 'SearcherConfig':
         name_type: str = d['type']
         type_: Type[SearcherConfig] = SearcherConfig.lookup(name_type)
+        return type_.from_dict(d)
+
+
+@dynamically_registered(lookup='lookup', length=None, iterator=None)
+class TestSuiteConfig(abc.ABC):
+    """Describes a test suite configuration."""
+    @staticmethod
+    def lookup(name: str) -> Type['TestSuiteConfig']:
+        ...
+
+    @classmethod
+    @abc.abstractmethod
+    def from_dict(cls, d: Dict[str, Any]) -> 'TestSuiteConfig':
+        if 'type' not in d:
+            logger.debug("using default BugZoo test suite")
+            name_type = 'bugzoo'
+        else:
+            name_type = d['type']
+        type_: Type[TestSuiteConfig] = TestSuiteConfig.lookup(name_type)
         return type_.from_dict(d)
 
 
@@ -184,12 +208,15 @@ class Config:
         searching for an acceptable patch.
     search: SearcherConfig
         The configuration used by the search algorithm.
+    tests: TestSuiteConfig
+        A configuration for the test suite.
     """
     snapshot: str = attr.ib()
     language: Language = attr.ib()
     transformations: TransformationsConfig = attr.ib()
     localization: LocalizationConfig = attr.ib()
     search: SearcherConfig = attr.ib()
+    tests: TestSuiteConfig = attr.ib()
     seed: int = attr.ib(default=0)
     optimizations: OptimizationsConfig = attr.ib(factory=OptimizationsConfig)
     terminate_early: bool = attr.ib(default=True)
@@ -321,6 +348,11 @@ class Config:
             raise BadConfigurationException(m)
         search = SearcherConfig.from_dict(yml['algorithm'])
 
+        if 'tests' in yml and not isinstance(yml['tests'], dict):
+            m = "'tests' section should be an object"
+            raise BadConfigurationException(m)
+        tests = TestSuiteConfig.from_dict(yml.get('tests', {}))
+
         return Config(snapshot=snapshot,
                       language=language,
                       seed=seed,
@@ -330,5 +362,6 @@ class Config:
                       limit_candidates=limit_candidates,
                       transformations=transformations,
                       localization=localization,
+                      tests=tests,
                       search=search,
                       optimizations=opts)
