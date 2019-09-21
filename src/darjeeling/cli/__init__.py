@@ -102,7 +102,7 @@ class BaseController(cement.Controller):
             (['--interactive'],
              {'help': 'enables an interactive user interface.',
               'action': 'store_true'}),
-            (['-q', '--quiet', '--silent'],
+            (['-q', '--quiet'],
              {'help': 'prevents output to the stdout',
               'action': 'store_true'}),
             (['--log-to-file'],
@@ -134,10 +134,11 @@ class BaseController(cement.Controller):
         ]
     )
     def repair(self) -> None:
-        # setup logging to stdout
-        log_to_stdout = logging.StreamHandler()
-        log_to_stdout.setLevel(logging.INFO)
-        logging.getLogger('darjeeling').addHandler(log_to_stdout)
+        # setup logging to stdout unless instructed not to do so
+        if not self.app.pargs.quiet:
+            log_to_stdout = logging.StreamHandler()
+            log_to_stdout.setLevel(logging.INFO)
+            logging.getLogger('darjeeling').addHandler(log_to_stdout)
 
         # setup logging to file
         log_to_filename = self.app.pargs.log_to_file  # type: Optional[str]
