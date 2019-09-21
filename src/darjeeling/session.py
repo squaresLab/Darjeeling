@@ -13,7 +13,7 @@ from datetime import timedelta, datetime
 import attr
 import bugzoo
 import kaskara
-from bugzoo.core import FileLine
+from bugzoo.core import FileLine, Patch
 from bugzoo import Bug as Snapshot
 
 from .core import Language, TestCoverageMap
