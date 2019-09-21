@@ -207,6 +207,10 @@ class BaseController(cement.Controller):
                 session.run()
                 session.close()
 
+            if self.app.pargs.print_patch and session.has_found_patch:
+                first_patch = next(session.patches)
+                print(str(first_patch))
+
             return session.has_found_patch
 
 
