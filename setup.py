@@ -25,7 +25,7 @@ setup(
         'kaskara>=0.0.5',
         'attrs~=19.1.0',
         'pyroglyph~=0.0.4',
-        'cement~=3.0.0',
+        'cement~=3.0.4',
         'requests',
         'flask'
     ],

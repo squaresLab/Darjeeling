@@ -133,7 +133,14 @@ class BaseController(cement.Controller):
                        'should be distributed')})
         ]
     )
-    def repair(self) -> None:
+    def repair(self) -> bool:
+        """Performs repair on a given scenario.
+
+        Returns
+        -------
+        bool
+            :code:`True` if at least one patch was found, else :code:`False`.
+        """
         # setup logging to stdout unless instructed not to do so
         if not self.app.pargs.quiet:
             log_to_stdout = logging.StreamHandler()
@@ -197,6 +204,8 @@ class BaseController(cement.Controller):
                 session.run()
                 session.close()
 
+            return session.has_found_patch
+
 
 class CLI(cement.App):
     class Meta:
@@ -206,4 +215,8 @@ class CLI(cement.App):
 
 def main():
     with CLI() as app:
-        app.run()
+        found_patch = app.run()
+        if found_patch:
+            sys.exit(0)
+        else:
+            sys.exit(1)
