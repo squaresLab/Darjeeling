@@ -163,6 +163,11 @@ class Session:
             logger.info("failed to find a patch")
 
     @property
+    def has_found_patch(self) -> bool:
+        """Returns :code:`True` if an acceptable patch has been found."""
+        return len(self._patches) > 0
+
+    @property
     def num_candidate_evaluations(self) -> int:
         return self.searcher.num_candidate_evals
 
