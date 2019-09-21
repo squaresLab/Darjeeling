@@ -7,6 +7,7 @@ import shutil
 import logging
 import random
 import asyncio
+import contextlib
 from datetime import timedelta, datetime
 
 import attr
@@ -41,6 +42,7 @@ class Session:
     """Used to manage and inspect an interactive repair session."""
     dir_patches = attr.ib(type=str)
     searcher = attr.ib(type=Searcher)
+    _problem = attr.ib(type=Problem)
     terminate_early = attr.ib(type=bool, default=True)
     _patches = attr.ib(type=List[Candidate], factory=list)
 
@@ -137,6 +139,7 @@ class Session:
 
         # build session
         return Session(dir_patches=dir_patches,
+                       problem=problem,
                        searcher=searcher,
                        terminate_early=cfg.terminate_early)
 
@@ -175,6 +178,13 @@ class Session:
     def running_time_secs(self) -> float:
         """Number of seconds that the search has been running."""
         return self.searcher.time_running.seconds
+
+    @property
+    @contextlib.contextmanager
+    def patches(self) -> Iterator[Patch]:
+        """Returns an iterator over the patches found during this session."""
+        for candidate in self._patches:
+            yield candidate.to_diff(self._problem)
 
     def close(self) -> None:
         """Closes the session."""
