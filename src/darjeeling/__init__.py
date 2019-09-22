@@ -7,15 +7,16 @@ from . import exceptions
 from .version import __version__
 from .problem import Problem
 
-_logging.getLogger(__name__).setLevel(_logging.INFO)
-_logging.getLogger(__name__).addHandler(_logging.NullHandler())
+_logger = _logging.getLogger(__name__)
+_logger.setLevel(_logging.INFO)
+_logger.addHandler(_logging.NullHandler())
 
 
 def _load_plugins() -> None:
     """Dynamically loads all plugins for Darjeeling."""
     for finder, name, is_pkg in _pkgutil.iter_modules():
         if name.startswith('darjeeling_'):
-            logger.info("loading plugin: %s", name)
+            _logger.info("loading plugin: %s", name)
             _importlib.import_module(name)
 
 
