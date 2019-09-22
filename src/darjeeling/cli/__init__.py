@@ -102,8 +102,11 @@ class BaseController(cement.Controller):
             (['--interactive'],
              {'help': 'enables an interactive user interface.',
               'action': 'store_true'}),
-            (['-q', '--quiet'],
+            (['--silent'],
              {'help': 'prevents output to the stdout',
+              'action': 'store_true'}),
+            (['--print-patch'],
+             {'help': 'prints the first acceptable patch that was found',
               'action': 'store_true'}),
             (['--log-to-file'],
              {'help': 'path to store the log file.',
@@ -142,7 +145,7 @@ class BaseController(cement.Controller):
             :code:`True` if at least one patch was found, else :code:`False`.
         """
         # setup logging to stdout unless instructed not to do so
-        if not self.app.pargs.quiet:
+        if not self.app.pargs.silent:
             log_to_stdout = logging.StreamHandler()
             log_to_stdout.setLevel(logging.INFO)
             logging.getLogger('darjeeling').addHandler(log_to_stdout)
@@ -203,6 +206,10 @@ class BaseController(cement.Controller):
             if not interactive:
                 session.run()
                 session.close()
+
+            if self.app.pargs.print_patch and session.has_found_patch:
+                first_patch = next(session.patches)
+                print(str(first_patch))
 
             return session.has_found_patch
 

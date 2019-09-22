@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from typing import List, Dict, Any, Type, Optional
+from typing import List, Dict, Any, Type, Optional, Iterator
 import os
 import sys
 import asyncio
@@ -12,7 +12,7 @@ from datetime import timedelta, datetime
 import attr
 import bugzoo
 import kaskara
-from bugzoo.core import FileLine
+from bugzoo.core import FileLine, Patch
 from bugzoo import Bug as Snapshot
 
 from .core import Language, TestCoverageMap
@@ -41,6 +41,7 @@ class Session:
     """Used to manage and inspect an interactive repair session."""
     dir_patches = attr.ib(type=str)
     searcher = attr.ib(type=Searcher)
+    _problem = attr.ib(type=Problem)
     terminate_early = attr.ib(type=bool, default=True)
     _patches = attr.ib(type=List[Candidate], factory=list)
 
@@ -137,6 +138,7 @@ class Session:
 
         # build session
         return Session(dir_patches=dir_patches,
+                       problem=problem,
                        searcher=searcher,
                        terminate_early=cfg.terminate_early)
 
@@ -175,6 +177,12 @@ class Session:
     def running_time_secs(self) -> float:
         """Number of seconds that the search has been running."""
         return self.searcher.time_running.seconds
+
+    @property
+    def patches(self) -> Iterator[Patch]:
+        """Returns an iterator over the patches found during this session."""
+        for candidate in self._patches:
+            yield candidate.to_diff(self._problem)
 
     def close(self) -> None:
         """Closes the session."""
