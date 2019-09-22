@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import logging as _logging
 import importlib as _importlib
 import pkgutil as _pkgutil
