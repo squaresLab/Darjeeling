@@ -10,4 +10,12 @@ from .problem import Problem
 _logging.getLogger(__name__).setLevel(_logging.INFO)
 _logging.getLogger(__name__).addHandler(_logging.NullHandler())
 
-# TODO dynamically load plugins
+
+def _load_plugins() -> None:
+    """Dynamically loads all plugins for Darjeeling."""
+    for finder, name, is_pkg in _pkgutil.iter_modules():
+        if name.startswith('darjeeling_'):
+            _importlib.import_module(name)
+
+
+_load_plugins()
