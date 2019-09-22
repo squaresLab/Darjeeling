@@ -102,7 +102,7 @@ class BaseController(cement.Controller):
             (['--interactive'],
              {'help': 'enables an interactive user interface.',
               'action': 'store_true'}),
-            (['-q', '--quiet'],
+            (['--silent'],
              {'help': 'prevents output to the stdout',
               'action': 'store_true'}),
             (['--print-patch'],
@@ -145,7 +145,7 @@ class BaseController(cement.Controller):
             :code:`True` if at least one patch was found, else :code:`False`.
         """
         # setup logging to stdout unless instructed not to do so
-        if not self.app.pargs.quiet:
+        if not self.app.pargs.silent:
             log_to_stdout = logging.StreamHandler()
             log_to_stdout.setLevel(logging.INFO)
             logging.getLogger('darjeeling').addHandler(log_to_stdout)
