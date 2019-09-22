@@ -7,7 +7,6 @@ import shutil
 import logging
 import random
 import asyncio
-import contextlib
 from datetime import timedelta, datetime
 
 import attr
@@ -180,7 +179,6 @@ class Session:
         return self.searcher.time_running.seconds
 
     @property
-    @contextlib.contextmanager
     def patches(self) -> Iterator[Patch]:
         """Returns an iterator over the patches found during this session."""
         for candidate in self._patches:
