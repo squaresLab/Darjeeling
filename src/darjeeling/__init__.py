@@ -1,8 +1,12 @@
-import logging
+import logging as _logging
+import importlib as _importlib
+import pkgutil as _pkgutil
 
 from . import exceptions
 from .version import __version__
 from .problem import Problem
 
-logging.getLogger(__name__).setLevel(logging.INFO)
-logging.getLogger(__name__).addHandler(logging.NullHandler())
+_logging.getLogger(__name__).setLevel(_logging.INFO)
+_logging.getLogger(__name__).addHandler(_logging.NullHandler())
+
+# TODO dynamically load plugins
