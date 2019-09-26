@@ -250,6 +250,7 @@ class Config:
 
     @staticmethod
     def from_yml(yml: Dict[str, Any],
+                 dir_: Optional[str] = None,
                  *,
                  terminate_early: bool = True,
                  seed: Optional[int] = None,
