@@ -90,6 +90,7 @@ class Session:
         logger.info("computing coverage information...")
         coverage = coverage_for_snapshot(client_bugzoo, program.snapshot, program.tests)
         logger.info("computed coverage information")
+        logger.debug("coverage: %s", coverage)
 
         # compute localization
         logger.info("computing fault localization...")
