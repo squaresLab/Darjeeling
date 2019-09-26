@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from typing import (Sequence, Iterator, TypeVar, Dict, Any, Sequence, Generic,
-                    Type, ClassVar)
+                    Type, ClassVar, Optional)
 import abc
 
 import attr
