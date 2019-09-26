@@ -53,14 +53,17 @@ class TestSuiteConfig(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def from_dict(cls, d: Dict[str, Any]) -> 'TestSuiteConfig':
+    def from_dict(cls,
+                  d: Dict[str, Any],
+                  dir_: Optional[str] = None
+                  ) -> 'TestSuiteConfig':
         if 'type' not in d:
             logger.debug("using default BugZoo test suite")
             name_type = 'bugzoo'
         else:
             name_type = d['type']
         type_: Type[TestSuiteConfig] = TestSuiteConfig.lookup(name_type)
-        return type_.from_dict(d)
+        return type_.from_dict(d, dir_)
 
 
 @attr.s(frozen=True)
@@ -352,7 +355,7 @@ class Config:
         if 'tests' in yml and not isinstance(yml['tests'], dict):
             m = "'tests' section should be an object"
             raise BadConfigurationException(m)
-        tests = TestSuiteConfig.from_dict(yml.get('tests', {}))
+        tests = TestSuiteConfig.from_dict(yml.get('tests', {}), dir_=dir_)
 
         return Config(snapshot=snapshot,
                       language=language,

@@ -55,7 +55,10 @@ class BugZooTestSuiteConfig(TestSuiteConfig):
     NAME = 'bugzoo'
 
     @classmethod
-    def from_dict(cls, d: Dict[str, Any]) -> TestSuiteConfig:
+    def from_dict(cls,
+                  d: Dict[str, Any],
+                  dir_: Optional[str] = None
+                  ) -> TestSuiteConfig:
         return BugZooTestSuiteConfig()
 
 
