@@ -150,6 +150,19 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
         """Returns an iterator over the names of the tests in this map."""
         yield from self.__mapping
 
+    def __str__(self) -> str:
+        out_lines = []
+        for name_test in self:
+            coverage_test = self[name_test]
+            result = 'PASS' if coverage_test.outcome.successful else 'FAIL'
+            lines_covered = coverage_test.lines
+            prefix = f"{name_test} [{result}]: { ... }"
+            lines.append(prefix)
+
+        out = '\n'.join(f'  {l}' for l in out_lines)
+        out = f'{{\n{out}\n}}'
+        return out
+
     @property
     def passing(self) -> 'TestCoverageMap':
         """Returns a variant of this mapping restricted to passing tests."""
