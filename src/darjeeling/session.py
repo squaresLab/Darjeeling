@@ -84,7 +84,9 @@ class Session:
             logger.warn(m)
 
         # build program
+        logger.debug("building program...")
         program = Program.from_config(client_bugzoo, cfg)
+        logger.debug("built program: %s", program)
 
         # compute coverage
         logger.info("computing coverage information...")
