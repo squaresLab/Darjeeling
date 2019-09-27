@@ -84,7 +84,7 @@ class CoverageConfig:
     ValueError
         If coverage is restricted to the empty set of files.
     """
-    restrict_to_files: Optional[Set[str]] = attr.ib(factory=set)
+    restrict_to_files: Optional[Set[str]] = attr.ib(default=None)
 
     @restrict_to_files.validator
     def validate_restrict_to_files(self, attr, value) -> None:
@@ -99,7 +99,7 @@ class CoverageConfig:
                   ) -> 'CoverageConfig':
         restrict_to_files: Optional[MutableSet[str]] = None
         if 'restrict-to-files' in d:
-            restrict_to_files = set(d['restrict-to-files'])
+            restrict_to_files = frozenset(d['restrict-to-files'])
         return CoverageConfig(restrict_to_files=restrict_to_files)
 
 
