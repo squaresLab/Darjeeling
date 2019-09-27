@@ -38,10 +38,13 @@ class SearcherConfig(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def from_dict(cls, d: Dict[str, Any]) -> 'SearcherConfig':
+    def from_dict(cls,
+                  d: Dict[str, Any],
+                  dir_: Optional[str] = None
+                  ) -> 'SearcherConfig':
         name_type: str = d['type']
         type_: Type[SearcherConfig] = SearcherConfig.lookup(name_type)
-        return type_.from_dict(d)
+        return type_.from_dict(d, dir_)
 
 
 @dynamically_registered(lookup='lookup', length=None, iterator=None)
@@ -350,12 +353,12 @@ class Config:
         if 'algorithm' not in yml:
             m = "'algorithm' section is missing"
             raise BadConfigurationException(m)
-        search = SearcherConfig.from_dict(yml['algorithm'])
+        search = SearcherConfig.from_dict(yml['algorithm'], dir_)
 
         if 'tests' in yml and not isinstance(yml['tests'], dict):
             m = "'tests' section should be an object"
             raise BadConfigurationException(m)
-        tests = TestSuiteConfig.from_dict(yml.get('tests', {}), dir_=dir_)
+        tests = TestSuiteConfig.from_dict(yml.get('tests', {}), dir_)
 
         return Config(snapshot=snapshot,
                       language=language,
