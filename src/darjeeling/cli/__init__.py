@@ -164,6 +164,8 @@ class BaseController(cement.Controller):
         log_to_file.setLevel(logging.DEBUG)
         log_to_file.setFormatter(log_formatter)
         logging.getLogger('darjeeling').addHandler(log_to_file)
+        logging.getLogger('bugzoo').addHandler(log_to_file)
+        logging.getLogger('kaskara').addHandler(log_to_file)
 
         filename = self.app.pargs.filename  # type: str
         interactive = self.app.pargs.interactive  # type: bool
