@@ -372,7 +372,7 @@ class Config:
 
         # coverage config
         if 'coverage' in yml:
-            CoverageConfig.from_dict(yml['coverage'], dir_)
+            coverage = CoverageConfig.from_dict(yml['coverage'], dir_)
         else:
             coverage = CoverageConfig()
 
