@@ -84,12 +84,15 @@ class Session:
             logger.warn(m)
 
         # build program
+        logger.debug("building program...")
         program = Program.from_config(client_bugzoo, cfg)
+        logger.debug("built program: %s", program)
 
         # compute coverage
         logger.info("computing coverage information...")
         coverage = coverage_for_snapshot(client_bugzoo, program.snapshot, program.tests)
         logger.info("computed coverage information")
+        logger.debug("coverage: %s", coverage)
 
         # compute localization
         logger.info("computing fault localization...")
