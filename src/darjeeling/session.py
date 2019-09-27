@@ -16,7 +16,7 @@ from bugzoo.core import FileLine, Patch
 from bugzoo import Bug as Snapshot
 
 from .core import Language, TestCoverageMap
-from .coverage import coverage_for_program
+from .coverage import coverage_for_config
 from .test import BugZooTestSuite, TestSuite
 from .candidate import Candidate
 from .searcher import Searcher
@@ -91,10 +91,7 @@ class Session:
 
         # compute coverage
         logger.info("computing coverage information...")
-        coverage = coverage_for_program(client_bugzoo, program)
-
-        # FIXME add option
-        coverage = coverage.restrict_to_files(['ArduCopter/*.cpp'])
+        coverage = coverage_for_config(client_bugzoo, program, cfg.coverage)
         logger.info("computed coverage information")
         logger.debug("coverage: %s", coverage)
 

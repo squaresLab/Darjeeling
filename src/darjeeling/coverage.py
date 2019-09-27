@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 __all__ = ('coverage_for_snapshot', 'coverage_for_container',
-           'coverage_for_test', 'coverage_for_program')
+           'coverage_for_test', 'coverage_for_program', 'coverage_for_config')
 
 from typing import Set
 import logging
@@ -10,6 +10,7 @@ from bugzoo import (Client as BugZooClient,
                     Bug as Snapshot,
                     Container as BugZooContainer)
 
+from .config import CoverageConfig
 from .core import FileLine, TestCoverageMap, Test, TestCoverage, TestOutcome
 from .test import TestSuite
 from .program import Program
@@ -18,8 +19,20 @@ logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-def coverage_for_program(bz: BugZooClient, prog: Program) -> TestCoverageMap:
-    return coverage_for_snapshot(bz, prog.snapshot, prog.tests)
+def coverage_for_config(bz: BugZooClient,
+                        program: Program,
+                        cfg: CoverageConfig
+                        ) -> TestCoverageMap:
+    coverage = coverage_for_program(bz, program)
+    if cfg.restrict_to_files:
+        coverage = coverage.restrict_to_files(cfg.restrict_to_files)
+    return coverage
+
+
+def coverage_for_program(bz: BugZooClient,
+                         program: Program
+                         ) -> TestCoverageMap:
+    return coverage_for_snapshot(bz, program.snapshot, program.tests)
 
 
 def coverage_for_snapshot(bz: BugZooClient,
