@@ -6,6 +6,7 @@ from typing import (TypeVar, Sequence, Iterator, Optional, Dict, Generic, Set,
 from collections import OrderedDict
 from enum import Enum
 import abc
+import fnmatch
 
 import attr
 from bugzoo.core import TestSuiteCoverage as BugZooTestSuiteCoverage
@@ -112,9 +113,21 @@ class TestCoverage:
         return len(self.lines)
 
     def restrict_to_files(self, files: Iterable[str]) -> 'TestCoverage':
-        """Returns a variant of this coverage, restricted to given files."""
-        lines = FileLineSet(l for l in self.lines if l.filename in files)
-        return TestCoverage(self.test, self.outcome, lines)
+        """Returns a variant of this coverage, restricted to given files.
+
+        Parameters
+        ----------
+        files: Iterable[str]
+            A list of filenames (that may or may not contain Unix wildcards)
+        """
+        lines: List[FileLine] = []
+        # NOTE this could be _much_ more efficient, but for now, performance
+        # isnt really a concern
+        for line in self:
+            filename = line.filename
+            if any(True for pattern in files if fnmatch.fnmatch(filename, pattern)):
+                lines.append(line)
+        return TestCoverage(self.test, self.outcome, FileLineSet.from_iter(lines))
 
     def restrict_to_locations(self,
                               locations: Iterable[FileLine]
