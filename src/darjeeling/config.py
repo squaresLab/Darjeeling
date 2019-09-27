@@ -5,7 +5,7 @@ __all__ = ('Config', 'OptimizationsConfig', 'SchemaConfig',
            'TransformationsConfig', 'LocalizationConfig')
 
 from typing import (Optional, Collection, Tuple, Dict, Any, List, Set,
-                    Iterator, Type)
+                    MutableSet, Iterator, Type)
 import abc
 import sys
 import random
@@ -80,6 +80,17 @@ class CoverageConfig:
         An optional set of files to which coverage should be restricted.
     """
     restrict_to_files: Optional[Set[str]] = attr.ib(factory=set)
+
+    # TODO must not restrict to empty set
+
+    @staticmethod
+    def from_dict(d: Dict[str, Any],
+                  dir_: Optional[str] = None
+                  ) -> 'CoverageConfig':
+        restrict_to_files: Optional[MutableSet[str]] = None
+        if 'restrict-to-files' in d:
+            restrict_to_files = set(d['restrict-to-files'])
+        return CoverageConfig(restrict_to_files=restrict_to_files)
 
 
 @attr.s(frozen=True)
