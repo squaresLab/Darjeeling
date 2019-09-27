@@ -61,6 +61,7 @@ class Session:
         logger.info("using %d threads", cfg.threads)
         logger.info("using language: %s", cfg.language.value)
         logger.info("using optimizations: %s", cfg.optimizations)
+        logger.info("using coverage config: %s", cfg.coverage)
         logger.info("using random number generator seed: %d", cfg.seed)
 
         if not cfg.terminate_early:
@@ -91,6 +92,9 @@ class Session:
         # compute coverage
         logger.info("computing coverage information...")
         coverage = coverage_for_snapshot(client_bugzoo, program.snapshot, program.tests)
+
+        # FIXME add option
+        coverage = coverage.restrict_to_files(['ArduCopter/*.cpp'])
         logger.info("computed coverage information")
         logger.debug("coverage: %s", coverage)
 
