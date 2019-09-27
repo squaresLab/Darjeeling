@@ -238,6 +238,7 @@ class Config:
     tests: TestSuiteConfig = attr.ib()
     seed: int = attr.ib(default=0)
     optimizations: OptimizationsConfig = attr.ib(factory=OptimizationsConfig)
+    coverage: CoverageConfig = attr.ib(factory=CoverageConfig)
     terminate_early: bool = attr.ib(default=True)
     threads: int = attr.ib(default=1)
     limit_candidates: Optional[int] = attr.ib(default=None)
