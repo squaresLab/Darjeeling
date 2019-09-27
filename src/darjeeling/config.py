@@ -5,7 +5,7 @@ __all__ = ('Config', 'OptimizationsConfig', 'SchemaConfig',
            'TransformationsConfig', 'LocalizationConfig')
 
 from typing import (Optional, Collection, Tuple, Dict, Any, List, Set,
-                    MutableSet, Iterator, Type)
+                    FrozenSet, Iterator, Type)
 import abc
 import sys
 import random
@@ -84,7 +84,7 @@ class CoverageConfig:
     ValueError
         If coverage is restricted to the empty set of files.
     """
-    restrict_to_files: Optional[Set[str]] = attr.ib(default=None)
+    restrict_to_files: Optional[FrozenSet[str]] = attr.ib(default=None)
 
     @restrict_to_files.validator
     def validate_restrict_to_files(self, attr, value) -> None:
@@ -97,9 +97,10 @@ class CoverageConfig:
     def from_dict(d: Dict[str, Any],
                   dir_: Optional[str] = None
                   ) -> 'CoverageConfig':
-        restrict_to_files: Optional[MutableSet[str]] = None
+        restrict_to_files: Optional[FrozenSet[str]] = None
         if 'restrict-to-files' in d:
-            restrict_to_files = frozenset(d['restrict-to-files'])
+            restrict_to_files_list: List[str] = d['restrict-to-files']
+            restrict_to_files = frozenset(restrict_to_files_list)
         return CoverageConfig(restrict_to_files=restrict_to_files)
 
 
