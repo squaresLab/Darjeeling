@@ -2,7 +2,7 @@ __all__ = ('Replacement', 'FileLine', 'FileLocationRange', 'Location',
            'TestCoverage', 'TestCoverageMap')
 
 from typing import (TypeVar, Sequence, Iterator, Optional, Dict, Generic, Set,
-                    Mapping, Iterable)
+                    Mapping, Iterable, List)
 from collections import OrderedDict
 from enum import Enum
 import abc
@@ -156,9 +156,9 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
             coverage_test = self[name_test]
             result = 'PASS' if coverage_test.outcome.successful else 'FAIL'
             lines_covered = coverage_test.lines
-            prefix = f"{name_test} [{result}]: { ... }"
-            out_lines.append(prefix)
-
+            out_lines.append(f'{name_test} [{result}]: {{')
+            out_lines.extend('  ' + s for s in str(lines_covered).split('\n'))
+            out_lines.append('}')
         out = '\n'.join(f'  {l}' for l in out_lines)
         out = f'{{\n{out}\n}}'
         return out
