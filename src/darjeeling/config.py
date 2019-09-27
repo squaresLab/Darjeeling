@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 __all__ = ('Config', 'OptimizationsConfig', 'SchemaConfig',
+           'CoverageConfig',
            'SearcherConfig', 'TestSuiteConfig',
            'TransformationsConfig', 'LocalizationConfig')
 
 from typing import (Optional, Collection, Tuple, Dict, Any, List, Set,
-                    Iterator, Type)
+                    FrozenSet, Iterator, Type)
 import abc
 import sys
 import random
@@ -67,6 +68,40 @@ class TestSuiteConfig(abc.ABC):
             name_type = d['type']
         type_: Type[TestSuiteConfig] = TestSuiteConfig.lookup(name_type)
         return type_.from_dict(d, dir_)
+
+
+@attr.s(frozen=True)
+class CoverageConfig:
+    """Holds instructions for collecting and processing coverage.
+
+    Attributes
+    ----------
+    restrict_to_files: Set[str], optional
+        An optional set of files to which coverage should be restricted.
+
+    Raises
+    ------
+    ValueError
+        If coverage is restricted to the empty set of files.
+    """
+    restrict_to_files: Optional[FrozenSet[str]] = attr.ib(default=None)
+
+    @restrict_to_files.validator
+    def validate_restrict_to_files(self, attr, value) -> None:
+        if value is None:
+            return
+        if not value:
+            raise ValueError("cannot restrict to empty set of files")
+
+    @staticmethod
+    def from_dict(d: Dict[str, Any],
+                  dir_: Optional[str] = None
+                  ) -> 'CoverageConfig':
+        restrict_to_files: Optional[FrozenSet[str]] = None
+        if 'restrict-to-files' in d:
+            restrict_to_files_list: List[str] = d['restrict-to-files']
+            restrict_to_files = frozenset(restrict_to_files_list)
+        return CoverageConfig(restrict_to_files=restrict_to_files)
 
 
 @attr.s(frozen=True)
@@ -225,6 +260,7 @@ class Config:
     tests: TestSuiteConfig = attr.ib()
     seed: int = attr.ib(default=0)
     optimizations: OptimizationsConfig = attr.ib(factory=OptimizationsConfig)
+    coverage: CoverageConfig = attr.ib(factory=CoverageConfig)
     terminate_early: bool = attr.ib(default=True)
     threads: int = attr.ib(default=1)
     limit_candidates: Optional[int] = attr.ib(default=None)
@@ -335,6 +371,12 @@ class Config:
 
         opts = OptimizationsConfig.from_yml(yml.get('optimizations', {}))
 
+        # coverage config
+        if 'coverage' in yml:
+            coverage = CoverageConfig.from_dict(yml['coverage'], dir_)
+        else:
+            coverage = CoverageConfig()
+
         # fetch the transformation schemas
         if 'transformations' not in yml:
             m = "'transformations' section is missing"
@@ -370,5 +412,6 @@ class Config:
                       transformations=transformations,
                       localization=localization,
                       tests=tests,
+                      coverage=coverage,
                       search=search,
                       optimizations=opts)

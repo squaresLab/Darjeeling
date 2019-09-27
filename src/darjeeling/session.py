@@ -16,7 +16,7 @@ from bugzoo.core import FileLine, Patch
 from bugzoo import Bug as Snapshot
 
 from .core import Language, TestCoverageMap
-from .coverage import coverage_for_snapshot
+from .coverage import coverage_for_config
 from .test import BugZooTestSuite, TestSuite
 from .candidate import Candidate
 from .searcher import Searcher
@@ -61,6 +61,7 @@ class Session:
         logger.info("using %d threads", cfg.threads)
         logger.info("using language: %s", cfg.language.value)
         logger.info("using optimizations: %s", cfg.optimizations)
+        logger.info("using coverage config: %s", cfg.coverage)
         logger.info("using random number generator seed: %d", cfg.seed)
 
         if not cfg.terminate_early:
@@ -90,7 +91,7 @@ class Session:
 
         # compute coverage
         logger.info("computing coverage information...")
-        coverage = coverage_for_snapshot(client_bugzoo, program.snapshot, program.tests)
+        coverage = coverage_for_config(client_bugzoo, program, cfg.coverage)
         logger.info("computed coverage information")
         logger.debug("coverage: %s", coverage)
 
