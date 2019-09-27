@@ -175,11 +175,13 @@ class BaseController(cement.Controller):
         limit_time_minutes = \
             self.app.pargs.limit_time_minutes  # type: Optional[int]
 
+        # load the configuration file
+        filename = os.path.abspath(filename)
+        cfg_dir = os.path.dirname(filename)
         with open(filename, 'r') as f:
             yml = yaml.safe_load(f)
-
-        # load the configuration file
         cfg = Config.from_yml(yml,
+                              dir_=cfg_dir,
                               threads=threads,
                               seed=seed,
                               terminate_early=terminate_early,

@@ -37,7 +37,10 @@ class GeneticSearcherConfig(SearcherConfig):
     sample_size: Optional[Union[int, float]] = attr.ib(default=None)
 
     @classmethod
-    def from_dict(cls, d: Dict[str, Any]) -> 'SearcherConfig':
+    def from_dict(cls,
+                  d: Dict[str, Any],
+                  dir_: Optional[str] = None
+                  ) -> 'SearcherConfig':
         num_generations: int = d.get('generations', 10)
         population_size: int = d.get('population', 40)
         rate_mutation: float = d.get('mutation-rate', 1.0)

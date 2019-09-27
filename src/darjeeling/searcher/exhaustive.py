@@ -25,7 +25,10 @@ class ExhaustiveSearcherConfig(SearcherConfig):
         return repr(self)
 
     @classmethod
-    def from_dict(cls, d: Dict[str, Any]) -> 'SearcherConfig':
+    def from_dict(cls,
+                  d: Dict[str, Any],
+                  dir_: Optional[str] = None
+                  ) -> 'SearcherConfig':
         return ExhaustiveSearcherConfig()
 
 
