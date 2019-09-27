@@ -78,10 +78,20 @@ class CoverageConfig:
     ----------
     restrict_to_files: Set[str], optional
         An optional set of files to which coverage should be restricted.
+
+    Raises
+    ------
+    ValueError
+        If coverage is restricted to the empty set of files.
     """
     restrict_to_files: Optional[Set[str]] = attr.ib(factory=set)
 
-    # TODO must not restrict to empty set
+    @restrict_to_files.validator
+    def validate_restrict_to_files(self, attr, value) -> None:
+        if restrict_to_files is None:
+            return
+        if not restrict_to_files:
+            raise ValueError("cannot restrict to empty set of files")
 
     @staticmethod
     def from_dict(d: Dict[str, Any],
