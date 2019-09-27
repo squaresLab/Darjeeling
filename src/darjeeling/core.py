@@ -151,13 +151,13 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
         yield from self.__mapping
 
     def __str__(self) -> str:
-        out_lines = []
+        out_lines: List[str] = []
         for name_test in self:
             coverage_test = self[name_test]
             result = 'PASS' if coverage_test.outcome.successful else 'FAIL'
             lines_covered = coverage_test.lines
             prefix = f"{name_test} [{result}]: { ... }"
-            lines.append(prefix)
+            out_lines.append(prefix)
 
         out = '\n'.join(f'  {l}' for l in out_lines)
         out = f'{{\n{out}\n}}'
