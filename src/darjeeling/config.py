@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 __all__ = ('Config', 'OptimizationsConfig', 'SchemaConfig',
+           'CoverageConfig',
            'SearcherConfig', 'TestSuiteConfig',
            'TransformationsConfig', 'LocalizationConfig')
 
@@ -67,6 +68,18 @@ class TestSuiteConfig(abc.ABC):
             name_type = d['type']
         type_: Type[TestSuiteConfig] = TestSuiteConfig.lookup(name_type)
         return type_.from_dict(d, dir_)
+
+
+@attr.s(frozen=True)
+class CoverageConfig:
+    """Holds instructions for collecting and processing coverage.
+
+    Attributes
+    ----------
+    restrict_to_files: Set[str], optional
+        An optional set of files to which coverage should be restricted.
+    """
+    restrict_to_files: Optional[Set[str]] = attr.ib(factory=set)
 
 
 @attr.s(frozen=True)
