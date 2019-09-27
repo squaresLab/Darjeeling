@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 __all__ = ('coverage_for_snapshot', 'coverage_for_container',
-           'coverage_for_test')
+           'coverage_for_test', 'coverage_for_program')
 
 from typing import Set
 import logging
@@ -12,9 +12,14 @@ from bugzoo import (Client as BugZooClient,
 
 from .core import FileLine, TestCoverageMap, Test, TestCoverage, TestOutcome
 from .test import TestSuite
+from .program import Program
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+
+def coverage_for_program(bz: BugZooClient, prog: Program) -> TestCoverageMap:
+    return coverage_for_snapshot(bz, prog.snapshot, prog.tests)
 
 
 def coverage_for_snapshot(bz: BugZooClient,
