@@ -88,9 +88,9 @@ class CoverageConfig:
 
     @restrict_to_files.validator
     def validate_restrict_to_files(self, attr, value) -> None:
-        if restrict_to_files is None:
+        if value is None:
             return
-        if not restrict_to_files:
+        if not value:
             raise ValueError("cannot restrict to empty set of files")
 
     @staticmethod
@@ -370,6 +370,12 @@ class Config:
 
         opts = OptimizationsConfig.from_yml(yml.get('optimizations', {}))
 
+        # coverage config
+        if 'coverage' in yml:
+            CoverageConfig.from_dict(yml['coverage'], dir_)
+        else:
+            coverage = CoverageConfig()
+
         # fetch the transformation schemas
         if 'transformations' not in yml:
             m = "'transformations' section is missing"
@@ -405,5 +411,6 @@ class Config:
                       transformations=transformations,
                       localization=localization,
                       tests=tests,
+                      coverage=coverage,
                       search=search,
                       optimizations=opts)
