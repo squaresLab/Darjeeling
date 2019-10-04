@@ -182,8 +182,8 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
     def from_dict(cls, d: List[Dict[str, Any]]) -> 'TestCoverageMap':
         name_to_coverage: Dict[str, TestCoverage] = {}
         for d_test in d:
-            name = d['name']
-            coverage = TestCoverage.from_dict(d)
+            name = d_test['name']
+            coverage = TestCoverage.from_dict(d_test)
             name_to_coverage[name] = coverage
         return TestCoverageMap(name_to_coverage)
 
