@@ -116,7 +116,7 @@ class TestCoverage:
     def from_dict(d: Dict[str, Any]) -> 'TestCoverage':
         name = d['name']
         outcome = TestOutcome.from_dict(d['outcome'])
-        lines = FileLineSet.from_set(d['lines'])
+        lines = FileLineSet.from_dict(d['lines'])
         return TestCoverage(name, outcome, lines)
 
     def __contains__(self, elem: object) -> bool:
