@@ -62,7 +62,7 @@ class BuildOutcome:
     time_taken = attr.ib(type=float)
 
 
-class TestOutcomeSet(object):
+class TestOutcomeSet:
     """Records the outcome of different test executions for a single patch."""
     def __init__(self,
                  outcomes: Optional[Dict[str, TestOutcome]] = None
