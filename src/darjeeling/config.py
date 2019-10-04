@@ -11,6 +11,7 @@ import sys
 import random
 import datetime
 import logging
+import os
 
 import attr
 
@@ -102,10 +103,16 @@ class CoverageConfig:
                   dir_: Optional[str] = None
                   ) -> 'CoverageConfig':
         restrict_to_files: Optional[FrozenSet[str]] = None
+        load_from_file: Optional[str] = None
+        if 'load-from-file' in d:
+            load_from_file = d['load-from-file']
+            if not os.path.isabs(load_from_file):
+                load_from_file = os.path.abspath(dir_, load_from_file)
         if 'restrict-to-files' in d:
             restrict_to_files_list: List[str] = d['restrict-to-files']
             restrict_to_files = frozenset(restrict_to_files_list)
-        return CoverageConfig(restrict_to_files=restrict_to_files)
+        return CoverageConfig(restrict_to_files=restrict_to_files,
+                              load_from_file=load_from_file)
 
 
 @attr.s(frozen=True)
