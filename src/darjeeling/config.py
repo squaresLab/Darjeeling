@@ -78,6 +78,9 @@ class CoverageConfig:
     ----------
     restrict_to_files: Set[str], optional
         An optional set of files to which coverage should be restricted.
+    load_from_file: str, optional
+        The name of the file, if any, that coverage information should be
+        read from.
 
     Raises
     ------
@@ -85,6 +88,7 @@ class CoverageConfig:
         If coverage is restricted to the empty set of files.
     """
     restrict_to_files: Optional[FrozenSet[str]] = attr.ib(default=None)
+    load_from_file: Optional[str] = attr.ib(default=None)
 
     @restrict_to_files.validator
     def validate_restrict_to_files(self, attr, value) -> None:
