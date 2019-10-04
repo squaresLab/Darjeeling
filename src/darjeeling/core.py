@@ -2,13 +2,14 @@ __all__ = ('Replacement', 'FileLine', 'FileLocationRange', 'Location',
            'TestCoverage', 'TestCoverageMap')
 
 from typing import (TypeVar, Sequence, Iterator, Optional, Dict, Generic, Set,
-                    Mapping, Iterable, List)
+                    Mapping, Iterable, List, Any)
 from collections import OrderedDict
 from enum import Enum
 import abc
 import fnmatch
 
 import attr
+import yaml
 from bugzoo.core import TestSuiteCoverage as BugZooTestSuiteCoverage
 from bugzoo.core import TestCoverage as BugZooTestCoverage
 from bugzoo.core import TestOutcome as BugZooTestOutcome
@@ -54,6 +55,14 @@ class TestOutcome:
         return TestOutcome(successful=outcome.passed,
                            time_taken=outcome.duration)
 
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> 'TestOutcome':
+        return TestOutcome(d['successful'], d['time-taken'])
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {'successful': self.successful,
+                'time-taken': self.time_taken}
+
 
 @attr.s(frozen=True, slots=True)
 class BuildOutcome:
@@ -62,7 +71,7 @@ class BuildOutcome:
     time_taken = attr.ib(type=float)
 
 
-class TestOutcomeSet(object):
+class TestOutcomeSet:
     """Records the outcome of different test executions for a single patch."""
     def __init__(self,
                  outcomes: Optional[Dict[str, TestOutcome]] = None
@@ -102,6 +111,13 @@ class TestCoverage:
             test=coverage.test,
             outcome=TestOutcome.from_bugzoo(coverage.outcome),
             lines=coverage.lines)
+
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> 'TestCoverage':
+        name = d['name']
+        outcome = TestOutcome.from_dict(d['outcome'])
+        lines = FileLineSet.from_dict(d['lines'])
+        return TestCoverage(name, outcome, lines)
 
     def __contains__(self, elem: object) -> bool:
         return elem in self.lines
@@ -150,6 +166,29 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
         self.__mapping: OrderedDict[str, TestCoverage] = OrderedDict()
         for test_name in sorted(mapping):
             self.__mapping[test_name] = mapping[test_name]
+
+    @classmethod
+    def from_file(cls, fn: str) -> 'TestCoverageMap':
+        with open(fn, 'r') as fh:
+            dict_ = yaml.safe_load(fh)
+        return cls.from_dict(dict_)
+
+    def to_file(self, fn: str) -> None:
+        dict_ = self.to_dict()
+        with open(fn, 'w') as fh:
+            yaml.dump(dict_, fh, indent=2, default_flow_style=False)
+
+    @classmethod
+    def from_dict(cls, d: List[Dict[str, Any]]) -> 'TestCoverageMap':
+        name_to_coverage: Dict[str, TestCoverage] = {}
+        for d_test in d:
+            name = d_test['name']
+            coverage = TestCoverage.from_dict(d_test)
+            name_to_coverage[name] = coverage
+        return TestCoverageMap(name_to_coverage)
+
+    def to_dict(self) -> List[Dict[str, Any]]:
+        raise NotImplementedError
 
     def __len__(self) -> int:
         """Returns the number of tests represented in this map."""
