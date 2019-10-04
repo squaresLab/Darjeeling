@@ -54,6 +54,14 @@ class TestOutcome:
         return TestOutcome(successful=outcome.passed,
                            time_taken=outcome.duration)
 
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> 'TestOutcome':
+        return TestOutcome(d['successful'], d['time-taken'])
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {'successful': self.successful,
+                'time-taken': self.time_taken}
+
 
 @attr.s(frozen=True, slots=True)
 class BuildOutcome:
