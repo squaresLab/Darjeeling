@@ -106,7 +106,9 @@ class CoverageConfig:
         load_from_file: Optional[str] = None
         if 'load-from-file' in d:
             load_from_file = d['load-from-file']
+            assert load_from_file is not None
             if not os.path.isabs(load_from_file):
+                assert dir_ is not None
                 load_from_file = os.path.join(dir_, load_from_file)
         if 'restrict-to-files' in d:
             restrict_to_files_list: List[str] = d['restrict-to-files']
