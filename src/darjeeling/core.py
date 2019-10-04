@@ -168,7 +168,7 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
 
     @classmethod
     def from_file(cls, fn: str) -> 'TestCoverageMap':
-        with open(f, 'r') as fh:
+        with open(fn, 'r') as fh:
             dict_ = yaml.safe_load(fh)
         return cls.from_dict(dict_)
 
