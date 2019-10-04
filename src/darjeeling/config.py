@@ -162,11 +162,12 @@ class LocalizationConfig:
         restrict_lines_arg = yml.get('restrict-to-lines')
         restrict_to_lines: Optional[Set[FileLine]] = None
         if restrict_lines_arg is not None:
-            restrict_to_lines = FileLineSet()
+            restrict_to_lines = set()
             assert restrict_to_lines is not None  # mypy is stupid
             for fn in restrict_lines_arg:
                 for line_num in restrict_lines_arg[fn]:
                     restrict_to_lines.add(FileLine(fn, line_num))
+            restrict_to_lines = FileLineSet.from_iter(restrict_to_lines)
 
         return LocalizationConfig(metric=metric,
                                   exclude_files=exclude_files,
