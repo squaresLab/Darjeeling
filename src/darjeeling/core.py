@@ -172,6 +172,11 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
             dict_ = yaml.safe_load(fh)
         return cls.from_dict(dict_)
 
+    def to_file(self, fn: str) -> None:
+        dict_ = self.to_dict()
+        with open(fn, 'w') as fh:
+            yaml.dump(dict_, fh, indent=2, default_flow_style=False)
+
     @classmethod
     def from_dict(cls, d: List[Dict[str, Any]]) -> 'TestCoverageMap':
         name_to_coverage: Dict[str, TestCoverage] = {}
