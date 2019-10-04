@@ -2,7 +2,7 @@ __all__ = ('Replacement', 'FileLine', 'FileLocationRange', 'Location',
            'TestCoverage', 'TestCoverageMap')
 
 from typing import (TypeVar, Sequence, Iterator, Optional, Dict, Generic, Set,
-                    Mapping, Iterable, List)
+                    Mapping, Iterable, List, Any)
 from collections import OrderedDict
 from enum import Enum
 import abc
@@ -156,6 +156,10 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
         with open(f, 'r') as fh:
             dict_ = yaml.safe_load(fh)
         return cls.from_dict(dict_)
+
+    @classmethod
+    def from_dict(cls, d: Dict[str, Any]) -> 'TestCoverageMap':
+        raise NotImplementedError
 
     def __len__(self) -> int:
         """Returns the number of tests represented in this map."""
