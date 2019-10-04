@@ -23,7 +23,13 @@ def coverage_for_config(bz: BugZooClient,
                         program: Program,
                         cfg: CoverageConfig
                         ) -> TestCoverageMap:
-    coverage = coverage_for_program(bz, program)
+    if cfg.load_from_file:
+        fn_coverage = cfg.load_from_file
+        logger.info("loading coverage from file: %s", fn_coverage)
+        coverage = TestCoverageMap.from_file(fn_coverage)
+    else:
+        coverage = coverage_for_program(bz, program)
+
     if cfg.restrict_to_files:
         coverage = coverage.restrict_to_files(cfg.restrict_to_files)
     return coverage

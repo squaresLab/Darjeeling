@@ -11,6 +11,7 @@ import sys
 import random
 import datetime
 import logging
+import os
 
 import attr
 
@@ -78,6 +79,9 @@ class CoverageConfig:
     ----------
     restrict_to_files: Set[str], optional
         An optional set of files to which coverage should be restricted.
+    load_from_file: str, optional
+        The name of the file, if any, that coverage information should be
+        read from.
 
     Raises
     ------
@@ -85,6 +89,7 @@ class CoverageConfig:
         If coverage is restricted to the empty set of files.
     """
     restrict_to_files: Optional[FrozenSet[str]] = attr.ib(default=None)
+    load_from_file: Optional[str] = attr.ib(default=None)
 
     @restrict_to_files.validator
     def validate_restrict_to_files(self, attr, value) -> None:
@@ -98,10 +103,18 @@ class CoverageConfig:
                   dir_: Optional[str] = None
                   ) -> 'CoverageConfig':
         restrict_to_files: Optional[FrozenSet[str]] = None
+        load_from_file: Optional[str] = None
+        if 'load-from-file' in d:
+            load_from_file = d['load-from-file']
+            assert load_from_file is not None
+            if not os.path.isabs(load_from_file):
+                assert dir_ is not None
+                load_from_file = os.path.join(dir_, load_from_file)
         if 'restrict-to-files' in d:
             restrict_to_files_list: List[str] = d['restrict-to-files']
             restrict_to_files = frozenset(restrict_to_files_list)
-        return CoverageConfig(restrict_to_files=restrict_to_files)
+        return CoverageConfig(restrict_to_files=restrict_to_files,
+                              load_from_file=load_from_file)
 
 
 @attr.s(frozen=True)
