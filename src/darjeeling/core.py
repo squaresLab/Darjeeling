@@ -103,6 +103,10 @@ class TestCoverage:
             outcome=TestOutcome.from_bugzoo(coverage.outcome),
             lines=coverage.lines)
 
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> 'TestCoverage':
+        raise NotImplementedError
+
     def __contains__(self, elem: object) -> bool:
         return elem in self.lines
 
