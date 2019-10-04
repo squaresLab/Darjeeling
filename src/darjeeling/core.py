@@ -151,6 +151,12 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
         for test_name in sorted(mapping):
             self.__mapping[test_name] = mapping[test_name]
 
+    @classmethod
+    def from_file(cls, fn: str) -> 'TestCoverageMap':
+        with open(f, 'r') as fh:
+            dict_ = yaml.safe_load(fh)
+        return cls.from_dict(dict_)
+
     def __len__(self) -> int:
         """Returns the number of tests represented in this map."""
         return len(self.__mapping)
