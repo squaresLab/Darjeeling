@@ -9,6 +9,7 @@ import abc
 import fnmatch
 
 import attr
+import yaml
 from bugzoo.core import TestSuiteCoverage as BugZooTestSuiteCoverage
 from bugzoo.core import TestCoverage as BugZooTestCoverage
 from bugzoo.core import TestOutcome as BugZooTestOutcome
