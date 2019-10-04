@@ -158,8 +158,13 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
         return cls.from_dict(dict_)
 
     @classmethod
-    def from_dict(cls, d: Dict[str, Any]) -> 'TestCoverageMap':
-        raise NotImplementedError
+    def from_dict(cls, d: List[Dict[str, Any]]) -> 'TestCoverageMap':
+        name_to_coverage: Dict[str, TestCoverage] = {}
+        for d_test in d:
+            name = d['name']
+            coverage = TestCoverage.from_dict(d)
+            name_to_coverage[name] = coverage
+        return TestCoverageMap(name_to_coverage)
 
     def __len__(self) -> int:
         """Returns the number of tests represented in this map."""
