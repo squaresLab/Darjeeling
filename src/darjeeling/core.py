@@ -105,7 +105,10 @@ class TestCoverage:
 
     @staticmethod
     def from_dict(d: Dict[str, Any]) -> 'TestCoverage':
-        raise NotImplementedError
+        name = d['name']
+        outcome = TestOutcome.from_dict(d['outcome'])
+        lines = FileLineSet.from_set(d['lines'])
+        return TestCoverage(name, outcome, lines)
 
     def __contains__(self, elem: object) -> bool:
         return elem in self.lines
