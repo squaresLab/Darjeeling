@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+__all__ = ('Snippet', 'SnippetDatabase', 'SnippetFinder')
+
 from typing import List, Iterator, Set, Iterable, Optional, Dict, Callable, \
                    Any, FrozenSet
 import json
@@ -13,7 +16,7 @@ logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-class Snippet(object):
+class Snippet:
     """
     Represents a code snippet that may be inserted into a program under
     repair.
@@ -119,7 +122,7 @@ class Snippet(object):
         return d
 
 
-class SnippetDatabase(object):
+class SnippetDatabase:
     @staticmethod
     def from_statements(statements: Iterable[Statement],
                         *,
@@ -251,7 +254,7 @@ class SnippetDatabase(object):
         logger.debug("saved snippet database to file: %s", fn)
 
 
-class SnippetFinder(object):
+class SnippetFinder:
     def __init__(self, database: SnippetDatabase) -> None:
         self.__database = database
 
