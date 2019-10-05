@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+__all__ = ('Snippet', 'SnippetDatabase', 'SnippetFinder')
+
 from typing import List, Iterator, Set, Iterable, Optional, Dict, Callable, \
                    Any, FrozenSet
 import json
@@ -9,10 +12,11 @@ from kaskara import Statement
 from .core import FileLocationRange, FileLine
 from .problem import Problem
 
-logger = logging.getLogger(__name__)  # type: logging.Logger
+logger: logging.Logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
-class Snippet(object):
+class Snippet:
     """
     Represents a code snippet that may be inserted into a program under
     repair.
@@ -118,7 +122,7 @@ class Snippet(object):
         return d
 
 
-class SnippetDatabase(object):
+class SnippetDatabase:
     @staticmethod
     def from_statements(statements: Iterable[Statement],
                         *,
@@ -136,6 +140,8 @@ class SnippetDatabase(object):
                    declares=stmt.declares,
                    requires_syntax=stmt.requires_syntax)
         logger.debug("constructed snippet database from snippets")
+        logger.debug("snippets:\n%s",
+                     '\n'.join([f' * {s.content}' for s in db]))
         return db
 
     @staticmethod
@@ -248,7 +254,7 @@ class SnippetDatabase(object):
         logger.debug("saved snippet database to file: %s", fn)
 
 
-class SnippetFinder(object):
+class SnippetFinder:
     def __init__(self, database: SnippetDatabase) -> None:
         self.__database = database
 
