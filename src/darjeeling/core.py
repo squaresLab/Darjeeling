@@ -261,4 +261,3 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
         """
         return TestCoverageMap({test: cov.restrict_to_locations(locations)
                                 for (test, cov) in self.items()})
-

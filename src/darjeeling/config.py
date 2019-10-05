@@ -89,6 +89,7 @@ class CoverageConfig:
         If coverage is restricted to the empty set of files.
     """
     restrict_to_files: Optional[FrozenSet[str]] = attr.ib(default=None)
+    restrict_to_lines: Optional[Set[FileLine]] = attr.ib(default=None)
     load_from_file: Optional[str] = attr.ib(default=None)
 
     @restrict_to_files.validator
@@ -98,11 +99,19 @@ class CoverageConfig:
         if not value:
             raise ValueError("cannot restrict to empty set of files")
 
+    @restrict_to_lines.validator
+    def validate_restrict_to_lines(self, attr, value) -> None:
+        if value is None:
+            return
+        if not value:
+            raise ValueError("cannot restrict to empty set of lines")
+
     @staticmethod
     def from_dict(d: Dict[str, Any],
                   dir_: Optional[str] = None
                   ) -> 'CoverageConfig':
         restrict_to_files: Optional[FrozenSet[str]] = None
+        restrict_to_lines: Optional[Set[FileLine]] = None
         load_from_file: Optional[str] = None
         if 'load-from-file' in d:
             load_from_file = d['load-from-file']
@@ -113,7 +122,10 @@ class CoverageConfig:
         if 'restrict-to-files' in d:
             restrict_to_files_list: List[str] = d['restrict-to-files']
             restrict_to_files = frozenset(restrict_to_files_list)
+        if 'restrict-to-lines' in d:
+            restrict_to_lines = FileLineSet.from_dict(d['restrict-to-lines'])
         return CoverageConfig(restrict_to_files=restrict_to_files,
+                              restrict_to_lines=restrict_to_lines,
                               load_from_file=load_from_file)
 
 

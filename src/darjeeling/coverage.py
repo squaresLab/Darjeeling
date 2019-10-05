@@ -32,6 +32,10 @@ def coverage_for_config(bz: BugZooClient,
 
     if cfg.restrict_to_files:
         coverage = coverage.restrict_to_files(cfg.restrict_to_files)
+
+    if cfg.restrict_to_lines:
+        coverage = coverage.restrict_to_locations(cfg.restrict_to_lines)
+
     return coverage
 
 
