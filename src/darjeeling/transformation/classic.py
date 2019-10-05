@@ -193,6 +193,7 @@ class ReplaceStatement(StatementTransformation):
 
         check_equiv = problem.settings.ignore_string_equivalent_snippets
         for snippet in cls.viable_snippets(problem, snippets, statement):
+            logger.debug("using snippet: %s", snippet.content)
             eq_content = \
                 not check_equiv and snippet.content == statement.content
             eq_canonical = \
@@ -201,6 +202,7 @@ class ReplaceStatement(StatementTransformation):
                 logger.debug("prevented self-replacement of statement [%s]",
                              statement.location)
             else:
+                logger.debug("replace with snippet: %s", snippet.content)
                 yield ReplaceStatement(statement.location, snippet)
 
 
