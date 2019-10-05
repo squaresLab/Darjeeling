@@ -3,6 +3,7 @@ __all__ = ('Program',)
 
 from typing import Iterator
 import contextlib
+import logging
 
 from bugzoo import Client as BugZooClient, Bug as Snapshot
 from bugzoo.core.container import Container
@@ -13,6 +14,9 @@ from .core import Test, TestOutcome
 from .test import TestSuite, BugZooTestSuite
 from .config import Config
 from .exceptions import BadConfigurationException, BuildFailure
+
+logger = logging.getLogger(__name__)  # type: logging.Logger
+logger.setLevel(logging.DEBUG)
 
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
@@ -68,7 +72,9 @@ class Program:
         container = None
         try:
             container = mgr_ctr.provision(self.snapshot)
-            mgr_ctr.patch(container, patch)
+            if not mgr_ctr.patch(container, patch):
+                logger.debug("failed to apply patch: %s", patch)
+                raise BuildFailure
             outcome = mgr_ctr.build(container)
             if not outcome.successful:
                 raise BuildFailure
