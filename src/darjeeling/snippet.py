@@ -9,7 +9,8 @@ from kaskara import Statement
 from .core import FileLocationRange, FileLine
 from .problem import Problem
 
-logger = logging.getLogger(__name__)  # type: logging.Logger
+logger: logging.Logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class Snippet(object):
@@ -136,6 +137,8 @@ class SnippetDatabase(object):
                    declares=stmt.declares,
                    requires_syntax=stmt.requires_syntax)
         logger.debug("constructed snippet database from snippets")
+        logger.debug("snippets:\n%s",
+                     '\n'.join([f' * {s.content}' for s in db]))
         return db
 
     @staticmethod
