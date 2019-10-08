@@ -282,7 +282,7 @@ class Config:
     """
     snapshot: str = attr.ib()
     language: Language = attr.ib()
-    dir_patches: str = attr.ib(transform=os.path.abspath)
+    dir_patches: str = attr.ib()
     transformations: TransformationsConfig = attr.ib()
     localization: LocalizationConfig = attr.ib()
     search: SearcherConfig = attr.ib()
@@ -299,6 +299,12 @@ class Config:
     def validate_seed(self, attribute, value):
         if value < 0:
             m = "'seed' should be greater than or equal to zero."
+            raise BadConfigurationException(m)
+
+    @dir_patches.validator
+    def validate_patches(self, attribute, value):
+        if not os.path.isabs(value):
+            m = "patch directory should be an absolute path."
             raise BadConfigurationException(m)
 
     @threads.validator
