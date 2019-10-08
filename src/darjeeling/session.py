@@ -51,8 +51,10 @@ class Session:
         # create the patch directory
         dir_patches = os.path.abspath('patches')
         if os.path.exists(dir_patches):
-            logger.warning("destroying existing patch directory")
-            shutil.rmtree(dir_patches)
+            logger.warning("clearing existing patch directory")
+            for fn in glob.glob(f'{dir_patches}/**'):
+                if os.path.isfile(fn):
+                    os.remove(fn)
 
         # seed the RNG
         # FIXME use separate RNG for each session
