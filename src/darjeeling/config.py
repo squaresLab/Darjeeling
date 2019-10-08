@@ -354,9 +354,11 @@ class Config:
                 err("'save-patches-to' property should be a string")
             if not os.path.isabs(dir_patches):
                 if not dir_:
-                    err("'save-patches-to' must be relative for non-file-based configurations")
+                    err("'save-patches-to' must be absolute for non-file-based configurations")
                 dir_patches = os.path.join(dir_, dir_patches)
         elif dir_patches is None:
+            if not dir_:
+                err("'save-patches-to' must be specified for non-file-based configurations")
             dir_patches = dir_
 
         if 'snapshot' not in yml:
@@ -452,4 +454,5 @@ class Config:
                       tests=tests,
                       coverage=coverage,
                       search=search,
-                      optimizations=opts)
+                      optimizations=opts,
+                      dir_patches=dir_patches)
