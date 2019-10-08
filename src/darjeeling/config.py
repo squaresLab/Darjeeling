@@ -348,7 +348,7 @@ class Config:
 
         has_limits = 'resource-limits' in yml
 
-        if dir_patches is None and 'save-patches-to':
+        if dir_patches is None and 'save-patches-to' in yml:
             dir_patches = yml['save-patches-to']
             if not isinstance(dir_patches, str):
                 err("'save-patches-to' property should be a string")
