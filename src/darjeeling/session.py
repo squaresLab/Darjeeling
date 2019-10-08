@@ -53,7 +53,7 @@ class Session:
         dir_patches = os.path.abspath('patches')
         if os.path.exists(dir_patches):
             logger.warning("clearing existing patch directory")
-            for fn in glob.glob(f'{dir_patches}/**'):
+            for fn in glob.glob(f'{dir_patches}/*.diff'):
                 if os.path.isfile(fn):
                     os.remove(fn)
 
