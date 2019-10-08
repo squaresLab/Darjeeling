@@ -111,6 +111,10 @@ class BaseController(cement.Controller):
             (['--log-to-file'],
              {'help': 'path to store the log file.',
               'type': str}),
+            (['--patch-dir'],
+             {'help': 'path to store the patches.',
+              'dest': 'dir_patches',
+              'type': str}),
             (['--seed'],
              {'help': 'random number generator seed',
               'type': int}),
@@ -176,6 +180,7 @@ class BaseController(cement.Controller):
             self.app.pargs.limit_candidates  # type: Optional[int]
         limit_time_minutes = \
             self.app.pargs.limit_time_minutes  # type: Optional[int]
+        dir_patches: Optional[str] = self.app.pargs.dir_patches
 
         # load the configuration file
         filename = os.path.abspath(filename)
@@ -188,7 +193,8 @@ class BaseController(cement.Controller):
                               seed=seed,
                               terminate_early=terminate_early,
                               limit_candidates=limit_candidates,
-                              limit_time_minutes=limit_time_minutes)
+                              limit_time_minutes=limit_time_minutes,
+                              dir_patches=dir_patches)
         logger.info("using configuration: %s", cfg)
 
         # connect to BugZoo
