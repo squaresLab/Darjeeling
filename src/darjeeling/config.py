@@ -282,7 +282,7 @@ class Config:
     """
     snapshot: str = attr.ib()
     language: Language = attr.ib()
-    dir_patches: str = attr.ib()
+    dir_patches: str = attr.ib(transform=os.path.abspath)
     transformations: TransformationsConfig = attr.ib()
     localization: LocalizationConfig = attr.ib()
     search: SearcherConfig = attr.ib()
@@ -294,12 +294,6 @@ class Config:
     threads: int = attr.ib(default=1)
     limit_candidates: Optional[int] = attr.ib(default=None)
     limit_time_minutes: Optional[float] = attr.ib(default=None)
-
-    @dir_patches.validator
-    def validate_dir_patches(self, attribute, value):
-        if not os.path.isabs(value):
-            m = "patch directory must be an absolute directory"
-            raise BadConfigurationException(m)
 
     @seed.validator
     def validate_seed(self, attribute, value):
@@ -333,7 +327,8 @@ class Config:
                  seed: Optional[int] = None,
                  threads: Optional[int] = None,
                  limit_candidates: Optional[int] = None,
-                 limit_time_minutes: Optional[int] = None
+                 limit_time_minutes: Optional[int] = None,
+                 dir_patches: Optional[str] = None
                  ) -> 'Config':
         """Loads a configuration from a YAML dictionary.
 
@@ -343,6 +338,13 @@ class Config:
             If an illegal configuration is provided.
         """
         has_limits = 'resource-limits' in yml
+
+        if dir_patches is None and 'save-patches-to':
+            dir_patches = yml['save-patches-to']
+            if not os.path.isabs(dir_patches):
+                dir_patches = os.path.join(dir_, dir_patches)
+        elif dir_patches is None:
+            dir_patches = dir_
 
         if 'snapshot' not in yml:
             raise BadConfigurationException("'snapshot' property is missing")
