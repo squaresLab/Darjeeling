@@ -207,6 +207,8 @@ class Session:
         logger.info("# candidate evaluations: %d",
                     self.searcher.num_candidate_evals)
 
+        self._save_patches_to_disk()
+
     def pause(self) -> None:
         """Pauses the session."""
         raise NotImplementedError
@@ -221,7 +223,7 @@ class Session:
             try:
                 with open(fn_patch, 'w') as f:
                     f.write(diff)
-            except Exception:
+            except OSError:
                 logger.exception("failed to write patch: %s", fn_patch)
                 raise
             logger.debug("wrote patch to %s", fn_patch)
