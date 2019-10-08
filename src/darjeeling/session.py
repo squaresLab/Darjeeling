@@ -215,8 +215,7 @@ class Session:
 
     def _save_patches_to_disk(self) -> None:
         logger.debug("saving patches to disk...")
-        if not os.path.exists(self.dir_patches):
-            os.mkdir(self.dir_patches)
+        os.makedirs(self.dir_patches, exist_ok=True)
         for i, patch in enumerate(self._patches):
             diff = str(patch.to_diff(self.problem))
             fn_patch = os.path.join(self.dir_patches, '{}.diff'.format(i))
