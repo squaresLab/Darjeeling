@@ -353,6 +353,8 @@ class Config:
             if not isinstance(dir_patches, str):
                 err("'save-patches-to' property should be a string")
             if not os.path.isabs(dir_patches):
+                if not dir_:
+                    err("'save-patches-to' must be relative for non-file-based configurations")
                 dir_patches = os.path.join(dir_, dir_patches)
         elif dir_patches is None:
             dir_patches = dir_
