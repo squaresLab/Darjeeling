@@ -50,7 +50,7 @@ class Session:
     def from_config(client_bugzoo: bugzoo.Client, cfg: Config) -> 'Session':
         """Creates a new repair session according to a given configuration."""
         # create the patch directory
-        dir_patches = os.path.abspath('patches')
+        dir_patches = cfg.dir_patches
         if os.path.exists(dir_patches):
             logger.warning("clearing existing patch directory")
             for fn in glob.glob(f'{dir_patches}/*.diff'):
@@ -212,6 +212,7 @@ class Session:
         raise NotImplementedError
 
     def _save_patches_to_disk(self) -> None:
+        logger.debug("saving patches to disk...")
         os.makedirs(self.dir_patches, exist_ok=True)
         for i, patch in enumerate(self._patches):
             diff = str(patch.to_diff(self.problem))
@@ -224,6 +225,7 @@ class Session:
                 logger.exception("failed to write patch: %s", fn_patch)
                 raise
             logger.debug("wrote patch to %s", fn_patch)
+        logger.debug("saved patches to disk")
 
     def __enter__(self) -> 'Session':
         self.run()
