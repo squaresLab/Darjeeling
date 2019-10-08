@@ -5,7 +5,7 @@ __all__ = ('Config', 'OptimizationsConfig', 'SchemaConfig',
            'TransformationsConfig', 'LocalizationConfig')
 
 from typing import (Optional, Collection, Tuple, Dict, Any, List, Set,
-                    FrozenSet, Iterator, Type)
+                    FrozenSet, Iterator, Type, NoReturn)
 import abc
 import sys
 import random
@@ -343,26 +343,29 @@ class Config:
         BadConfigurationException
             If an illegal configuration is provided.
         """
+        def err(m: str) -> NoReturn:
+            raise BadConfigurationException(m)
+
         has_limits = 'resource-limits' in yml
 
         if dir_patches is None and 'save-patches-to':
             dir_patches = yml['save-patches-to']
+            if not isinstance(dir_patches, str):
+                err("'save-patches-to' property should be a string")
             if not os.path.isabs(dir_patches):
                 dir_patches = os.path.join(dir_, dir_patches)
         elif dir_patches is None:
             dir_patches = dir_
 
         if 'snapshot' not in yml:
-            raise BadConfigurationException("'snapshot' property is missing")
+            err("'snapshot' property is missing")
         if not isinstance(yml['snapshot'], str):
-            m = "'snapshot' property should be a string"
-            raise BadConfigurationException(m)
+            err("'snapshot' property should be a string")
         snapshot: str = yml['snapshot']
 
         if threads is None and 'threads' in yml:
             if not isinstance(yml['threads'], int):
-                m = "'threads' property should be an int"
-                raise BadConfigurationException(m)
+                err("'threads' property should be an int")
             threads = yml['threads']
         elif threads is None:
             threads = 1
@@ -370,8 +373,7 @@ class Config:
         # no seed override; seed provided in config
         if seed is None and 'seed' in yml:
             if not isinstance(yml['seed'], int):
-                m = "'seed' property should be an int."
-                raise BadConfigurationException(m)
+                err("'seed' property should be an int.")
             seed = yml['seed']
         # no seed override or provided in config; use current date/time
         elif seed is None:
@@ -380,11 +382,9 @@ class Config:
 
         # determine the language
         if 'language' not in yml:
-            m = "'language' property is missing"
-            raise BadConfigurationException(m)
+            err("'language' property is missing")
         if not isinstance(yml['language'], str):
-            m = "'language' property should be a string"
-            raise BadConfigurationException(m)
+            err("'language' property should be a string")
         try:
             language: Language = Language.find(yml['language'])
         except LanguageNotSupported:
@@ -392,15 +392,14 @@ class Config:
             supported = "(supported languages: {})".format(supported)
             m = "unsupported language [{}]. {}"
             m = m.format(yml['language'], supported)
-            raise BadConfigurationException(m)
+            err(m)
 
         has_candidate_override = limit_candidates is not None
         has_candidate_limit = \
             has_limits and 'candidates' in yml['resource-limits']
         if not has_candidate_override and has_candidate_limit:
             if not isinstance(yml['resource-limits']['candidates'], int):
-                m = "'candidates' property in 'resource-limits' section should be an int"
-                raise BadConfigurationException(m)
+                err("'candidates' property in 'resource-limits' section should be an int")
             limit_candidates = yml['resource-limits']['candidates']
 
         has_time_override = limit_time_minutes is not None
@@ -408,8 +407,7 @@ class Config:
             has_limits and 'time-minutes' in yml['resource-limits']
         if has_time_override and has_time_limit:
             if not isinstance(yml['resource-limits']['time-minutes'], int):
-                m = "'time-minutes' property in 'resource-limits' section should be an int"  # noqa: pycodestyle
-                raise BadConfigurationException(m)
+                err("'time-minutes' property in 'resource-limits' section should be an int")  # noqa: pycodestyle
             limit_time_minutes = yml['resource-limits']['time-minutes']
 
         opts = OptimizationsConfig.from_yml(yml.get('optimizations', {}))
@@ -422,27 +420,22 @@ class Config:
 
         # fetch the transformation schemas
         if 'transformations' not in yml:
-            m = "'transformations' section is missing"
-            raise BadConfigurationException(m)
+            err("'transformations' section is missing")
         if not isinstance(yml['transformations'], dict):
-            m = "'transformations' section should be an object"
-            raise BadConfigurationException(m)
+            err("'transformations' section should be an object")
         transformations = \
             TransformationsConfig.from_yml(yml['transformations'])
 
         if 'localization' not in yml:
-            m = "'localization' section is missing"
-            raise BadConfigurationException(m)
+            err("'localization' section is missing")
         localization = LocalizationConfig.from_yml(yml['localization'])
 
         if 'algorithm' not in yml:
-            m = "'algorithm' section is missing"
-            raise BadConfigurationException(m)
+            err("'algorithm' section is missing")
         search = SearcherConfig.from_dict(yml['algorithm'], dir_)
 
         if 'tests' in yml and not isinstance(yml['tests'], dict):
-            m = "'tests' section should be an object"
-            raise BadConfigurationException(m)
+            err("'tests' section should be an object")
         tests = TestSuiteConfig.from_dict(yml.get('tests', {}), dir_)
 
         return Config(snapshot=snapshot,
