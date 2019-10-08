@@ -260,6 +260,8 @@ class Config:
         The name of the BugZoo snapshot that should be repaired.
     language: Language
         The language that is used by the program under repair.
+    dir_patches: str
+        The absolute path to the directory to which patches should be saved.
     seed: int
         The seed that should be used by the random number generator.
     terminate_early: bool
@@ -280,6 +282,7 @@ class Config:
     """
     snapshot: str = attr.ib()
     language: Language = attr.ib()
+    dir_patches: str = attr.ib()
     transformations: TransformationsConfig = attr.ib()
     localization: LocalizationConfig = attr.ib()
     search: SearcherConfig = attr.ib()
@@ -291,6 +294,12 @@ class Config:
     threads: int = attr.ib(default=1)
     limit_candidates: Optional[int] = attr.ib(default=None)
     limit_time_minutes: Optional[float] = attr.ib(default=None)
+
+    @dir_patches.validator
+    def validate_dir_patches(self, attribute, value):
+        if not os.path.isabs(value):
+            m = "patch directory must be an absolute directory"
+            raise BadConfigurationException(m)
 
     @seed.validator
     def validate_seed(self, attribute, value):
