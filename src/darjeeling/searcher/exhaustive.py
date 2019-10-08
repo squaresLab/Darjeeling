@@ -32,7 +32,7 @@ class ExhaustiveSearcherConfig(SearcherConfig):
         return ExhaustiveSearcherConfig()
 
 
-class ExhaustiveSearcher(Searcher[ExhaustiveSearcherConfig]):
+class ExhaustiveSearcher(Searcher):
     CONFIG = ExhaustiveSearcherConfig
 
     @classmethod
