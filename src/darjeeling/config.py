@@ -409,7 +409,7 @@ class Config:
         has_time_override = limit_time_minutes is not None
         has_time_limit = \
             has_limits and 'time-minutes' in yml['resource-limits']
-        if has_time_override and has_time_limit:
+        if not has_time_override and has_time_limit:
             if not isinstance(yml['resource-limits']['time-minutes'], int):
                 err("'time-minutes' property in 'resource-limits' section should be an int")  # noqa: pycodestyle
             limit_time_minutes = yml['resource-limits']['time-minutes']
