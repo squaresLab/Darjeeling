@@ -23,7 +23,7 @@ setup(
         'rooibos>=0.3.0',
         'boggart>=0.1.16',
         'kaskara>=0.0.5',
-        'attrs~=19.1.0',
+        'attrs~=19.2.0',
         'pyroglyph~=0.0.4',
         'cement~=3.0.4',
         'requests',
