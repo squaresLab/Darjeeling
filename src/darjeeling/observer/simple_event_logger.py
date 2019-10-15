@@ -2,6 +2,7 @@
 __all__ = ('SimpleEventLogger',)
 
 import csv
+import io
 import os
 
 import attr
