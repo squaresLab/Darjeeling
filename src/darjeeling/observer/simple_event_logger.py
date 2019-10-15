@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __all__ = ('SimpleEventLogger',)
 
-from typing import Tuple, Optional
+from typing import Tuple, Optional, TextIO
 import csv
 import functools
 import io
@@ -25,7 +25,7 @@ class SimpleEventLogger(SearchObserver):
         The absolute path to the file to which events should be logged.
     """
     filename: str = attr.ib()
-    _file: io.StringIO = \
+    _file: TextIO = \
         attr.ib(init=False, repr=False)
     _writer: csv._writer = \
         attr.ib(init=False, repr=False)
