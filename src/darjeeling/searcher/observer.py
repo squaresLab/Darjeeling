@@ -5,6 +5,7 @@ import abc
 
 from ..core import Test, TestOutcome, BuildOutcome
 from ..candidate import Candidate
+from ..outcome import CandidateOutcome
 
 
 class SearchObserver(abc.ABC):
@@ -25,4 +26,15 @@ class SearchObserver(abc.ABC):
                           candidate: Candidate,
                           outcome: BuildOutcome
                           ) -> None:
+        ...
+
+    @abc.abstractmethod
+    def on_candidate_started(self, candidate: Candidate) -> None:
+        ...
+
+    @abc.abstractmethod
+    def on_candidate_finished(self,
+                              candidate: Candidate,
+                              outcome: CandidateOutcome
+                              ) -> None:
         ...
