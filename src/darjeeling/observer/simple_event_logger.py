@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 __all__ = ('SimpleEventLogger',)
 
-from typing import Tuple, Optional, TextIO
+from typing import Tuple, Optional, TextIO, Sequence
+from typing_extensions import Protocol
 import csv
 import functools
 import io
@@ -15,6 +16,11 @@ from ..candidate import Candidate
 from ..outcome import CandidateOutcome
 
 
+class _CSVWriter(Protocol):
+    def writerow(self, row: Sequence[str]) -> None:
+        ...
+
+
 @attr.s(eq=False, hash=False)
 class SimpleEventLogger(SearchObserver):
     """Logs search events to a CSV file.
@@ -25,10 +31,8 @@ class SimpleEventLogger(SearchObserver):
         The absolute path to the file to which events should be logged.
     """
     filename: str = attr.ib()
-    _file: TextIO = \
-        attr.ib(init=False, repr=False)
-    _writer: csv._writer = \
-        attr.ib(init=False, repr=False)
+    _file: TextIO = attr.ib(init=False, repr=False)
+    _writer: _CSVWriter = attr.ib(init=False, repr=False)
 
     @filename.validator
     def validate_filename(self, attr, value) -> None:
