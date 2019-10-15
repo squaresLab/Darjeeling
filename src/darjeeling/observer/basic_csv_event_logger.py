@@ -14,6 +14,13 @@ from ..outcome import CandidateOutcome
 
 @attr.s(eq=False, hash=False)
 class SimpleCSVSearchEventLogger(SearchObserver):
+    """Logs search events to a CSV file.
+
+    Attributes
+    ----------
+    filename: str
+        The absolute path to the CSV file to which events should be logged.
+    """
     filename: str = attr.ib()
     _file: Optional[io.StringIO] = \
         attr.ib(default=None, init=None, repr=False)
