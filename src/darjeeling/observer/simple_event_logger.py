@@ -3,6 +3,7 @@ __all__ = ('SimpleEventLogger',)
 
 from typing import Tuple, Optional
 import csv
+import functools
 import io
 import os
 
@@ -24,7 +25,7 @@ class SimpleEventLogger(SearchObserver):
         The absolute path to the file to which events should be logged.
     """
     filename: str = attr.ib()
-    _file: Optional[io.StringIO] = \
+    _file: Optional[io.TextIO] = \
         attr.ib(default=None, init=False, repr=False)
     _writer: Optional[csv._writer] = \
         attr.ib(default=None, init=False, repr=False)
@@ -44,50 +45,59 @@ class SimpleEventLogger(SearchObserver):
             self._writer = None
             self._file = None
 
-    # TODO add 'must_be_open' decorator
+    def _must_be_open(self, method):
+        @functools.wraps(method)
+        def wrapped(*args, **kwargs):
+            if not self._writer:
+                m = (f"{self.__class__.__name__} instance must be open"
+                     f" before calling {method.__name__}")
+                raise RuntimeError(m)
+            return method(*args, **kwargs)
+
+        return wrapped
+
+    @_must_be_open
     def on_test_finished(self,
                          candidate: Candidate,
                          test: Test,
                          outcome: TestOutcome
                          ) -> None:
-        assert self._writer
         status = 'passed' if outcome.successful else 'failed'
         duration = f'{test.time_taken:.3f}'
         row: Tuple[str, ...] = \
             ('TEST-OUTCOME', candidate.id, test.name, status, duration)
         self._writer.writerow(row)
 
+    @_must_be_open
     def on_test_started(self, candidate: Candidate, test: Test) -> None:
-        assert self._writer
-        row: Tuple[str, ...] = ('TEST-STARTED', candidate.id, test.name)
-        self._writer.writerow(row)
+        self._writer.writerow(('TEST-STARTED', candidate.id, test.name))
 
+    @_must_be_open
     def on_build_started(self, candidate: Candidate) -> None:
-        assert self._writer
         self._writer.writerow(('BUILD-STARTED', candidate.id))
 
+    @_must_be_open
     def on_build_finished(self,
                           candidate: Candidate,
                           outcome: BuildOutcome
                           ) -> None:
-        assert self._writer
         status = 'passed' if outcome.successful else 'failed'
         duration = f'{test.time_taken:.3f}'
         row: Tuple[str, ...] = \
             ('BUILD-OUTCOME', candidate.id, status, duration)
         self._writer.writerow(row)
 
+    @_must_be_open
     def on_candidate_started(self, candidate: Candidate) -> None:
-        assert self._writer
         # FIXME add diff!
         diff = "FIXMEFIXMEFIXME"
         self._writer.writerow(('CANDIDATE-STARTED', candidate.id, diff))
 
+    @_must_be_open
     def on_candidate_finished(self,
                               candidate: Candidate,
                               outcome: CandidateOutcome
                               ) -> None:
-        assert self._writer
         # FIXME add diff!
         diff = "FIXMEFIXMEFIXME"
         event = 'PATCH-ACCEPTED' if outcome.successful else 'PATCH-REJECTED'
