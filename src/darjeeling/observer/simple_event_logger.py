@@ -44,6 +44,7 @@ class SimpleEventLogger(SearchObserver):
             self._writer = None
             self._file = None
 
+    # TODO add 'must_be_open' decorator
     def on_test_finished(self,
                          candidate: Candidate,
                          test: Test,
@@ -52,23 +53,28 @@ class SimpleEventLogger(SearchObserver):
         assert self._writer
         status = 'passed' if outcome.successful else 'failed'
         duration = f'{test.time_taken:.3f}'
-        row: Tuple[str, ...] = (candidate.id, test.name, status, duration)
+        row: Tuple[str, ...] = \
+            ('TEST-OUTCOME', candidate.id, test.name, status, duration)
         self._writer.writerow(row)
 
     def on_test_started(self, candidate: Candidate, test: Test) -> None:
         assert self._writer
-        row: Tuple[str, ...] = (candidate.id, test.name)
+        row: Tuple[str, ...] = ('TEST-STARTED', candidate.id, test.name)
         self._writer.writerow(row)
 
     def on_build_started(self, candidate: Candidate) -> None:
         assert self._writer
-        self._writer.writerow(row)
+        self._writer.writerow(('BUILD-STARTED', candidate.id))
 
     def on_build_finished(self,
                           candidate: Candidate,
                           outcome: BuildOutcome
                           ) -> None:
         assert self._writer
+        status = 'passed' if outcome.successful else 'failed'
+        duration = f'{test.time_taken:.3f}'
+        row: Tuple[str, ...] = \
+            ('BUILD-OUTCOME', candidate.id, status, duration)
         self._writer.writerow(row)
 
     def on_candidate_started(self, candidate: Candidate) -> None:
