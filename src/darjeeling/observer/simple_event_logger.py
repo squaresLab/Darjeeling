@@ -56,6 +56,7 @@ class SimpleEventLogger(SearchObserver):
 
     def on_test_started(self, candidate: Candidate, test: Test) -> None:
         assert self._writer
+        row: Tuple[str, ...] = (candidate.id, test.name)
         self._writer.writerow(row)
 
     def on_build_started(self, candidate: Candidate) -> None:
