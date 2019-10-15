@@ -64,7 +64,7 @@ class SimpleEventLogger(SearchObserver):
                           outcome: BuildOutcome
                           ) -> None:
         status = 'passed' if outcome.successful else 'failed'
-        duration = f'{test.time_taken:.3f}'
+        duration = f'{outcome.time_taken:.3f}'
         row: Tuple[str, ...] = \
             ('BUILD-OUTCOME', candidate.id, status, duration)
         self._writer.writerow(row)
