@@ -25,7 +25,7 @@ class SimpleEventLogger(SearchObserver):
         The absolute path to the file to which events should be logged.
     """
     filename: str = attr.ib()
-    _file: Optional[io.TextIO] = \
+    _file: Optional[io.StringIO] = \
         attr.ib(default=None, init=False, repr=False)
     _writer: Optional[csv._writer] = \
         attr.ib(default=None, init=False, repr=False)
@@ -63,7 +63,7 @@ class SimpleEventLogger(SearchObserver):
                          outcome: TestOutcome
                          ) -> None:
         status = 'passed' if outcome.successful else 'failed'
-        duration = f'{test.time_taken:.3f}'
+        duration = f'{outcome.time_taken:.3f}'
         row: Tuple[str, ...] = \
             ('TEST-OUTCOME', candidate.id, test.name, status, duration)
         self._writer.writerow(row)
