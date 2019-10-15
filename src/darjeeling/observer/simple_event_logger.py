@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __all__ = ('SimpleEventLogger',)
 
-from typing import Tuple
+from typing import Tuple, Optional
 import csv
 import io
 import os
