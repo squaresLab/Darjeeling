@@ -48,25 +48,34 @@ class SimpleEventLogger(SearchObserver):
                          test: Test,
                          outcome: TestOutcome
                          ) -> None:
-        ...
+        assert self._writer
+        status = 'passed' if outcome.successful else 'failed'
+        duration = f'{test.time_taken:.3f}'
+        row: Tuple[str, ...] = (candidate.id, test.name, status, duration)
+        self._writer.writerow(row)
 
     def on_test_started(self, candidate: Candidate, test: Test) -> None:
-        ...
+        assert self._writer
+        self._writer.writerow(row)
 
     def on_build_started(self, candidate: Candidate) -> None:
-        ...
+        assert self._writer
+        self._writer.writerow(row)
 
     def on_build_finished(self,
                           candidate: Candidate,
                           outcome: BuildOutcome
                           ) -> None:
-        ...
+        assert self._writer
+        self._writer.writerow(row)
 
     def on_candidate_started(self, candidate: Candidate) -> None:
-        ...
+        assert self._writer
+        self._writer.writerow(row)
 
     def on_candidate_finished(self,
                               candidate: Candidate,
                               outcome: CandidateOutcome
                               ) -> None:
-        ...
+        assert self._writer
+        self._writer.writerow(row)
