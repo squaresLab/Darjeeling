@@ -25,9 +25,9 @@ class SimpleEventLogger(SearchObserver):
     """
     filename: str = attr.ib()
     _file: Optional[io.StringIO] = \
-        attr.ib(default=None, init=None, repr=False)
+        attr.ib(default=None, init=False, repr=False)
     _writer: Optional[csv._writer] = \
-        attr.ib(default=None, init=None, repr=False)
+        attr.ib(default=None, init=False, repr=False)
 
     @filename.validator
     def validate_filename(self, attr, value) -> None:
