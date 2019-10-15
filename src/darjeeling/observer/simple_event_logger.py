@@ -80,5 +80,5 @@ class SimpleEventLogger(SearchObserver):
                               ) -> None:
         # FIXME add diff!
         diff = "FIXMEFIXMEFIXME"
-        event = 'PATCH-ACCEPTED' if outcome.successful else 'PATCH-REJECTED'
+        event = 'PATCH-ACCEPTED' if outcome.is_repair else 'PATCH-REJECTED'
         self._writer.writerow((event, candidate.id, diff))
