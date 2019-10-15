@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-__all__ = ('SimpleCSVSearchEventLogger',)
+__all__ = ('SimpleEventLogger',)
 
 import csv
 import os
@@ -13,13 +13,13 @@ from ..outcome import CandidateOutcome
 
 
 @attr.s(eq=False, hash=False)
-class SimpleCSVSearchEventLogger(SearchObserver):
+class SimpleEventLogger(SearchObserver):
     """Logs search events to a CSV file.
 
     Attributes
     ----------
     filename: str
-        The absolute path to the CSV file to which events should be logged.
+        The absolute path to the file to which events should be logged.
     """
     filename: str = attr.ib()
     _file: Optional[io.StringIO] = \
@@ -31,11 +31,9 @@ class SimpleCSVSearchEventLogger(SearchObserver):
             raise ValueError("'filename' must be an absolute path")
 
     def open(self) -> None:
-        """Opens the associated CSV file handle."""
         self._file = open(self.filename, 'w')
 
     def close(self) -> None:
-        """Closes the associated CSV file handle."""
         if self._file:
             self._file.close()
             self._file = None
