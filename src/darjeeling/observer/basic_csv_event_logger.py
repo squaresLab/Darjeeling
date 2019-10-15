@@ -12,9 +12,11 @@ from ..candidate import Candidate
 from ..outcome import CandidateOutcome
 
 
-@attr.s
+@attr.s(eq=False, hash=False)
 class SimpleCSVSearchEventLogger(SearchObserver):
     filename: str = attr.ib()
+    _file: Optional[io.StringIO] = \
+        attr.ib(default=None, init=None, repr=False)
 
     @filename.validator
     def validate_filename(self, attr, value) -> None:
@@ -22,10 +24,14 @@ class SimpleCSVSearchEventLogger(SearchObserver):
             raise ValueError("'filename' must be an absolute path")
 
     def open(self) -> None:
-        pass
+        """Opens the associated CSV file handle."""
+        self._file = open(self.filename, 'w')
 
     def close(self) -> None:
-        pass
+        """Closes the associated CSV file handle."""
+        if self._file:
+            self._file.close()
+            self._file = None
 
     def on_test_finished(self,
                          candidate: Candidate,
