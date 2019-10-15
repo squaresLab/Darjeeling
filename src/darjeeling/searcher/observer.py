@@ -11,7 +11,11 @@ from ..outcome import CandidateOutcome
 class SearchObserver(abc.ABC):
     """Provides an interface for listening and responding to search events."""
     @abc.abstractmethod
-    def on_test_finished(self, test: Test, outcome: TestOutcome) -> None:
+    def on_test_finished(self,
+                         candidate: Candidate,
+                         test: Test,
+                         outcome: TestOutcome
+                         ) -> None:
         """Called when a test execution has finished for a candidate patch."""
         ...
 
