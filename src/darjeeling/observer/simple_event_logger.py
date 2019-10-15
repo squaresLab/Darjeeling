@@ -79,11 +79,16 @@ class SimpleEventLogger(SearchObserver):
 
     def on_candidate_started(self, candidate: Candidate) -> None:
         assert self._writer
-        self._writer.writerow(row)
+        # FIXME add diff!
+        diff = "FIXMEFIXMEFIXME"
+        self._writer.writerow(('CANDIDATE-STARTED', candidate.id, diff))
 
     def on_candidate_finished(self,
                               candidate: Candidate,
                               outcome: CandidateOutcome
                               ) -> None:
         assert self._writer
-        self._writer.writerow(row)
+        # FIXME add diff!
+        diff = "FIXMEFIXMEFIXME"
+        event = 'PATCH-ACCEPTED' if outcome.successful else 'PATCH-REJECTED'
+        self._writer.writerow((event, candidate.id, diff))
