@@ -79,15 +79,13 @@ class ProgramSource(Mapping[str, ProgramSourceFile]):
         logger.debug("fetched file contents")
 
     def __init__(self, file_to_content: Mapping[str, str]) -> None:
-        self.__file_to_content: Mapping[str, str] = dict(file_to_content)
-        self.__file_to_line_offsets: Mapping[str, Sequence[Tuple[int, int]]] = \
-            {fn: self._compute_line_offsets(content)
-             for fn, content in self.__file_to_content}
-
-    @property
-    def files(self) -> Iterator[str]:
-        """Returns an iterator over the source files for this program."""
-        yield from self.__file_to_content
+        self.__files: Mapping[str, ProgramSourceFile] =
+            {fn: ProgramSourceFile(fn, content)
+             for fn, content in file_to_content.items()}
+        
+    def __iter__(self) -> Iterator[str]:
+        """Returns an iterator over the source filenames for this program."""
+        yield from self.__files
 
     def line_col_to_offset(self,
                            filename: str,
