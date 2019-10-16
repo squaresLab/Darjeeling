@@ -44,14 +44,18 @@ class ProgramSourceFile:
             The contents of the given file.
         """
         line_to_start_end: List[Tuple[int, int]] = []
+        offset_file_end = len(contents)
         offset_line_start = 0
         while True:
             offset_line_break = contents.find('\n', offset_line_start)
             if offset_line_break == -1:
+                start_end = (offset_line_start, offset_file_end)
+                line_to_start_end.append(start_end)
                 break
             start_end = (offset_line_start, offset_line_break - 1)
             line_to_start_end.append(start_end)
             offset_line_start = offset_line_break + 1
+        print(line_to_start_end)
         return tuple(line_to_start_end)
 
     def location_to_offset(self, location: Location) -> int:
