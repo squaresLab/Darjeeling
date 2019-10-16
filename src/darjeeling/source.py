@@ -21,6 +21,36 @@ logger.setLevel(logging.DEBUG)
 class ProgramSourceFile:
     filename: str = attr.ib()
     contents: str = attr.ib()
+    num_lines: int = attr.ib(init=False, repr=False)
+    _line_to_start_and_end_offset: Sequence[Tuple[int, int]] = \
+        attr.ib(init=False, repr=False)
+
+    def __attrs_post_init__(self) -> None:
+        line_offsets = self._compute_line_start_and_end_offsets()
+        num_lines = len(line_offsets)
+        object.__setattr__('_line_to_start_and_end_offset', line_offsets)
+        object.__setattr_('num_lines', num_lines)
+
+    @staticmethod
+    def _compute_line_start_and_end_offsets(contents: str
+                                           ) -> Sequence[Tuple[int, int]]:
+        """Computes the offsets for each line within a given file.
+
+        Parameters
+        ----------
+        contents: str
+            The contents of the given file.
+        """
+        line_to_start_end: List[Tuple[int, int]] = []
+        offset_line_start = 0
+        while True:
+            offset_line_break = contents.find('\n', offset_line_start)
+            if offset_line_break == -1:
+                break
+            start_end = (offset_line_start, offset_line_break - 1)
+            line_to_start_end.append(start_end)
+            offset_line_start = offset_line_break + 1
+        return tuple(line_to_start_end)
 
 
 # FIXME add option to save to disk
@@ -53,26 +83,6 @@ class ProgramSource(Mapping[str, ProgramSourceFile]):
         self.__file_to_line_offsets: Mapping[str, Sequence[Tuple[int, int]]] = \
             {fn: self._compute_line_offsets(content)
              for fn, content in self.__file_to_content}
-
-    @staticmethod
-    def _compute_line_offsets(contents: str) -> Sequence[Tuple[int, int]]:
-        """Computes the offsets for each line within a given file.
-
-        Parameters
-        ----------
-        contents: str
-            The contents of the given file.
-        """
-        line_to_start_end: List[Tuple[int, int]] = []
-        offset_line_start = 0
-        while True:
-            offset_line_break = contents.find('\n', offset_line_start)
-            if offset_line_break == -1:
-                break
-            start_end = (offset_line_start, offset_line_break - 1)
-            line_to_start_end.append(start_end)
-            offset_line_start = offset_line_break + 1
-        return line_to_start_end
 
     @property
     def files(self) -> Iterator[str]:
