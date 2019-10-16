@@ -178,16 +178,16 @@ class Evaluator:
                   ) -> TestOutcome:
         """Runs a test for a given patch using a provided container."""
         logger.debug("executing test: %s [%s]", test.name, candidate)
-        # for listener in self.__listeners:
-        #     listener.on_test_started(candidate, test)
+        for listener in self.__listeners:
+            listener.on_test_started(candidate, test)
         self.__counter_tests += 1
         outcome = self.__test_suite.execute(container, test)
         if not outcome.successful:
             logger.debug("* test failed: %s (%s)", test.name, candidate)
         else:
             logger.debug("* test passed: %s (%s)", test.name, candidate)
-        # for listener in self.__listeners:
-        #     listener.on_test_finished(candidate, test, outcome)
+        for listener in self.__listeners:
+            listener.on_test_finished(candidate, test, outcome)
         return outcome
 
     def _evaluate(self, candidate: Candidate) -> CandidateOutcome:
