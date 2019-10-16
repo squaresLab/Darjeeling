@@ -39,5 +39,9 @@ class CsvEventLogger(DarjeelingEventHandler):
         self._file = open(self.filename, 'w')
         self._writer = csv.writer(self._file)
 
+    def _write(self, row: Sequence[str]) -> None:
+        self._writer.writerow(row)
+        self._file.flush()
+
     def notify(self, event: DarjeelingEvent) -> None:
         print(str(event))
