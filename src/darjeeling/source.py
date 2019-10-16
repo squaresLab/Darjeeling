@@ -43,7 +43,7 @@ class ProgramSource:
 
     def __init__(self, file_to_content: Mapping[str, str]) -> None:
         self.__file_to_content: Mapping[str, str] = dict(file_to_content)
-        self.__file_to_line_offsets: Mapping[str, Sequence[int]] = \
+        self.__file_to_line_offsets: Mapping[str, Sequence[Tuple[int, int]]] = \
             {fn: self._compute_line_offsets(content)
              for fn, content in self.__file_to_content}
 
@@ -56,7 +56,16 @@ class ProgramSource:
         contents: str
             The contents of the given file.
         """
-        raise NotImplementedError
+        line_to_start_end: List[Tuple[int, int]] = []
+        offset_line_start = 0
+        while True:
+            offset_line_break = contents.find('\n', offset_line_start)
+            if offset_line_break == -1:
+                break
+            start_end = (offset_line_start, offset_line_break - 1)
+            line_to_start_end.append(start_end)
+            offset_line_start = offset_line_break + 1
+        return line_to_start_end
 
     @property
     def files(self) -> Iterator[str]:
