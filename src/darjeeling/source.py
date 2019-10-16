@@ -2,6 +2,7 @@
 __all__ = ('ProgramSource',)
 
 from typing import List, Union, Dict, Optional, Iterator, Iterable
+import logging
 
 import boggart
 from rooibos import Client as RooibosClient
@@ -9,8 +10,12 @@ from bugzoo.client import Client as BugZooClient
 from bugzoo.core.patch import Patch
 from bugzoo.core.bug import Bug as Snapshot
 
+from . import exceptions 
 from .core import Replacement, FileLine, FileLocationRange, Location, \
     LocationRange
+
+logger: logging.Logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 # FIXME add option to save to disk
@@ -24,23 +29,27 @@ class ProgramSource:
         # load the content of each file
         file_to_content: Dict[str, str] = {}
 
-        return
+        logger.debug("provisioning container to fetch file contents")
+        container = client_bugzoo.containers.provision(snapshot)
+        try:
+            for filename in files:
+                content = client_bugzoo.files.read(container, filename)
+                file_to_content[filename] = content
+        except KeyError:
+            logger.exception("failed to read source file, "
+                             f"'{snapshot.name}/{filename}': file not found")
+            raise exceptions.FileNotFound(filename)
+        finally:
+            del client_bugzoo.containers[container.uid]
+        logger.debug("fetched file contents")
 
-        # FIXME hacko
-        self.__snapshot = snapshot
-        SFM = boggart.server.sourcefile.SourceFileManager
-        self.__mgr = SFM(client_bugzoo,
-                         client_rooibos,
-                         boggart.config.Operators())  # type: ignore  # noqa: pycodestyle
-        self.__files = list(files)
-        self.__mgr._fetch_files(snapshot, self.__files)
-        for fn in files:
-            self.__mgr.read_file(snapshot, fn)
+    def __init__(self, file_to_content: Mapping[str, str]) -> None:
+        self.__file_to_content = dict(file_to_content)
 
     @property
     def files(self) -> Iterator[str]:
         """Returns an iterator over the source files for this program."""
-        yield from self.__files
+        yield from self.__file_to_content
 
     def line_col_to_offset(self,
                            filename: str,
