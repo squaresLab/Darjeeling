@@ -188,7 +188,6 @@ class Evaluator:
 
     def _evaluate(self, candidate: Candidate) -> CandidateOutcome:
         bz = self.__bugzoo
-
         patch = candidate.to_diff(self.__problem)
         logger.info("evaluating candidate: %s\n%s\n", candidate, patch)
 
@@ -283,12 +282,17 @@ class Evaluator:
     def evaluate(self, candidate: Candidate) -> Evaluation:
         """Evaluates a given candidate patch."""
         # FIXME return an evaluation error
+        for listener in self.__listeners:
+            listener.on_candidate_started(candidate)
         try:
             outcome = self._evaluate(candidate)
         except Exception:
             m = "unexpected error occurred when evaluating candidate [{}]"
             m = m.format(candidate.id)
             logger.exception(m)
+        else:
+            for listener in self.__listeners:
+                listener.on_candidate_finished(candidate, outcome)
 
         self.outcomes.record(candidate, outcome)
         with self.__lock:
