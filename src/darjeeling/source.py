@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-__all__ = ('ProgramSource',)
+__all__ = ('ProgramSource', 'ProgramSourceFile')
 
 from typing import (List, Union, Dict, Optional, Iterator, Iterable, Mapping,
                     Collection, Tuple, Sequence)
+from difflib import unified_diff
 import logging
 
 import attr
@@ -80,6 +81,10 @@ class ProgramSourceFile:
         range_ = self.line_to_location_range(num)
         contents = self.read_chars(range_)
         return contents + '\n' if keep_newline else contents
+
+    def with_replacements(self, replacements: Sequence[Replacement]) -> str:
+        """Returns the result of applying replacements to this file."""
+        raise NotImplementedError
 
 
 # FIXME add option to save to disk
@@ -172,7 +177,7 @@ class ProgramSource(Mapping[str, ProgramSourceFile]):
         return self.__files[at.filename].read_chars(at.location_range)
 
     def replacements_to_diff(self,
-                             file_to_replacements: Dict[str, List[Replacement]]
+                             file_to_replacements: Mapping[str, Sequence[Replacement]]
                              ) -> Patch:
         file_diffs: List[str] = []
         for filename, replacements in file_to_replacements.items():
