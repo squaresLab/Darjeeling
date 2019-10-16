@@ -41,3 +41,8 @@ def test_filename(simple_file):
 
 def test_num_lines(simple_file):
     assert simple_file.num_lines == 18
+
+
+def test_read_line(simple_file):
+    line_1 = "@attr.s(frozen=True, slots=True)"
+    assert simple_file.read_line(1) == line_1
