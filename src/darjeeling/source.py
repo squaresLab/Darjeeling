@@ -2,7 +2,7 @@
 __all__ = ('ProgramSource',)
 
 from typing import (List, Union, Dict, Optional, Iterator, Iterable, Mapping,
-                    Collection)
+                    Collection, Tuple)
 import logging
 
 import attr
