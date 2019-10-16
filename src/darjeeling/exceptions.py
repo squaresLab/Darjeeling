@@ -17,8 +17,10 @@ class SearchAlreadyStarted(DarjeelingError):
     """The searcher has already begun searching for patches."""
 
 
+@_attr.s(auto_exc=True, auto_attribs=True)
 class FileNotFound(DarjeelingError):
     """A given file could not be found."""
+    filename: str = attr.ib()
 
 
 class TimeLimitReached(DarjeelingError):
