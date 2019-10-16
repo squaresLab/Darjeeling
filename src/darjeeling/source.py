@@ -42,7 +42,21 @@ class ProgramSource:
         logger.debug("fetched file contents")
 
     def __init__(self, file_to_content: Mapping[str, str]) -> None:
-        self.__file_to_content = dict(file_to_content)
+        self.__file_to_content: Mapping[str, str] = dict(file_to_content)
+        self.__file_to_line_offsets: Mapping[str, Sequence[int]] = \
+            {fn: self._compute_line_offsets(content)
+             for fn, content in self.__file_to_content}
+
+    @staticmethod
+    def _compute_line_offsets(contents: str) -> None:
+        """Computes the offsets for each line within a given file.
+
+        Parameters
+        ----------
+        contents: str
+            The contents of the given file.
+        """
+        raise NotImplementedError
 
     @property
     def files(self) -> Iterator[str]:
@@ -55,15 +69,12 @@ class ProgramSource:
                            col: int
                            ) -> int:
         """Transforms a line and column in a file to a zero-indexed offset."""
-        return self.__mgr.line_col_to_offset(self.__snapshot,
-                                             filename,
-                                             line,
-                                             col)
+        offset_line_start = self.__file_to_line_offsets[filename][line - 1]
+        return offset_line_start + col
 
-    # FIXME move to boggart
     def line_to_location_range(self, line: FileLine) -> FileLocationRange:
         """Returns the range of characters covered by a given line."""
-        content = self.__mgr.read_line(self.__snapshot, line)
+        content = self.read_line(line)
         start = Location(line.num, 0)
         stop = Location(line.num, len(content) + 1)
         r = LocationRange(start, stop)
@@ -89,7 +100,7 @@ class ProgramSource:
             will be kept. If set to False, the trailing newline character
             will be removed.
         """
-        content = self.__mgr.read_line(self.__snapshot, at)
+        content = self.__file_to_content[fn]
         return content + '\n' if keep_newline else content
 
     def read_chars(self, at: FileLocationRange) -> str:
