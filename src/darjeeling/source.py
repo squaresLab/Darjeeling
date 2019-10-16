@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 __all__ = ('ProgramSource',)
 
-from typing import List, Union, Dict, Optional, Iterator, Iterable
+from typing import List, Union, Dict, Optional, Iterator, Iterable, Mapping
 import logging
 
+import attr
 from bugzoo.client import Client as BugZooClient
 from bugzoo.core.patch import Patch
 from bugzoo.core.bug import Bug as Snapshot
@@ -16,8 +17,14 @@ logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
+@attr.s(slots=True, frozen=True)
+class ProgramSourceFile:
+    filename: str = attr.ib()
+    contents: str = attr.ib()
+
+
 # FIXME add option to save to disk
-class ProgramSource:
+class ProgramSource(Mapping[str, ProgramSourceFile]):
     """Stores the source code for a given program."""
     @staticmethod
     def for_bugzoo_snapshot(client_bugzoo: BugZooClient,
