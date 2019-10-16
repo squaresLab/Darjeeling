@@ -109,7 +109,7 @@ class ProgramSource(Mapping[str, ProgramSourceFile]):
         self.__files: Mapping[str, ProgramSourceFile] = \
             {f.filename: f for f in files}
 
-    def __getitem__(self, filename: str) -> None:
+    def __getitem__(self, filename: str) -> ProgramSourceFile:
         return self.__files[filename]
         
     def __iter__(self) -> Iterator[str]:
