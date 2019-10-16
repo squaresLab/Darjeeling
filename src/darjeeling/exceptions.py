@@ -20,7 +20,7 @@ class SearchAlreadyStarted(DarjeelingError):
 @_attr.s(auto_exc=True, auto_attribs=True)
 class FileNotFound(DarjeelingError):
     """A given file could not be found."""
-    filename: str = attr.ib()
+    filename: str
 
 
 class TimeLimitReached(DarjeelingError):
