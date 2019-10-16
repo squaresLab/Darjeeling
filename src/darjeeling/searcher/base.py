@@ -15,7 +15,7 @@ import signal
 
 import bugzoo
 
-from ..listener import SearchListener
+from ..listener import EvaluationListener
 from ..core import FileLine
 from ..config import SearcherConfig
 from ..candidate import Candidate
@@ -99,7 +99,6 @@ class Searcher(Generic[T], abc.ABC):
         self.__time_limit = time_limit
         self.__candidate_limit = candidate_limit
         self.__outcomes = OutcomeManager()
-        self.__listeners: List[SearchListener] = []
         self.__evaluator = Evaluator(bugzoo,
                                      problem,
                                      num_workers=threads,
@@ -117,36 +116,11 @@ class Searcher(Generic[T], abc.ABC):
         self.__history = []  # type: List[Candidate]
         logger.debug("constructed searcher")
 
-    @property
-    def listeners(self) -> Iterator[SearchListener]:
-        """Returns an iterator over the listeners attached to this searcher."""
-        yield from self.__listeners
+    def add_evaluation_listener(self, listener: EvaluationListener) -> None:
+        self.__evaluator.add_listener(listener)
 
-    def add_listener(self, listener: SearchListener) -> None:
-        """Attaches a listener to this searcher.
-        Does nothing if the listener is already attached to the searcher.
-        """
-        logger.debug("adding search listener: %s", listener)
-        if not listener in self.__listeners:
-            self.__listeners.append(listener)
-            logger.debug("added search listener: %s", listener)
-        else:
-            logger.debug("search listener already attached: %s", listener)
-
-    def remove_listener(self, listener: SearchListener) -> None:
-        """Removes a listener from this searcher.
-
-        Raises
-        ------
-        ValueError
-            If the given listener is not attached to this searcher.
-        """
-        logger.debug("removing search listener: %s", listener)
-        if not listener in self.__listeners:
-            m = f"listener [{listener}] not attached to searcher [{self}]"
-            raise ValueError(m)
-        self.__listeners.remove(listener)
-        logger.debug("removed search listener: %s", listener)
+    def remove_evaluation_listener(self, listener: EvaluationListener) -> None:
+        self.__evaluator.remove_listener(listener)
 
     @property
     def num_workers(self) -> int:
@@ -233,10 +207,6 @@ class Searcher(Generic[T], abc.ABC):
         if self.candidate_limit and self.num_candidate_evals > self.candidate_limit:
             raise CandidateLimitReached
         # FIXME test limit
-
-        for listener in self.__listeners:
-            listener.on_candidate_started(candidate)
-
         self.__evaluator.submit(candidate)
 
     def evaluate_all(self,
@@ -276,11 +246,7 @@ class Searcher(Generic[T], abc.ABC):
                 i += 1
 
     def as_evaluated(self) -> Iterator[Evaluation]:
-        for evaluation in self.__evaluator.as_completed():
-            candidate, outcome = evaluation
-            for listener in self.__listeners:
-                listener.on_candidate_finished(candidate, outcome)
-            yield evaluation
+        yield from self.__evaluator.as_completed()
 
     def __iter__(self) -> Iterator[Candidate]:
         """
