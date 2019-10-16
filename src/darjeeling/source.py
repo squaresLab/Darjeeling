@@ -53,6 +53,12 @@ class ProgramSourceFile:
             offset_line_start = offset_line_break + 1
         return tuple(line_to_start_end)
 
+    def line_col_to_offset(self, line: int, col: int) -> int:
+        """Transforms a line and column in this file to an offset."""
+        offset_line_start, offset_line_stop = \
+            self._line_to_start_and_end_offset[line - 1]
+        return offset_line_start + col
+
 
 # FIXME add option to save to disk
 class ProgramSource(Mapping[str, ProgramSourceFile]):
@@ -99,9 +105,7 @@ class ProgramSource(Mapping[str, ProgramSourceFile]):
                            col: int
                            ) -> int:
         """Transforms a line and column in a file to a zero-indexed offset."""
-        offset_line_start, offset_line_stop = \
-            self.__file_to_line_offsets[filename][line - 1]
-        return offset_line_start + col
+        return self.__files[filename].line_col_to_offset(line, col)
 
     def line_to_location_range(self, line: FileLine) -> FileLocationRange:
         """Returns the range of characters covered by a given line."""
