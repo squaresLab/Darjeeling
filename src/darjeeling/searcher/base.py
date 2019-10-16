@@ -143,7 +143,7 @@ class Searcher(Generic[T], abc.ABC):
         """
         logger.debug("removing search listener: %s", listener)
         if not listener in self.__listeners:
-            m = f"listener [{listener]] not attached to searcher [{searcher}]"
+            m = f"listener [{listener}] not attached to searcher [{searcher}]"
             raise ValueError(m)
         self.__listeners.remove(listener)
         logger.debug("removed search listener: %s", listener)
