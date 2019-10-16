@@ -174,4 +174,14 @@ class ProgramSource(Mapping[str, ProgramSourceFile]):
     def replacements_to_diff(self,
                              file_to_replacements: Dict[str, List[Replacement]]
                              ) -> Patch:
-        raise NotImplementedError
+        file_diffs: List[str] = []
+        for filename, replacements in file_to_replacements.items():
+            file_ = self.__files[filename]
+            original = file_.contents
+            mutated = file_.with_replacements(replacements)
+            diff = ''.join(unified_diff(original.splitlines(True),
+                                        mutated.splitlines(True),
+                                        filename,
+                                        filename))
+            file_diffs.append(diff)
+        return Patch.from_unidiff('\n'.join(file_diffs))
