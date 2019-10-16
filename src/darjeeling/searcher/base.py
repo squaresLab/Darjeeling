@@ -119,15 +119,34 @@ class Searcher(Generic[T], abc.ABC):
 
     @property
     def listeners(self) -> Iterator[SearchListener]:
+        """Returns an iterator over the listeners attached to this searcher."""
         yield from self.__listeners
 
     def add_listener(self, listener: SearchListener) -> None:
+        """Attaches a listener to this searcher.
+        Does nothing if the listener is already attached to the searcher.
+        """
         logger.debug("adding search listener: %s", listener)
         if not listener in self.__listeners:
             self.__listeners.append(listener)
             logger.debug("added search listener: %s", listener)
         else:
             logger.debug("search listener already attached: %s", listener)
+
+    def remove_listener(self, listener: SearchListener) -> None:
+        """Removes a listener from this searcher.
+
+        Raises
+        ------
+        ValueError
+            If the given listener is not attached to this searcher.
+        """
+        logger.debug("removing search listener: %s", listener)
+        if not listener in self.__listeners:
+            m = f"listener [{listener]] not attached to searcher [{searcher}]"
+            raise ValueError(m)
+        self.__listeners.remove(listener)
+        logger.debug("removed search listener: %s", listener)
 
     @property
     def num_workers(self) -> int:
