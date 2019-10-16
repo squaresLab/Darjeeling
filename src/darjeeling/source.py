@@ -108,6 +108,9 @@ class ProgramSource(Mapping[str, ProgramSourceFile]):
     def __init__(self, files: Collection[ProgramSourceFile]) -> None:
         self.__files: Mapping[str, ProgramSourceFile] = \
             {f.filename: f for f in files}
+
+    def __getitem__(self, filename: str) -> None:
+        return self.__files[filename]
         
     def __iter__(self) -> Iterator[str]:
         """Returns an iterator over the source filenames for this program."""
