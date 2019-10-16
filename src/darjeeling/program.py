@@ -22,7 +22,7 @@ logger.setLevel(logging.DEBUG)
 @attr.s(frozen=True, slots=True, auto_attribs=True)
 class Program:
     _bugzoo: BugZooClient
-    _snapshot: Snapshot
+    snapshot: Snapshot
     tests: TestSuite
 
     @staticmethod
