@@ -46,6 +46,10 @@ class SimpleEventLogger(SearchObserver):
     def close(self) -> None:
         self._file.close()
 
+    def _write(self, row: Sequence[str]) -> None:
+        self._writer.writerow(row)
+        self._file.flush()
+
     def on_test_finished(self,
                          candidate: Candidate,
                          test: Test,
@@ -55,13 +59,13 @@ class SimpleEventLogger(SearchObserver):
         duration = f'{outcome.time_taken:.3f}'
         row: Tuple[str, ...] = \
             ('TEST-OUTCOME', candidate.id, test.name, status, duration)
-        self._writer.writerow(row)
+        self._write(row)
 
     def on_test_started(self, candidate: Candidate, test: Test) -> None:
-        self._writer.writerow(('TEST-STARTED', candidate.id, test.name))
+        self._write(('TEST-STARTED', candidate.id, test.name))
 
     def on_build_started(self, candidate: Candidate) -> None:
-        self._writer.writerow(('BUILD-STARTED', candidate.id))
+        self._write(('BUILD-STARTED', candidate.id))
 
     def on_build_finished(self,
                           candidate: Candidate,
@@ -71,12 +75,12 @@ class SimpleEventLogger(SearchObserver):
         duration = f'{outcome.time_taken:.3f}'
         row: Tuple[str, ...] = \
             ('BUILD-OUTCOME', candidate.id, status, duration)
-        self._writer.writerow(row)
+        self._write(row)
 
     def on_candidate_started(self, candidate: Candidate) -> None:
         # FIXME add diff!
         diff = "FIXMEFIXMEFIXME"
-        self._writer.writerow(('CANDIDATE-STARTED', candidate.id, diff))
+        self._write(('CANDIDATE-STARTED', candidate.id, diff))
 
     def on_candidate_finished(self,
                               candidate: Candidate,
@@ -85,4 +89,4 @@ class SimpleEventLogger(SearchObserver):
         # FIXME add diff!
         diff = "FIXMEFIXMEFIXME"
         event = 'PATCH-ACCEPTED' if outcome.is_repair else 'PATCH-REJECTED'
-        self._writer.writerow((event, candidate.id, diff))
+        self._write((event, candidate.id, diff))
