@@ -234,11 +234,15 @@ class Evaluator:
 
         self.__counter_candidates += 1
         logger.debug("building candidate: %s", candidate)
+        for listener in self.__listeners:
+            listener.on_build_started(candidate)
         timer_build = Stopwatch()
         timer_build.start()
         try:
             with self.__program.build(patch) as container:
                 outcome_build = BuildOutcome(True, timer_build.duration)
+                for listener in self.__listeners:
+                    listener.on_build_finished(candidate, outcome_build)
                 logger.debug("built candidate: %s", candidate)
                 logger.debug("executing tests for candidate: %s", candidate)
                 for test in tests:
@@ -269,6 +273,8 @@ class Evaluator:
         except BuildFailure:
             logger.debug("failed to build candidate: %s", candidate)
             outcome_build = BuildOutcome(False, timer_build.duration)
+            for listener in self.__listeners:
+                listener.on_build_finished(candidate, outcome_build)
             return CandidateOutcome(outcome_build,
                                     TestOutcomeSet(),
                                     False)
