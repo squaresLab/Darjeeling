@@ -12,17 +12,30 @@ class DarjeelingEvent:
     """Base class used by all events within Darjeeling."""
 
 
-@_attr.s(frozen=True, auto_attribs=True, slots=True)
+@_attr.s(frozen=True, auto_attribs=True, slots=True, str=False)
 class BuildStarted(DarjeelingEvent):
     """An attempt to build a candidate patch has started."""
     candidate: _Candidate
 
+    def __str__(self) -> str:
+        return f"building candidate patch: {self.candidate.id}"
 
-@_attr.s(frozen=True, auto_attribs=True, slots=True)
+
+@_attr.s(frozen=True, auto_attribs=True, slots=True, str=False)
 class BuildFinished(DarjeelingEvent):
     """An attempt to build a candidate patch has finished."""
     candidate: _Candidate
     outcome: _BuildOutcome
+
+    def __str__(self) -> str:
+        if not self.outcome.successful:
+            prefix = "failed to build"
+        else:
+            prefix = "successfully built"
+
+        s = (f"{prefix} candidate patch [{self.candidate.id}]"
+             f" after {self.outcome.time_taken:.3f} seconds.")
+        return s
 
 
 @_attr.s(frozen=True, auto_attribs=True, slots=True)
