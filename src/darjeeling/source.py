@@ -103,7 +103,8 @@ class ProgramSource(Mapping[str, ProgramSourceFile]):
         return cls.from_file_contents(file_to_content)
 
     @staticmethod
-    def from_file_contents(file_to_contents: Mapping[str, str]) -> None:
+    def from_file_contents(file_to_contents: Mapping[str, str]
+                          ) -> 'ProgramSource':
         files = [ProgramSourceFile(fn, contents)
                  for fn, contents in file_to_contents.items()]
         return ProgramSource(files)
