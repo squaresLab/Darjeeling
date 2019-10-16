@@ -22,7 +22,7 @@ from .outcome import CandidateOutcome, \
                      TestOutcome, \
                      BuildOutcome
 from .problem import Problem
-from .listeners import EvaluationListener
+from .listener import EvaluationListener
 from .exceptions import BuildFailure
 from .core import Test
 from .test import TestSuite
