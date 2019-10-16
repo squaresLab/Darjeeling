@@ -4,8 +4,6 @@ __all__ = ('ProgramSource',)
 from typing import List, Union, Dict, Optional, Iterator, Iterable
 import logging
 
-import boggart
-from rooibos import Client as RooibosClient
 from bugzoo.client import Client as BugZooClient
 from bugzoo.core.patch import Patch
 from bugzoo.core.bug import Bug as Snapshot
