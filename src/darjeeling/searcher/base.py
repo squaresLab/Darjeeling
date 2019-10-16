@@ -233,6 +233,10 @@ class Searcher(Generic[T], abc.ABC):
         if self.candidate_limit and self.num_candidate_evals > self.candidate_limit:
             raise CandidateLimitReached
         # FIXME test limit
+
+        for listener in self.__listeners:
+            listener.on_candidate_started(candidate)
+
         self.__evaluator.submit(candidate)
 
     def evaluate_all(self,
@@ -272,7 +276,11 @@ class Searcher(Generic[T], abc.ABC):
                 i += 1
 
     def as_evaluated(self) -> Iterator[Evaluation]:
-        yield from self.__evaluator.as_completed()
+        for evaluation in self.__evaluator.as_completed():
+            candidate, outcome = evaluation
+            for listener in self.__listeners:
+                listener.on_candidate_finished(candidate, outcome)
+            yield evaluation
 
     def __iter__(self) -> Iterator[Candidate]:
         """
