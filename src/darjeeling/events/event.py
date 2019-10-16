@@ -21,6 +21,12 @@ class TestExecutionFinished(DarjeelingEvent):
 
 
 @_attr.s(frozen=True, auto_attrs=True, slots=True)
+class CandidateEvaluationStarted(DarjeelingEvent):
+    """Evaluation of a given candidate patch has started."""
+    candidate: _Candidate
+
+
+@_attr.s(frozen=True, auto_attrs=True, slots=True)
 class CandidateEvaluationFinished(DarjeelingEvent):
     """Evaluation of a given candidate patch has finished."""
     candidate: _Candidate
