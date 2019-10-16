@@ -1,40 +1,51 @@
 # -*- coding: utf-8 -*-
-__all__ = ('EchoSearchEvents',)
+__all__ = ('EvaluationListener',)
 
-from .search_listener import SearchListener
+import abc
+
 from ..core import Test, TestOutcome, BuildOutcome
 from ..candidate import Candidate
 from ..outcome import CandidateOutcome
 
 
-class EchoSearchEvents(SearchListener):
-    """Prints search events to the stdout.
-    This class exists purely for testing and debugging purposes.
-    """
+class EvaluationListener(abc.ABC):
+    """Provides an interface for listening to patch evaluation events."""
+    @abc.abstractmethod
     def on_test_finished(self,
                          candidate: Candidate,
                          test: Test,
                          outcome: TestOutcome
                          ) -> None:
-        print(f"TEST FINISHED: {test.name}")
+        """Called when a test execution has finished for a candidate patch."""
+        ...
 
+    @abc.abstractmethod
     def on_test_started(self, candidate: Candidate, test: Test) -> None:
-        print(f"TEST STARTED: {test.name}")
+        """Called when a test execution has begun for a candidate patch."""
+        ...
 
+    @abc.abstractmethod
     def on_build_started(self, candidate: Candidate) -> None:
-        print(f"BUILD STARTED: {candidate}")
+        """Called when an attempt to build a candidate patch has begun."""
+        ...
 
+    @abc.abstractmethod
     def on_build_finished(self,
                           candidate: Candidate,
                           outcome: BuildOutcome
                           ) -> None:
-        print(f"BUILD FINISHED: {candidate}")
+        """Called when an attempt to build a candidate patch has finished."""
+        ...
 
+    @abc.abstractmethod
     def on_candidate_started(self, candidate: Candidate) -> None:
-        print(f"CANDIDATE STARTED: {candidate}")
+        """Called when the evaluation of a candidate patch has begun."""
+        ...
 
+    @abc.abstractmethod
     def on_candidate_finished(self,
                               candidate: Candidate,
                               outcome: CandidateOutcome
                               ) -> None:
-        print(f"CANDIDATE FINISHED: {candidate}")
+        """Called when the evaluation of a candidate patch has finished."""
+        ...
