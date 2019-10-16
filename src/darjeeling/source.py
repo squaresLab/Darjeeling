@@ -52,10 +52,9 @@ class ProgramSourceFile:
                 start_end = (offset_line_start, offset_file_end)
                 line_to_start_end.append(start_end)
                 break
-            start_end = (offset_line_start, offset_line_break - 1)
+            start_end = (offset_line_start, offset_line_break)  # is this end-inclusive?
             line_to_start_end.append(start_end)
             offset_line_start = offset_line_break + 1
-        print(line_to_start_end)
         return tuple(line_to_start_end)
 
     def location_to_offset(self, location: Location) -> int:
@@ -75,14 +74,14 @@ class ProgramSourceFile:
             self.line_col_to_offset(loc_start.line, loc_start.col)
         offset_stop = \
             self.line_col_to_offset(loc_stop.line, loc_stop.col)
-        return self.contents[offset_start:offset_stop + 1]
+        return self.contents[offset_start:offset_stop]
 
     def line_to_location_range(self, num: int) -> LocationRange:
         offset_start, offset_stop = \
             self._line_to_start_and_end_offset[num - 1]
         length = offset_stop - offset_start
         start = Location(num, 0)
-        stop = Location(num, length + 1)
+        stop = Location(num, length)
         return LocationRange(start, stop)
 
     def read_line(self, num: int, *, keep_newline: bool = False) -> str:
