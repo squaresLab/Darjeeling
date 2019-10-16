@@ -74,6 +74,7 @@ class ProgramSource:
 
     def line_to_location_range(self, line: FileLine) -> FileLocationRange:
         """Returns the range of characters covered by a given line."""
+        # FIXME don't rely on read_line
         content = self.read_line(line)
         start = Location(line.num, 0)
         stop = Location(line.num, len(content) + 1)
@@ -100,8 +101,15 @@ class ProgramSource:
             will be kept. If set to False, the trailing newline character
             will be removed.
         """
-        offset_start = self.__file_to_line_offsets[at.filename][at.num - 1]
-        raise NotImplementedError
+        filename = at.filename
+        range_ = self.line_to_location_range(at)
+        loc_start = range_.start
+        loc_stop = range_.stop
+        offset_start = \
+            self.line_col_to_offset(filename, loc_start.line, loc_start.col)
+        offset_stop = \
+            self.line_col_to_offset(filename, loc_stop.line, loc_stop.col)
+        content = self.__file_to_content[fn][offset_start:offset_stop + 1]
         return content + '\n' if keep_newline else content
 
     def read_chars(self, at: FileLocationRange) -> str:
