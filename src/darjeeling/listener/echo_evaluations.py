@@ -28,7 +28,7 @@ class EchoEvaluations(EvaluationListener):
                           candidate: Candidate,
                           outcome: BuildOutcome
                           ) -> None:
-        print(f"BUILD FINISHED: {candidate}")
+        print(f"BUILD FINISHED: {candidate} {outcome}")
 
     def on_candidate_started(self, candidate: Candidate) -> None:
         print(f"CANDIDATE STARTED: {candidate}")
