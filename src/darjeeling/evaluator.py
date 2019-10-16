@@ -25,6 +25,10 @@ from .outcome import CandidateOutcome, \
 from .problem import Problem
 from .events import (DarjeelingEventHandler, DarjeelingEventProducer,
                      DarjeelingEvent)
+from .events import (BuildStarted, BuildFinished,
+                     CandidateEvaluationStarted, CandidateEvaluationFinished,
+                     CandidateEvaluationError,
+                     TestExecutionStarted, TestExecutionFinished)
 from .exceptions import BuildFailure
 from .core import Test
 from .test import TestSuite
@@ -169,16 +173,14 @@ class Evaluator(DarjeelingEventProducer):
                   ) -> TestOutcome:
         """Runs a test for a given patch using a provided container."""
         logger.debug("executing test: %s [%s]", test.name, candidate)
-        for listener in self.__listeners:
-            listener.on_test_started(candidate, test)
+        self.dispatch(TestExecutionStarted(candidate, test))
         self.__counter_tests += 1
         outcome = self.__test_suite.execute(container, test)
         if not outcome.successful:
             logger.debug("* test failed: %s (%s)", test.name, candidate)
         else:
             logger.debug("* test passed: %s (%s)", test.name, candidate)
-        for listener in self.__listeners:
-            listener.on_test_finished(candidate, test, outcome)
+        self.dispatch(TestExecutionFinished(candidate, test, outcome))
         return outcome
 
     def _evaluate(self, candidate: Candidate) -> CandidateOutcome:
@@ -229,15 +231,13 @@ class Evaluator(DarjeelingEventProducer):
 
         self.__counter_candidates += 1
         logger.debug("building candidate: %s", candidate)
-        for listener in self.__listeners:
-            listener.on_build_started(candidate)
+        self.dispatch(BuildStarted(candidate))
         timer_build = Stopwatch()
         timer_build.start()
         try:
             with self.__program.build(patch) as container:
                 outcome_build = BuildOutcome(True, timer_build.duration)
-                for listener in self.__listeners:
-                    listener.on_build_finished(candidate, outcome_build)
+                self.dispatch(BuildFinished(candidate, outcome_build))
                 logger.debug("built candidate: %s", candidate)
                 logger.debug("executing tests for candidate: %s", candidate)
                 for test in tests:
@@ -268,8 +268,7 @@ class Evaluator(DarjeelingEventProducer):
         except BuildFailure:
             logger.debug("failed to build candidate: %s", candidate)
             outcome_build = BuildOutcome(False, timer_build.duration)
-            for listener in self.__listeners:
-                listener.on_build_finished(candidate, outcome_build)
+            self.dispatch(BuildFinished(candidate, outcome_build))
             return CandidateOutcome(outcome_build,
                                     TestOutcomeSet(),
                                     False)
@@ -283,17 +282,17 @@ class Evaluator(DarjeelingEventProducer):
     def evaluate(self, candidate: Candidate) -> Evaluation:
         """Evaluates a given candidate patch."""
         # FIXME return an evaluation error
-        for listener in self.__listeners:
-            listener.on_candidate_started(candidate)
+        self.dispatch(CandidateEvaluationStarted(candidate))
         try:
             outcome = self._evaluate(candidate)
-        except Exception:
+        # FIXME there is no outcome here! THIS IS A HUGE BUG.
+        except Exception as err:
             m = "unexpected error occurred when evaluating candidate [{}]"
             m = m.format(candidate.id)
             logger.exception(m)
+            self.dispatch(CandidateEvaluationError(candidate, err))
         else:
-            for listener in self.__listeners:
-                listener.on_candidate_finished(candidate, outcome)
+            self.dispatch(CandidateEvaluationFinished(candidate, outcome))
 
         self.outcomes.record(candidate, outcome)
         with self.__lock:
