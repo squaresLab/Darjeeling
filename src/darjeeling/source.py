@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 __all__ = ('ProgramSource',)
 
-from typing import List, Union, Dict, Optional, Iterator, Iterable, Mapping
+from typing import (List, Union, Dict, Optional, Iterator, Iterable, Mapping,
+                    Collection)
 import logging
 
 import attr
@@ -56,14 +57,13 @@ class ProgramSourceFile:
 # FIXME add option to save to disk
 class ProgramSource(Mapping[str, ProgramSourceFile]):
     """Stores the source code for a given program."""
-    @staticmethod
-    def for_bugzoo_snapshot(client_bugzoo: BugZooClient,
+    @classmethod
+    def for_bugzoo_snapshot(cls,
+                            client_bugzoo: BugZooClient,
                             snapshot: Snapshot,
                             files: Iterable[str]
                             ) -> 'ProgramSource':
-        # load the content of each file
         file_to_content: Dict[str, str] = {}
-
         logger.debug("provisioning container to fetch file contents")
         container = client_bugzoo.containers.provision(snapshot)
         try:
@@ -77,11 +77,17 @@ class ProgramSource(Mapping[str, ProgramSourceFile]):
         finally:
             del client_bugzoo.containers[container.uid]
         logger.debug("fetched file contents")
+        return cls.from_file_contents(file_to_content)
 
-    def __init__(self, file_to_content: Mapping[str, str]) -> None:
-        self.__files: Mapping[str, ProgramSourceFile] =
-            {fn: ProgramSourceFile(fn, content)
-             for fn, content in file_to_content.items()}
+    @staticmethod
+    def from_file_contents(file_to_content: Mapping[str, str]) -> None:
+        files = [ProgramSourceFile(fn, content)
+                 for fn, content in file_to_content.items()]
+        return ProgramSource(files)
+
+    def __init__(self, files: Collection[ProgramSourceFile]) -> None:
+        self.__files: Mapping[str, ProgramSourceFile] = \
+            {f.filename: f for f in files}
         
     def __iter__(self) -> Iterator[str]:
         """Returns an iterator over the source filenames for this program."""
