@@ -15,7 +15,7 @@ import signal
 
 import bugzoo
 
-from ..listener import EvaluationListener
+from ..events import DarjeelingEventProducer, DarjeelingEventHandler
 from ..core import FileLine
 from ..config import SearcherConfig
 from ..candidate import Candidate
@@ -40,7 +40,7 @@ T = TypeVar('T', bound=SearcherConfig)
 @dynamically_registered('CONFIG',
                         lookup='_searcher_for_config_type',
                         iterator=None)
-class Searcher(Generic[T], abc.ABC):
+class Searcher(Generic[T], DarjeelingEventProducer, abc.ABC):
     CONFIG: ClassVar[Type[T]]
 
     @staticmethod
@@ -116,11 +116,15 @@ class Searcher(Generic[T], abc.ABC):
         self.__history = []  # type: List[Candidate]
         logger.debug("constructed searcher")
 
-    def add_evaluation_listener(self, listener: EvaluationListener) -> None:
-        self.__evaluator.add_listener(listener)
+    @property
+    def handlers(self) -> Iterator[DarjeelingEventHandler]:
+        yield from self.__evaluator.handlers
 
-    def remove_evaluation_listener(self, listener: EvaluationListener) -> None:
-        self.__evaluator.remove_listener(listener)
+    def attach_handler(self, handler: DarjeelingEventHandler) -> None:
+        self.__evaluator.attach_handler(handler)
+
+    def remove_handler(self, handler: DarjeelingEventHandler) -> None:
+        self.__evaluator.remove_handler(handler)
 
     @property
     def num_workers(self) -> int:
