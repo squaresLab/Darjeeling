@@ -6,6 +6,8 @@ import pkgutil as _pkgutil
 from . import exceptions
 from .version import __version__
 from .problem import Problem
+from .events import (DarjeelingEvent, DarjeelingEventHandler,
+                     DarjeelingEventProducer)
 
 _logger = _logging.getLogger(__name__)
 _logger.setLevel(_logging.INFO)
