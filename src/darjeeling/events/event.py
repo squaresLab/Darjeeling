@@ -13,6 +13,19 @@ class DarjeelingEvent:
 
 
 @_attr.s(frozen=True, auto_attrs=True, slots=True)
+class BuildStarted(DarjeelingEvent):
+    """An attempt to build a candidate patch has started."""
+    candidate: _Candidate
+
+
+@_attr.s(frozen=True, auto_attrs=True, slots=True)
+class BuildFinished(DarjeelingEvent):
+    """An attempt to build a candidate patch has finished."""
+    candidate: _Candidate
+    outcome: _BuildOutcome
+
+
+@_attr.s(frozen=True, auto_attrs=True, slots=True)
 class TestExecutionStarted(DarjeelingEvent):
     """A test for a given candidate patch has started executing."""
     candidate: _Candidate
