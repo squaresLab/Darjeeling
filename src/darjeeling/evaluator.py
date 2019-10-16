@@ -4,6 +4,7 @@ __all__ = ('Evaluator',)
 from typing import Tuple, List, Optional, Iterator, Set, Union, FrozenSet
 from timeit import default_timer as timer
 from concurrent.futures import Future
+import warnings
 import math
 import logging
 import queue
@@ -22,7 +23,8 @@ from .outcome import CandidateOutcome, \
                      TestOutcome, \
                      BuildOutcome
 from .problem import Problem
-from .listener import EvaluationListener
+from .events import (DarjeelingEventHandler, DarjeelingEventProducer,
+                     DarjeelingEvent)
 from .exceptions import BuildFailure
 from .core import Test
 from .test import TestSuite
@@ -34,7 +36,7 @@ logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
 
-class Evaluator:
+class Evaluator(DarjeelingEventProducer):
     def __init__(self,
                  client_bugzoo: BugZooClient,
                  problem: Problem,
@@ -44,11 +46,11 @@ class Evaluator:
                  sample_size: Optional[Union[float, int]] = None,
                  outcomes: Optional[OutcomeManager] = None
                  ) -> None:
+        self.__handlers: List[DarjeelingEventHandler] = []
         self.__bugzoo = client_bugzoo
         self.__problem = problem
         self.__program = problem.program
         self.__test_suite = problem.test_suite
-        self.__listeners: List[EvaluationListener] = []
         self.__executor = \
             concurrent.futures.ThreadPoolExecutor(max_workers=num_workers)
         self.__num_workers = num_workers
@@ -80,35 +82,24 @@ class Evaluator:
         self.__counter_candidates = 0
 
     @property
-    def listeners(self) -> Iterator[EvaluationListener]:
-        """Returns an iterator over the listeners attached to this evaluator."""
-        yield from self.__listeners
+    def handlers(self) -> Iterator[DarjeelingEventHandler]:
+        yield from self.__handlers
 
-    def add_listener(self, listener: EvaluationListener) -> None:
-        """Attaches a listener to this evaluator.
-        Does nothing if the listener is already attached to the evaluator.
-        """
-        logger.debug("adding evaluation listener: %s", listener)
-        if not listener in self.__listeners:
-            self.__listeners.append(listener)
-            logger.debug("added evaluation listener: %s", listener)
+    def attach_handler(self, handler: DarjeelingEventHandler) -> None:
+        logger.debug("attaching event handler: %s", handler)
+        if not handler in self.__handlers:
+            self.__handlers.append(handler)
+            logger.debug("attached event handler: %s", handler)
         else:
-            logger.debug("evaluation listener already attached: %s", listener)
+            logger.debug("event handler already attached: %s", handler)
 
-    def remove_listener(self, listener: EvaluationListener) -> None:
-        """Removes a listener from this evaluator.
-
-        Raises
-        ------
-        ValueError
-            If the given listener is not attached to this evaluator.
-        """
-        logger.debug("removing evaluation listener: %s", listener)
-        if not listener in self.__listeners:
-            m = f"listener [{listener}] not attached to evaluator [{self}]"
-            raise ValueError(m)
-        self.__listeners.remove(listener)
-        logger.debug("removed evaluation listener: %s", listener)
+    def remove_handler(self, handler: DarjeelingEventHandler) -> None:
+        logger.debug("removing event handler: %s", handler)
+        if not handler in self.__handlers:
+            m = f"handler [{handler}] not attached to producer [{self}]"
+            warnings.warn(m)
+        self.__handlers.remove(handler)
+        logger.debug("removed event handler: %s", handler)
 
     @property
     def outcomes(self) -> OutcomeManager:
