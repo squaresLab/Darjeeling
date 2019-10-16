@@ -69,15 +69,17 @@ class ProgramSource:
                            col: int
                            ) -> int:
         """Transforms a line and column in a file to a zero-indexed offset."""
-        offset_line_start = self.__file_to_line_offsets[filename][line - 1]
+        offset_line_start, offset_line_stop = \
+            self.__file_to_line_offsets[filename][line - 1]
         return offset_line_start + col
 
     def line_to_location_range(self, line: FileLine) -> FileLocationRange:
         """Returns the range of characters covered by a given line."""
-        # FIXME don't rely on read_line
-        content = self.read_line(line)
+        offset_start, offset_stop = \
+            self.__file_to_line_offsets[filename][line - 1]
+        length = offset_stop - offset_start
         start = Location(line.num, 0)
-        stop = Location(line.num, len(content) + 1)
+        stop = Location(line.num, length + 1)
         r = LocationRange(start, stop)
         return FileLocationRange(line.filename, r)
 
