@@ -54,6 +54,10 @@ class ProgramSourceFile:
             offset_line_start = offset_line_break + 1
         return tuple(line_to_start_end)
 
+    def location_to_offset(self, location: Location) -> int:
+        """Transforms a location to an offset in this file."""
+        return self.line_col_to_offset(location.line, location.column)
+
     def line_col_to_offset(self, line: int, col: int) -> int:
         """Transforms a line and column in this file to an offset."""
         offset_line_start, offset_line_stop = \
@@ -84,7 +88,16 @@ class ProgramSourceFile:
 
     def with_replacements(self, replacements: Sequence[Replacement]) -> str:
         """Returns the result of applying replacements to this file."""
-        raise NotImplementedError
+        # exclude conflicting replacements
+        replacements = Replacement.resolve(replacements)
+        contents = self.contents
+        for replacement in replacements:
+            loc = replacement.location
+            offset_start = self.location_to_offset(loc.start)
+            offset_stop = self.location_to_offset(loc.stop)
+            contents = \
+                contents[:offset_start] + replacement.text + contents[offset_stop:]
+        return contents
 
 
 # FIXME add option to save to disk
