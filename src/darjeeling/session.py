@@ -28,7 +28,7 @@ from .snippet import SnippetDatabase
 from .exceptions import BadConfigurationException, LanguageNotSupported
 from .localization import (Localization, ample, genprog, jaccard, ochiai,
                            tarantula)
-from .events import EventEchoer
+from .events import EventEchoer, CsvEventLogger
 from .transformation import Transformation
 from .transformation import find_all as find_all_transformations
 from .transformation.classic import (DeleteStatement, ReplaceStatement,
@@ -147,6 +147,9 @@ class Session:
         # TODO attach listeners to Session and propagate
         # attach listeners
         searcher.attach_handler(EventEchoer())
+        csv_event_log_filename = os.path.join(os.getcwd(), 'events.csv')
+        csv_event_logger = CsvEventLogger(csv_event_log_filename)
+        searcher.attach_handler(csv_event_logger)
 
         # build session
         return Session(dir_patches=dir_patches,
