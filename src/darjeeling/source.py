@@ -100,14 +100,14 @@ class ProgramSource:
             will be kept. If set to False, the trailing newline character
             will be removed.
         """
-        content = self.__file_to_content[fn]
+        offset_start = self.__file_to_line_offsets[at.filename][at.num - 1]
+        raise NotImplementedError
         return content + '\n' if keep_newline else content
 
     def read_chars(self, at: FileLocationRange) -> str:
-        return self.__mgr.read_chars(self.__snapshot, at)
+        raise NotImplementedError
 
     def replacements_to_diff(self,
                              file_to_replacements: Dict[str, List[Replacement]]
                              ) -> Patch:
-        return self.__mgr.replacements_to_diff(self.__snapshot,
-                                               file_to_replacements)
+        raise NotImplementedError
