@@ -59,6 +59,20 @@ class ProgramSourceFile:
             self._line_to_start_and_end_offset[line - 1]
         return offset_line_start + col
 
+    def read_chars(self, at: LocationRange) -> str:
+        loc_start = at.start
+        loc_stop = at.stop
+        offset_start = \
+            self.line_col_to_offset(loc_start.line, loc_start.col)
+        offset_stop = \
+            self.line_col_to_offset(loc_stop.line, loc_stop.col)
+        return self.contents[offset_start:offset_stop + 1]
+
+    def read_line(self, num: int, *, keep_newline: bool = False) -> str:
+        range_ = self.line_to_location_range(num)
+        contents = self.read_chars(range_)
+        return contents + '\n' if keep_newline else contents
+
 
 # FIXME add option to save to disk
 class ProgramSource(Mapping[str, ProgramSourceFile]):
@@ -86,9 +100,9 @@ class ProgramSource(Mapping[str, ProgramSourceFile]):
         return cls.from_file_contents(file_to_content)
 
     @staticmethod
-    def from_file_contents(file_to_content: Mapping[str, str]) -> None:
-        files = [ProgramSourceFile(fn, content)
-                 for fn, content in file_to_content.items()]
+    def from_file_contents(file_to_contents: Mapping[str, str]) -> None:
+        files = [ProgramSourceFile(fn, contents)
+                 for fn, contents in file_to_contents.items()]
         return ProgramSource(files)
 
     def __init__(self, files: Collection[ProgramSourceFile]) -> None:
@@ -119,11 +133,11 @@ class ProgramSource(Mapping[str, ProgramSourceFile]):
 
     def num_lines(self, fn: str) -> int:
         """Computes the number of lines in a given source file."""
-        return len(self.__file_to_content[fn])
+        return self.__files[fn].num_lines
 
     def read_file(self, fn: str) -> str:
         """Returns the contents of a given source file."""
-        return self.__file_to_content[fn]
+        return self.__files[fn].contents
 
     def read_line(self, at: FileLine, *, keep_newline: bool = False) -> str:
         """Returns the contents of a given line.
@@ -138,18 +152,11 @@ class ProgramSource(Mapping[str, ProgramSourceFile]):
             will be removed.
         """
         range_ = self.line_to_location_range(at)
-        content = self.read_chars(range_)
-        return content + '\n' if keep_newline else content
+        contents = self.read_chars(range_)
+        return contents + '\n' if keep_newline else contents
 
     def read_chars(self, at: FileLocationRange) -> str:
-        filename = at.filename
-        loc_start = at.start
-        loc_stop = at.stop
-        offset_start = \
-            self.line_col_to_offset(filename, loc_start.line, loc_start.col)
-        offset_stop = \
-            self.line_col_to_offset(filename, loc_stop.line, loc_stop.col)
-        return self.__file_to_content[fn][offset_start:offset_stop + 1]
+        return self.__files[at.filename].read_chars(at.location_range)
 
     def replacements_to_diff(self,
                              file_to_replacements: Dict[str, List[Replacement]]
