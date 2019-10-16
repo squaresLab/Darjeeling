@@ -30,7 +30,7 @@ class ProgramSourceFile:
         line_offsets = self._compute_line_start_and_end_offsets()
         num_lines = len(line_offsets)
         object.__setattr__('_line_to_start_and_end_offset', line_offsets)
-        object.__setattr_('num_lines', num_lines)
+        object.__setattr__('num_lines', num_lines)
 
     @staticmethod
     def _compute_line_start_and_end_offsets(contents: str
