@@ -113,7 +113,12 @@ class ProgramSource(Mapping[str, ProgramSourceFile]):
         self.__files: Mapping[str, ProgramSourceFile] = \
             {f.filename: f for f in files}
 
+    def __len__(self) -> int:
+        """Returns a count of the number of source files."""
+        return len(self.__files)
+
     def __getitem__(self, filename: str) -> ProgramSourceFile:
+        """Retrieves a given source file by its path."""
         return self.__files[filename]
         
     def __iter__(self) -> Iterator[str]:
