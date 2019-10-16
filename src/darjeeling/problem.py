@@ -24,7 +24,7 @@ from kaskara.analysis import Analysis
 
 from .core import Language, Test, TestCoverage, TestCoverageMap
 from .program import Program
-from .source import ProgramSourceManager
+from .source import ProgramSource
 from .util import get_file_contents
 from .exceptions import NoFailingTests, NoImplicatedLines, BuildFailure
 from .config import OptimizationsConfig
@@ -119,32 +119,21 @@ class Problem:
         logger.info("test order: %s",
                     ', '.join(t.name for t in self.__tests_ordered))
 
-        # FIXME huge bottleneck!
-        # cache contents of the implicated files
+        # TODO cache to disk
         t_start = timer()
         logger.debug("storing contents of source code files")
         source_files = set(self.implicated_files)
         if restrict_to_files:
             source_files &= set(restrict_to_files)
-        self.__sources = ProgramSourceManager(bz,
-                                              client_rooibos,
-                                              program.snapshot,
-                                              files=source_files)
+        self.__sources = ProgramSource.for_bugzoo_snapshot(bz,
+                                                           program.snapshot,
+                                                           files=source_files)
         logger.debug("stored contents of source code files (took %.1f seconds)",
                      timer() - t_start)
 
     def _dump_coverage(self) -> None:
         logger.debug("[COVERAGE]\n%s\n[/COVERAGE]",
                      indent(str(self.__coverage), 2))
-
-    def __remove_redundant_sources(self) -> None:
-        logger.debug("reducing memory footprint by discarding extraneous data")
-        source_files: Set[str] = set(self.__sources.files)
-        covered_files: Set[str] = set(l.filename for l in self.__coverage.locations)
-        extraneous_files: Set[str] = covered_files - source_files
-        for fn in extraneous_files:
-            del self.__sources[fn]
-        logger.debug("finished reducing memory footprint")
 
     def restrict_to_files(self, filenames: List[str]) -> None:
         """
@@ -156,7 +145,6 @@ class Problem:
         self.__coverage = self.__coverage.restrict_to_files(filenames)
         logger.info("successfully restricted repair to given files.")
         self._dump_coverage()
-        self.__remove_redundant_sources()
         self.validate()
 
     def restrict_to_lines(self, lines: Iterable[FileLine]) -> None:
@@ -166,7 +154,6 @@ class Problem:
         """
         self.__coverage = self.__coverage.restrict_to_locations(lines)
         self._dump_coverage()
-        self.__remove_redundant_sources()
         self.validate()
 
     def restrict_with_filter(self,
@@ -261,6 +248,6 @@ class Problem:
         yield from (l.filename for l in self.__coverage.failing.locations)
 
     @property
-    def sources(self) -> ProgramSourceManager:
+    def sources(self) -> ProgramSource:
         """The source code files for the program under repair."""
         return self.__sources
