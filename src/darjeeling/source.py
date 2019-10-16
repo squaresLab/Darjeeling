@@ -27,10 +27,10 @@ class ProgramSourceFile:
         attr.ib(init=False, repr=False)
 
     def __attrs_post_init__(self) -> None:
-        line_offsets = self._compute_line_start_and_end_offsets()
+        line_offsets = self._compute_line_start_and_end_offsets(self.contents)
         num_lines = len(line_offsets)
-        object.__setattr__('_line_to_start_and_end_offset', line_offsets)
-        object.__setattr__('num_lines', num_lines)
+        object.__setattr__(self, '_line_to_start_and_end_offset', line_offsets)
+        object.__setattr__(self, 'num_lines', num_lines)
 
     @staticmethod
     def _compute_line_start_and_end_offsets(contents: str
@@ -67,6 +67,9 @@ class ProgramSourceFile:
         offset_stop = \
             self.line_col_to_offset(loc_stop.line, loc_stop.col)
         return self.contents[offset_start:offset_stop + 1]
+
+    def line_to_location_range(self, num: int) -> LocationRange:
+        raise NotImplementedError
 
     def read_line(self, num: int, *, keep_newline: bool = False) -> str:
         range_ = self.line_to_location_range(num)
