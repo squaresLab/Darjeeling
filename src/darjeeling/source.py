@@ -148,14 +148,6 @@ class ProgramSource(Mapping[str, ProgramSourceFile]):
         """Returns an iterator over the source filenames for this program."""
         yield from self.__files
 
-    def line_col_to_offset(self,
-                           filename: str,
-                           line: int,
-                           col: int
-                           ) -> int:
-        """Transforms a line and column in a file to a zero-indexed offset."""
-        return self.__files[filename].line_col_to_offset(line, col)
-
     def line_to_location_range(self, line: FileLine) -> FileLocationRange:
         """Returns the range of characters covered by a given line."""
         filename = line.filename
