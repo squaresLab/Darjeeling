@@ -15,6 +15,7 @@ import signal
 
 import bugzoo
 
+from ..listener import SearchListener
 from ..core import FileLine
 from ..config import SearcherConfig
 from ..candidate import Candidate
@@ -98,6 +99,7 @@ class Searcher(Generic[T], abc.ABC):
         self.__time_limit = time_limit
         self.__candidate_limit = candidate_limit
         self.__outcomes = OutcomeManager()
+        self.__listeners: List[SearchListener] = []
         self.__evaluator = Evaluator(bugzoo,
                                      problem,
                                      num_workers=threads,
@@ -114,6 +116,18 @@ class Searcher(Generic[T], abc.ABC):
         # FIXME this isn't being maintained
         self.__history = []  # type: List[Candidate]
         logger.debug("constructed searcher")
+
+    @property
+    def listeners(self) -> Iterator[SearchListener]:
+        yield from self.__listeners
+
+    def add_listener(self, listener: SearchListener) -> None:
+        logger.debug("adding search listener: %s", listener)
+        if not listener in self.__listeners:
+            self.__listeners.append(listener)
+            logger.debug("added search listener: %s", listener)
+        else:
+            logger.debug("search listener already attached: %s", listener)
 
     @property
     def num_workers(self) -> int:
