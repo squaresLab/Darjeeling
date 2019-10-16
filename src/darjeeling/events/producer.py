@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 __all__ = ('DarjeelingEventProducer',)
 
+from typing import Iterator
+
 import abc
 
 from .event import DarjeelingEvent
