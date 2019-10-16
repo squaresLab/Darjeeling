@@ -48,7 +48,7 @@ class ProgramSource:
              for fn, content in self.__file_to_content}
 
     @staticmethod
-    def _compute_line_offsets(contents: str) -> None:
+    def _compute_line_offsets(contents: str) -> Sequence[Tuple[int, int]]:
         """Computes the offsets for each line within a given file.
 
         Parameters
@@ -101,19 +101,19 @@ class ProgramSource:
             will be kept. If set to False, the trailing newline character
             will be removed.
         """
-        filename = at.filename
         range_ = self.line_to_location_range(at)
-        loc_start = range_.start
-        loc_stop = range_.stop
+        content = self.read_chars(range_)
+        return content + '\n' if keep_newline else content
+
+    def read_chars(self, at: FileLocationRange) -> str:
+        filename = at.filename
+        loc_start = at.start
+        loc_stop = at.stop
         offset_start = \
             self.line_col_to_offset(filename, loc_start.line, loc_start.col)
         offset_stop = \
             self.line_col_to_offset(filename, loc_stop.line, loc_stop.col)
-        content = self.__file_to_content[fn][offset_start:offset_stop + 1]
-        return content + '\n' if keep_newline else content
-
-    def read_chars(self, at: FileLocationRange) -> str:
-        raise NotImplementedError
+        return self.__file_to_content[fn][offset_start:offset_stop + 1]
 
     def replacements_to_diff(self,
                              file_to_replacements: Dict[str, List[Replacement]]
