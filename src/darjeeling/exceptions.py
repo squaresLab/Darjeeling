@@ -1,41 +1,36 @@
+# -*- coding: utf-8 -*-
+import attr as _attr
+
+
 class DarjeelingError(Exception):
-    """
-    Base class used by all Darjeeling exceptions.
-    """
+    """Base class used by all Darjeeling exceptions."""
 
 
 class LanguageNotSupported(DarjeelingError):
-    """
-    Darjeeling does not support the given language.
-    """
+    """Darjeeling does not support the given language."""
     def __init__(self, name: str) -> None:
         msg = "language not supported: {}".format(name)
         super().__init__(msg)
 
 
 class SearchAlreadyStarted(DarjeelingError):
-    """
-    The searcher has already begun searching for patches.
-    """
+    """The searcher has already begun searching for patches."""
+
+
+class FileNotFound(DarjeelingError):
+    """A given file could not be found."""
 
 
 class TimeLimitReached(DarjeelingError):
-    """
-    The search has halted after reaching its time limit.
-    """
+    """The search has halted after reaching its time limit."""
 
 
 class CandidateLimitReached(DarjeelingError):
-    """
-    The search has halted after reaching its candidate limit.
-    """
+    """The search has halted after reaching its candidate limit."""
 
 
 class SearchExhausted(DarjeelingError):
-    """
-    The search has evaluated all of the candidate patches within its search
-    space.
-    """
+    """The search has evaluated all of its candidate patches."""
 
 
 class NoFailingTests(DarjeelingError):
@@ -53,15 +48,11 @@ class NoImplicatedLines(DarjeelingError):
 
 
 class BuildFailure(DarjeelingError):
-    """
-    The project failed to build.
-    """
+    """The project failed to build."""
 
 
 class NameInUseException(DarjeelingError):
-    """
-    A given name is already in use by another resource.
-    """
+    """A given name is already in use by another resource."""
 
 
 class UnknownTransformationSchemaException(DarjeelingError):
@@ -75,9 +66,7 @@ class UnknownTransformationSchemaException(DarjeelingError):
 
 
 class BadConfigurationException(DarjeelingError):
-    """
-    An illegal configuration file was provided to Darjeeling.
-    """
+    """An illegal configuration file was provided to Darjeeling."""
     def __init__(self, reason: str) -> None:
         msg = "bad configuration file: {}".format(reason)
         super().__init__(msg)
