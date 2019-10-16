@@ -26,6 +26,7 @@ setup(
         'attrs~=19.2.0',
         'pyroglyph~=0.0.5',
         'cement~=3.0.4',
+        'pytest-mock~=1.11.1',
         'requests',
         'flask'
     ],
