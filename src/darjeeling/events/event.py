@@ -51,3 +51,10 @@ class CandidateEvaluationFinished(DarjeelingEvent):
     """Evaluation of a given candidate patch has finished."""
     candidate: _Candidate
     outcome: _CandidateOutcome
+
+
+@_attr.s(frozen=True, auto_attribs=True, slots=True)
+class CandidateEvaluationError(DarjeelingEvent):
+    """An unexpected error occurred during evaluation of a candidate patch."""
+    candidate: _Candidate
+    error: Exception
