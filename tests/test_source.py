@@ -47,3 +47,4 @@ def test_read_line(simple_file):
     read_line = simple_file.read_line
     assert read_line(2) == "class TestOutcome:"
     assert read_line(1) == "@attr.s(frozen=True, slots=True)"
+    assert read_line(18) == "                'time-taken': self.time_taken}"
