@@ -44,5 +44,6 @@ def test_num_lines(simple_file):
 
 
 def test_read_line(simple_file):
-    line_1 = "@attr.s(frozen=True, slots=True)"
-    assert simple_file.read_line(1) == line_1
+    read_line = simple_file.read_line
+    assert read_line(2) == "class TestOutcome:"
+    assert read_line(1) == "@attr.s(frozen=True, slots=True)"
