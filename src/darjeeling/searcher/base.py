@@ -15,6 +15,7 @@ import signal
 
 import bugzoo
 
+from ..listener import EvaluationListener
 from ..core import FileLine
 from ..config import SearcherConfig
 from ..candidate import Candidate
@@ -114,6 +115,12 @@ class Searcher(Generic[T], abc.ABC):
         # FIXME this isn't being maintained
         self.__history = []  # type: List[Candidate]
         logger.debug("constructed searcher")
+
+    def add_evaluation_listener(self, listener: EvaluationListener) -> None:
+        self.__evaluator.add_listener(listener)
+
+    def remove_evaluation_listener(self, listener: EvaluationListener) -> None:
+        self.__evaluator.remove_listener(listener)
 
     @property
     def num_workers(self) -> int:

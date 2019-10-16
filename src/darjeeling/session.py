@@ -28,6 +28,7 @@ from .snippet import SnippetDatabase
 from .exceptions import BadConfigurationException, LanguageNotSupported
 from .localization import (Localization, ample, genprog, jaccard, ochiai,
                            tarantula)
+from .listener import EchoEvaluations
 from .transformation import Transformation
 from .transformation import find_all as find_all_transformations
 from .transformation.classic import (DeleteStatement, ReplaceStatement,
@@ -142,6 +143,9 @@ class Session:
                                         threads=cfg.threads,
                                         candidate_limit=cfg.limit_candidates,
                                         time_limit=cfg.limit_time)
+
+        # attach listeners
+        searcher.add_evaluation_listener(EchoEvaluations())
 
         # build session
         return Session(dir_patches=dir_patches,

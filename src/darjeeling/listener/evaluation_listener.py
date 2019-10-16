@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-__all__ = ('SearchObserver',)
+__all__ = ('EvaluationListener',)
 
 import abc
 
@@ -8,8 +8,8 @@ from ..candidate import Candidate
 from ..outcome import CandidateOutcome
 
 
-class SearchObserver(abc.ABC):
-    """Provides an interface for listening and responding to search events."""
+class EvaluationListener(abc.ABC):
+    """Provides an interface for listening to patch evaluation events."""
     @abc.abstractmethod
     def on_test_finished(self,
                          candidate: Candidate,

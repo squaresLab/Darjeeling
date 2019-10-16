@@ -22,6 +22,7 @@ from .outcome import CandidateOutcome, \
                      TestOutcome, \
                      BuildOutcome
 from .problem import Problem
+from .listener import EvaluationListener
 from .exceptions import BuildFailure
 from .core import Test
 from .test import TestSuite
@@ -47,6 +48,7 @@ class Evaluator:
         self.__problem = problem
         self.__program = problem.program
         self.__test_suite = problem.test_suite
+        self.__listeners: List[EvaluationListener] = []
         self.__executor = \
             concurrent.futures.ThreadPoolExecutor(max_workers=num_workers)
         self.__num_workers = num_workers
@@ -76,6 +78,37 @@ class Evaluator:
         self.__num_running = 0
         self.__counter_tests = 0
         self.__counter_candidates = 0
+
+    @property
+    def listeners(self) -> Iterator[EvaluationListener]:
+        """Returns an iterator over the listeners attached to this evaluator."""
+        yield from self.__listeners
+
+    def add_listener(self, listener: EvaluationListener) -> None:
+        """Attaches a listener to this evaluator.
+        Does nothing if the listener is already attached to the evaluator.
+        """
+        logger.debug("adding evaluation listener: %s", listener)
+        if not listener in self.__listeners:
+            self.__listeners.append(listener)
+            logger.debug("added evaluation listener: %s", listener)
+        else:
+            logger.debug("evaluation listener already attached: %s", listener)
+
+    def remove_listener(self, listener: EvaluationListener) -> None:
+        """Removes a listener from this evaluator.
+
+        Raises
+        ------
+        ValueError
+            If the given listener is not attached to this evaluator.
+        """
+        logger.debug("removing evaluation listener: %s", listener)
+        if not listener in self.__listeners:
+            m = f"listener [{listener}] not attached to evaluator [{self}]"
+            raise ValueError(m)
+        self.__listeners.remove(listener)
+        logger.debug("removed evaluation listener: %s", listener)
 
     @property
     def outcomes(self) -> OutcomeManager:
@@ -145,17 +178,20 @@ class Evaluator:
                   ) -> TestOutcome:
         """Runs a test for a given patch using a provided container."""
         logger.debug("executing test: %s [%s]", test.name, candidate)
+        for listener in self.__listeners:
+            listener.on_test_started(candidate, test)
         self.__counter_tests += 1
         outcome = self.__test_suite.execute(container, test)
         if not outcome.successful:
             logger.debug("* test failed: %s (%s)", test.name, candidate)
         else:
             logger.debug("* test passed: %s (%s)", test.name, candidate)
+        for listener in self.__listeners:
+            listener.on_test_finished(candidate, test, outcome)
         return outcome
 
     def _evaluate(self, candidate: Candidate) -> CandidateOutcome:
         bz = self.__bugzoo
-
         patch = candidate.to_diff(self.__problem)
         logger.info("evaluating candidate: %s\n%s\n", candidate, patch)
 
@@ -202,11 +238,15 @@ class Evaluator:
 
         self.__counter_candidates += 1
         logger.debug("building candidate: %s", candidate)
+        for listener in self.__listeners:
+            listener.on_build_started(candidate)
         timer_build = Stopwatch()
         timer_build.start()
         try:
             with self.__program.build(patch) as container:
                 outcome_build = BuildOutcome(True, timer_build.duration)
+                for listener in self.__listeners:
+                    listener.on_build_finished(candidate, outcome_build)
                 logger.debug("built candidate: %s", candidate)
                 logger.debug("executing tests for candidate: %s", candidate)
                 for test in tests:
@@ -237,6 +277,8 @@ class Evaluator:
         except BuildFailure:
             logger.debug("failed to build candidate: %s", candidate)
             outcome_build = BuildOutcome(False, timer_build.duration)
+            for listener in self.__listeners:
+                listener.on_build_finished(candidate, outcome_build)
             return CandidateOutcome(outcome_build,
                                     TestOutcomeSet(),
                                     False)
@@ -250,12 +292,17 @@ class Evaluator:
     def evaluate(self, candidate: Candidate) -> Evaluation:
         """Evaluates a given candidate patch."""
         # FIXME return an evaluation error
+        for listener in self.__listeners:
+            listener.on_candidate_started(candidate)
         try:
             outcome = self._evaluate(candidate)
         except Exception:
             m = "unexpected error occurred when evaluating candidate [{}]"
             m = m.format(candidate.id)
             logger.exception(m)
+        else:
+            for listener in self.__listeners:
+                listener.on_candidate_finished(candidate, outcome)
 
         self.outcomes.record(candidate, outcome)
         with self.__lock:
