@@ -69,7 +69,12 @@ class ProgramSourceFile:
         return self.contents[offset_start:offset_stop + 1]
 
     def line_to_location_range(self, num: int) -> LocationRange:
-        raise NotImplementedError
+        offset_start, offset_stop = \
+            self._line_to_start_and_end_offset[num - 1]
+        length = offset_stop - offset_start
+        start = Location(num, 0)
+        stop = Location(num, length + 1)
+        return LocationRange(start, stop)
 
     def read_line(self, num: int, *, keep_newline: bool = False) -> str:
         range_ = self.line_to_location_range(num)
@@ -135,13 +140,9 @@ class ProgramSource(Mapping[str, ProgramSourceFile]):
 
     def line_to_location_range(self, line: FileLine) -> FileLocationRange:
         """Returns the range of characters covered by a given line."""
-        offset_start, offset_stop = \
-            self.__file_to_line_offsets[filename][line - 1]
-        length = offset_stop - offset_start
-        start = Location(line.num, 0)
-        stop = Location(line.num, length + 1)
-        r = LocationRange(start, stop)
-        return FileLocationRange(line.filename, r)
+        filename = line.filename
+        r = self.__files[filename].line_to_location_range(line.num)
+        return FileLocationRange(filename, r)
 
     def num_lines(self, fn: str) -> int:
         """Computes the number of lines in a given source file."""
