@@ -9,8 +9,8 @@ from bugzoo.core.patch import Patch
 from bugzoo.core.bug import Bug as Snapshot
 
 from . import exceptions 
-from .core import Replacement, FileLine, FileLocationRange, Location, \
-    LocationRange
+from .core import (Replacement, FileLine, FileLocationRange, Location,
+                   LocationRange)
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -71,11 +71,11 @@ class ProgramSource:
 
     def num_lines(self, fn: str) -> int:
         """Computes the number of lines in a given source file."""
-        return self.__mgr.num_lines(self.__snapshot, fn)
+        return len(self.__file_to_content[fn])
 
     def read_file(self, fn: str) -> str:
         """Returns the contents of a given source file."""
-        return self.__mgr.read_file(self.__snapshot, fn)
+        return self.__file_to_content[fn]
 
     def read_line(self, at: FileLine, *, keep_newline: bool = False) -> str:
         """Returns the contents of a given line.
