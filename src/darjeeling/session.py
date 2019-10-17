@@ -149,18 +149,10 @@ class Session(DarjeelingEventProducer):
                                         time_limit=cfg.limit_time)
 
         # build session
-        session = Session(dir_patches=dir_patches,
-                          problem=problem,
-                          searcher=searcher,
-                          terminate_early=cfg.terminate_early)
-
-        # attach listeners
-        session.attach_handler(EventEchoer())
-        csv_event_log_filename = os.path.join(os.getcwd(), 'events.csv')
-        csv_event_logger = CsvEventLogger(csv_event_log_filename, problem)
-        session.attach_handler(csv_event_logger)
-
-        return session
+        return Session(dir_patches=dir_patches,
+                       problem=problem,
+                       searcher=searcher,
+                       terminate_early=cfg.terminate_early)
 
     @property
     def snapshot(self) -> Snapshot:
