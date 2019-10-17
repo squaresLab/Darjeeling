@@ -4,7 +4,6 @@ __all__ = ('Evaluator',)
 from typing import Tuple, List, Optional, Iterator, Set, Union, FrozenSet
 from timeit import default_timer as timer
 from concurrent.futures import Future
-import warnings
 import math
 import logging
 import queue
@@ -50,7 +49,7 @@ class Evaluator(DarjeelingEventProducer):
                  sample_size: Optional[Union[float, int]] = None,
                  outcomes: Optional[OutcomeManager] = None
                  ) -> None:
-        self.__handlers: List[DarjeelingEventHandler] = []
+        super().__init__()
         self.__bugzoo = client_bugzoo
         self.__problem = problem
         self.__program = problem.program
@@ -84,26 +83,6 @@ class Evaluator(DarjeelingEventProducer):
         self.__num_running = 0
         self.__counter_tests = 0
         self.__counter_candidates = 0
-
-    @property
-    def handlers(self) -> Iterator[DarjeelingEventHandler]:
-        yield from self.__handlers
-
-    def attach_handler(self, handler: DarjeelingEventHandler) -> None:
-        logger.debug("attaching event handler: %s", handler)
-        if not handler in self.__handlers:
-            self.__handlers.append(handler)
-            logger.debug("attached event handler: %s", handler)
-        else:
-            logger.debug("event handler already attached: %s", handler)
-
-    def remove_handler(self, handler: DarjeelingEventHandler) -> None:
-        logger.debug("removing event handler: %s", handler)
-        if not handler in self.__handlers:
-            m = f"handler [{handler}] not attached to producer [{self}]"
-            warnings.warn(m)
-        self.__handlers.remove(handler)
-        logger.debug("removed event handler: %s", handler)
 
     @property
     def outcomes(self) -> OutcomeManager:
