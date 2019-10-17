@@ -14,6 +14,7 @@ from .event import (DarjeelingEvent,
                     CandidateEvaluationError,
                     TestExecutionStarted, TestExecutionFinished)
 from .handler import DarjeelingEventHandler
+from ..problem import Problem
 
 
 class _CSVWriter(Protocol):
@@ -31,6 +32,7 @@ class CsvEventLogger(DarjeelingEventHandler):
         The absolute path to the file to which events should be relayed.
     """
     filename: str = attr.ib()
+    problem: Problem = attr.ib()
     _file: TextIO = attr.ib(init=False, repr=False)
     _writer: _CSVWriter = attr.ib(init=False, repr=False)
 
@@ -52,14 +54,14 @@ class CsvEventLogger(DarjeelingEventHandler):
                       ) -> Optional[Sequence[str]]:
         """Transforms an event to a CSV row."""
         if isinstance(event, CandidateEvaluationStarted):
-            diff = "TODOTODOTODO"
+            diff = event.candidate.to_diff(self.problem)
             return ['CANDIDATE-STARTED', event.candidate.id, diff]
         if isinstance(event, CandidateEvaluationError):
-            diff = "TODOTODOTODO"
+            diff = event.candidate.to_diff(self.problem)
             return ['CANDIDATE-ERROR', event.candidate.id, diff,
                     str(event.error)]
         if isinstance(event, CandidateEvaluationFinished):
-            diff = "TODOTODOTODO"
+            diff = event.candidate.to_diff(self.problem)
             is_repair = event.outcome.is_repair
             return ['PATCH-ACCEPTED' if is_repair else 'PATCH-REJECTED',
                     event.candidate.id, diff]

@@ -148,7 +148,7 @@ class Session:
         # attach listeners
         searcher.attach_handler(EventEchoer())
         csv_event_log_filename = os.path.join(os.getcwd(), 'events.csv')
-        csv_event_logger = CsvEventLogger(csv_event_log_filename)
+        csv_event_logger = CsvEventLogger(csv_event_log_filename, problem)
         searcher.attach_handler(csv_event_logger)
 
         # build session
