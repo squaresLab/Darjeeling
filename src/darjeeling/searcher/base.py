@@ -91,6 +91,7 @@ class Searcher(Generic[T], DarjeelingEventProducer, abc.ABC):
                 patches that may be generated.
         """
         logger.debug("constructing searcher")
+        super().__init__()
         assert time_limit is None or time_limit > datetime.timedelta(), \
             "if specified, time limit should be greater than zero."
 

@@ -28,7 +28,8 @@ from .snippet import SnippetDatabase
 from .exceptions import BadConfigurationException, LanguageNotSupported
 from .localization import (Localization, ample, genprog, jaccard, ochiai,
                            tarantula)
-from .events import EventEchoer, CsvEventLogger
+from .events import (DarjeelingEventHandler, DarjeelingEventProducer,
+                     EventEchoer, CsvEventLogger)
 from .transformation import Transformation
 from .transformation import find_all as find_all_transformations
 from .transformation.classic import (DeleteStatement, ReplaceStatement,
@@ -39,13 +40,16 @@ logger.setLevel(logging.DEBUG)
 
 
 @attr.s
-class Session:
+class Session(DarjeelingEventProducer):
     """Used to manage and inspect an interactive repair session."""
     dir_patches = attr.ib(type=str)
     searcher = attr.ib(type=Searcher)
     _problem = attr.ib(type=Problem)
     terminate_early = attr.ib(type=bool, default=True)
     _patches = attr.ib(type=List[Candidate], factory=list)
+
+    def __attrs_post_init__(self) -> None:
+        DarjeelingEventProducer.__init__(self)
 
     @staticmethod
     def from_config(client_bugzoo: bugzoo.Client, cfg: Config) -> 'Session':
@@ -144,18 +148,19 @@ class Session:
                                         candidate_limit=cfg.limit_candidates,
                                         time_limit=cfg.limit_time)
 
-        # TODO attach listeners to Session and propagate
+        # build session
+        session = Session(dir_patches=dir_patches,
+                          problem=problem,
+                          searcher=searcher,
+                          terminate_early=cfg.terminate_early)
+
         # attach listeners
-        searcher.attach_handler(EventEchoer())
+        session.attach_handler(EventEchoer())
         csv_event_log_filename = os.path.join(os.getcwd(), 'events.csv')
         csv_event_logger = CsvEventLogger(csv_event_log_filename, problem)
-        searcher.attach_handler(csv_event_logger)
+        session.attach_handler(csv_event_logger)
 
-        # build session
-        return Session(dir_patches=dir_patches,
-                       problem=problem,
-                       searcher=searcher,
-                       terminate_early=cfg.terminate_early)
+        return session
 
     @property
     def snapshot(self) -> Snapshot:
@@ -166,6 +171,14 @@ class Session:
     def problem(self) -> Problem:
         """The repair problem that is being solved in this session."""
         return self.searcher.problem
+
+    def attach_handler(self, handler: DarjeelingEventHandler) -> None:
+        super().attach_handler(handler)
+        self.searcher.attach_handler(handler)
+
+    def remove_handler(self, handler: DarjeelingEventHandler) -> None:
+        super().remove_handler(handler)
+        self.searcher.remove_handler(handler)
 
     def run(self) -> None:
         logger.info("beginning search process...")
