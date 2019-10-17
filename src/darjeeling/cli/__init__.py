@@ -19,6 +19,7 @@ import yaml
 from ..problem import Problem
 from ..version import __version__ as VERSION
 from ..config import Config
+from ..events import CsvEventLogger
 from ..session import Session
 from ..exceptions import BadConfigurationException
 from ..util import duration_str
@@ -209,6 +210,12 @@ class BaseController(cement.Controller):
             except BadConfigurationException as err:
                 logger.error(str(err))
                 sys.exit(1)
+
+            # create and attach handlers
+            csv_event_log_filename = os.path.join(os.getcwd(), 'events.csv')
+            csv_event_logger = CsvEventLogger(csv_event_log_filename,
+                                              session._problem)
+            session.attach_handler(csv_event_logger)
 
             if interactive:
                 log_to_stdout.setLevel(logging.CRITICAL)
