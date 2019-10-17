@@ -46,6 +46,7 @@ class CsvEventLogger(DarjeelingEventHandler):
         self._writer = csv.writer(self._file)
 
     def _write(self, row: Sequence[str]) -> None:
+        row = [s.replace('\n', '\\n') for s in row]
         self._writer.writerow(row)
         self._file.flush()
 
