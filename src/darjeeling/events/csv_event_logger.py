@@ -3,6 +3,7 @@ __all__ = ('CsvEventLogger',)
 
 from typing import Sequence, TextIO, Optional
 from typing_extensions import Protocol
+from threading import Lock
 import os
 import csv
 
@@ -46,7 +47,7 @@ class CsvEventLogger(DarjeelingEventHandler):
         self._writer = csv.writer(self._file)
 
     def _write(self, row: Sequence[str]) -> None:
-        row = [s.replace('\n', '\\n') for s in row]
+        row = [s.replace("\n", "\\n") for s in row]
         self._writer.writerow(row)
         self._file.flush()
 
@@ -55,14 +56,14 @@ class CsvEventLogger(DarjeelingEventHandler):
                       ) -> Optional[Sequence[str]]:
         """Transforms an event to a CSV row."""
         if isinstance(event, CandidateEvaluationStarted):
-            diff = event.candidate.to_diff(self.problem)
+            diff = str(event.candidate.to_diff(self.problem))
             return ['CANDIDATE-STARTED', event.candidate.id, diff]
         if isinstance(event, CandidateEvaluationError):
-            diff = event.candidate.to_diff(self.problem)
+            diff = str(event.candidate.to_diff(self.problem))
             return ['CANDIDATE-ERROR', event.candidate.id, diff,
                     str(event.error)]
         if isinstance(event, CandidateEvaluationFinished):
-            diff = event.candidate.to_diff(self.problem)
+            diff = str(event.candidate.to_diff(self.problem))
             is_repair = event.outcome.is_repair
             return ['PATCH-ACCEPTED' if is_repair else 'PATCH-REJECTED',
                     event.candidate.id, diff]
