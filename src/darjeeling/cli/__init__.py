@@ -212,10 +212,13 @@ class BaseController(cement.Controller):
                 sys.exit(1)
 
             # create and attach handlers
-            csv_event_log_filename = os.path.join(os.getcwd(), 'events.csv')
-            csv_event_logger = CsvEventLogger(csv_event_log_filename,
-                                              session._problem)
-            session.attach_handler(csv_event_logger)
+            if self.app.pargs.log_events_to_file:
+                csv_logger_fn = self.app.pargs.log_events_to_file
+                if not os.path.isabs(csv_logger_fn):
+                    csv_logger_fn = os.path.join(os.getcwd(), csv_logger_fn)
+                csv_logger = CsvEventLogger(csv_logger_fn,
+                                            session._problem)
+                session.attach_handler(csv_logger)
 
             if interactive:
                 log_to_stdout.setLevel(logging.CRITICAL)
