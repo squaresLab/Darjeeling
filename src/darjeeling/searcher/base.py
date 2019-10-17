@@ -116,14 +116,12 @@ class Searcher(Generic[T], DarjeelingEventProducer, abc.ABC):
         self.__history = []  # type: List[Candidate]
         logger.debug("constructed searcher")
 
-    @property
-    def handlers(self) -> Iterator[DarjeelingEventHandler]:
-        yield from self.__evaluator.handlers
-
     def attach_handler(self, handler: DarjeelingEventHandler) -> None:
+        super().attach_handler(handler)
         self.__evaluator.attach_handler(handler)
 
     def remove_handler(self, handler: DarjeelingEventHandler) -> None:
+        super().remove_handler(handler)
         self.__evaluator.remove_handler(handler)
 
     @property
