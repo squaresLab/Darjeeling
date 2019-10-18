@@ -44,7 +44,7 @@ class CsvEventLogger(DarjeelingEventHandler):
 
     def __attrs_post_init__(self) -> None:
         self._file = open(self.filename, 'w')
-        self._writer = csv.writer(self._file)
+        self._writer = csv.writer(self._file, delimiter='ɛ')
 
     def _write(self, row: Sequence[str]) -> None:
         row = [s.replace("\n", "\\n") for s in row]
@@ -57,7 +57,7 @@ class CsvEventLogger(DarjeelingEventHandler):
         """Transforms an event to a CSV row."""
         if isinstance(event, CandidateEvaluationStarted):
             diff = str(event.candidate.to_diff(self.problem))
-            return ['CANDIDATE-STARTED', event.candidate.id, diff]
+            return ['CANDIDATE', event.candidate.id, diff]
         if isinstance(event, CandidateEvaluationError):
             diff = str(event.candidate.to_diff(self.problem))
             return ['CANDIDATE-ERROR', event.candidate.id, diff,
