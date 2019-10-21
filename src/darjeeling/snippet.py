@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 __all__ = ('Snippet', 'SnippetDatabase', 'SnippetFinder')
 
-from typing import List, Iterator, Set, Iterable, Optional, Dict, Callable, \
-                   Any, FrozenSet
+from typing import (List, Iterator, Set, Iterable, Optional, Dict, Callable,
+                    Any, FrozenSet, MutableSet)
+from collections import OrderedDict
 import json
 import logging
-import attr
 
+import attr
 from kaskara import Statement
 
 from .core import FileLocationRange, FileLine
@@ -16,11 +17,18 @@ logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
+# FIXME don't store locations in Snippet!
+@attr.s(slots=True, eq=False, hash=False, str=False)
 class Snippet:
-    """
-    Represents a code snippet that may be inserted into a program under
-    repair.
-    """
+    """A snippet of code that may be inserted into a program."""
+    content: str = attr.ib()
+    kind: Optional[str] = attr.ib()
+    reads: Set[str] = attr.ib(converter=frozenset)
+    writes: Set[str] = attr.ib(converter=frozenset)
+    declares: Set[str] = attr.ib(converter=frozenset)
+    requires_syntax: Set[str] = attr.ib(converter=frozenset)
+    locations: MutableSet[str] = attr.ib(factory=set)
+
     @staticmethod
     def from_dict(d: Dict[str, Any]) -> 'Snippet':
         content = d['content']
@@ -42,22 +50,13 @@ class Snippet:
                 snippet.locations.add(loc)
         return snippet
 
-    def __init__(self,
-                 content: str,
-                 kind: Optional[str] = None,
-                 reads: Iterable[str] = [],
-                 writes: Iterable[str] = [],
-                 declares: Iterable[str] = [],
-                 requires_syntax: Iterable[str] = []
-                 ) -> None:
-        self.__content = content
-        self.__kind = kind
-        self.reads = frozenset(reads)  # type: FrozenSet[str]
-        self.writes = frozenset(writes)  # type: FrozenSet[str]
-        self.declares = frozenset(declares)  # type: FrozenSet[str]
-        self.requires_syntax = \
-            frozenset(requires_syntax)  # type: FrozenSet[str]
-        self.locations = set()  # type: Set[FileLocationRange]
+    def __lt__(self, other: Any) -> bool:
+        if not isinstance(other, Snippet):
+            return False
+        return self.content < other.content
+
+    def __str__(self) -> str:
+        return self.content
 
     def __eq__(self, other: Any) -> bool:
         return isinstance(other, Snippet) and self.content == other.content
@@ -74,20 +73,12 @@ class Snippet:
         return 'continue' in self.requires_syntax
 
     @property
-    def uses(self) -> FrozenSet[str]:
+    def uses(self) -> Set[str]:
         """
         Returns the set of variables used by this snippet, given by their
         names.
         """
         return self.reads | self.writes
-
-    @property
-    def content(self) -> str:
-        return self.__content
-
-    @property
-    def kind(self) -> Optional[str]:
-        return self.__kind
 
     @property
     def lines(self) -> Iterator[FileLine]:
@@ -168,11 +159,11 @@ class SnippetDatabase:
         if snippets is None:
             snippets = []
 
-        self.__snippets = {}  # type: Dict[str, Snippet]
+        self.__snippets = OrderedDict()  # type: OrderedDict[str, Snippet]
         for snippet in snippets:
             self.__snippets[snippet.content] = snippet
 
-        self.__snippets_by_file = {}  # type: Dict[str, Set[Snippet]]
+        self.__snippets_by_file = OrderedDict()  # type: OrderedDict[str, Set[Snippet]]
         for snippet in snippets:
             for location in snippet.locations:
                 fn = location.filename
