@@ -170,7 +170,7 @@ class ReplaceStatement(StatementTransformation):
 
     def __repr__(self) -> str:
         s = "ReplaceStatement[{}]<{}>"
-        s = s.format(str(self.replacement), str(self.location))
+        s = s.format(repr(self.replacement.content), str(self.location))
         return s
 
     def to_replacement(self, problem: Problem) -> Replacement:
@@ -224,7 +224,7 @@ class PrependStatement(StatementTransformation):
 
     def __repr__(self) -> str:
         s = "PrependStatement[{}]<{}>"
-        s = s.format(str(self.location), str(self.statement.content))
+        s = s.format(str(self.location), repr(str(self.statement.content)))
         return s
 
     @property
