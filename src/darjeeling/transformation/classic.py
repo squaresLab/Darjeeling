@@ -79,7 +79,7 @@ class StatementTransformation(Transformation):
         """
         filename = statement.location.filename
         location = FileLocation(filename, statement.location.start)
-        viable = snippets.in_file(filename)  # type: Iterator[Snippet]
+        viable = snippets.in_file(filename)
 
         if problem.settings.only_insert_executed_code:
             executed = problem.coverage.locations
@@ -111,7 +111,7 @@ class StatementTransformation(Transformation):
                 lambda s: not any(w not in live_vars for w in s.writes),
                 viable)
 
-        yield from viable
+        yield from sorted(viable)
 
 
 @register("delete-statement")
