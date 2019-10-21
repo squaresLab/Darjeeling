@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 __all__ = ('Snippet', 'SnippetDatabase', 'SnippetFinder')
 
-from typing import List, Iterator, Set, Iterable, Optional, Dict, Callable, \
-                   Any, FrozenSet
+from typing import (List, Iterator, Set, Iterable, Optional, Dict, Callable,
+                    Any, FrozenSet, MutableSet)
+from collections import OrderedDict
 import json
 import logging
-import attr
 
+import attr
 from kaskara import Statement
 
 from .core import FileLocationRange, FileLine
@@ -16,11 +17,18 @@ logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
+# FIXME don't store locations in Snippet!
+@attr.s(slots=True, eq=False, hash=False, str=False, auto_attribs=True)
 class Snippet:
-    """
-    Represents a code snippet that may be inserted into a program under
-    repair.
-    """
+    """A snippet of code that may be inserted into a program."""
+    content: str
+    kind: Optional[str]
+    reads: FrozenSet[str]
+    writes: FrozenSet[str]
+    declares: FrozenSet[str]
+    requires_syntax: FrozenSet[str]
+    locations: MutableSet[FileLocationRange] = attr.ib(factory=set, repr=False)
+
     @staticmethod
     def from_dict(d: Dict[str, Any]) -> 'Snippet':
         content = d['content']
@@ -42,22 +50,13 @@ class Snippet:
                 snippet.locations.add(loc)
         return snippet
 
-    def __init__(self,
-                 content: str,
-                 kind: Optional[str] = None,
-                 reads: Iterable[str] = [],
-                 writes: Iterable[str] = [],
-                 declares: Iterable[str] = [],
-                 requires_syntax: Iterable[str] = []
-                 ) -> None:
-        self.__content = content
-        self.__kind = kind
-        self.reads = frozenset(reads)  # type: FrozenSet[str]
-        self.writes = frozenset(writes)  # type: FrozenSet[str]
-        self.declares = frozenset(declares)  # type: FrozenSet[str]
-        self.requires_syntax = \
-            frozenset(requires_syntax)  # type: FrozenSet[str]
-        self.locations = set()  # type: Set[FileLocationRange]
+    def __lt__(self, other: Any) -> bool:
+        if not isinstance(other, Snippet):
+            return False
+        return self.content < other.content
+
+    def __str__(self) -> str:
+        return self.content
 
     def __eq__(self, other: Any) -> bool:
         return isinstance(other, Snippet) and self.content == other.content
@@ -82,14 +81,6 @@ class Snippet:
         return self.reads | self.writes
 
     @property
-    def content(self) -> str:
-        return self.__content
-
-    @property
-    def kind(self) -> Optional[str]:
-        return self.__kind
-
-    @property
     def lines(self) -> Iterator[FileLine]:
         """
         Returns an iterator over the file lines at which this snippet has
@@ -106,7 +97,7 @@ class Snippet:
 
     def to_dict(self) -> Dict[str, Any]:
         d = {}  # type: Dict[str, Any]
-        d['content'] = self.__content
+        d['content'] = self.content
         if self.locations:
             d['locations'] = [str(l) for l in self.locations]
         if self.kind:
@@ -168,11 +159,11 @@ class SnippetDatabase:
         if snippets is None:
             snippets = []
 
-        self.__snippets = {}  # type: Dict[str, Snippet]
+        self.__snippets = OrderedDict()  # type: OrderedDict[str, Snippet]
         for snippet in snippets:
             self.__snippets[snippet.content] = snippet
 
-        self.__snippets_by_file = {}  # type: Dict[str, Set[Snippet]]
+        self.__snippets_by_file = OrderedDict()  # type: OrderedDict[str, Set[Snippet]]
         for snippet in snippets:
             for location in snippet.locations:
                 fn = location.filename
@@ -221,20 +212,15 @@ class SnippetDatabase:
         Returns:
             nothing.
         """
-        reads = list(reads) if reads else []
-        writes = list(writes) if writes else []
-        declares = list(declares) if declares else []
-        requires_syntax = list(requires_syntax) if requires_syntax else []
-
         if content in self.__snippets:
             snippet = self.__snippets[content]
         else:
             snippet = Snippet(content=content,
-                              kind=kind,
-                              reads=reads,
-                              writes=writes,
-                              declares=declares,
-                              requires_syntax=requires_syntax)
+                kind=kind,
+                reads=frozenset(reads if reads else []),
+                writes=frozenset(writes if writes else []),
+                declares=frozenset(declares if declares else []),
+                requires_syntax=frozenset(requires_syntax if requires_syntax else []))
             self.__snippets[content] = snippet
 
         if origin is not None:

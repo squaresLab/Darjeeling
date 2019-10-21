@@ -79,7 +79,7 @@ class StatementTransformation(Transformation):
         """
         filename = statement.location.filename
         location = FileLocation(filename, statement.location.start)
-        viable = snippets.in_file(filename)  # type: Iterator[Snippet]
+        viable = snippets.in_file(filename)
 
         if problem.settings.only_insert_executed_code:
             executed = problem.coverage.locations
@@ -111,7 +111,7 @@ class StatementTransformation(Transformation):
                 lambda s: not any(w not in live_vars for w in s.writes),
                 viable)
 
-        yield from viable
+        yield from sorted(viable)
 
 
 @register("delete-statement")
@@ -170,7 +170,7 @@ class ReplaceStatement(StatementTransformation):
 
     def __repr__(self) -> str:
         s = "ReplaceStatement[{}]<{}>"
-        s = s.format(str(self.replacement), str(self.location))
+        s = s.format(repr(self.replacement.content), str(self.location))
         return s
 
     def to_replacement(self, problem: Problem) -> Replacement:
@@ -224,7 +224,7 @@ class PrependStatement(StatementTransformation):
 
     def __repr__(self) -> str:
         s = "PrependStatement[{}]<{}>"
-        s = s.format(str(self.location), str(self.statement.content))
+        s = s.format(str(self.location), repr(str(self.statement.content)))
         return s
 
     @property
