@@ -27,7 +27,7 @@ class Snippet:
     writes: Set[str] = attr.ib(converter=frozenset)
     declares: Set[str] = attr.ib(converter=frozenset)
     requires_syntax: Set[str] = attr.ib(converter=frozenset)
-    locations: MutableSet[str] = attr.ib(factory=set)
+    locations: MutableSet[FileLocationRange] = attr.ib(factory=set)
 
     @staticmethod
     def from_dict(d: Dict[str, Any]) -> 'Snippet':
