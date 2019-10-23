@@ -240,6 +240,7 @@ class BaseController(cement.Controller):
 class CLI(cement.App):
     class Meta:
         label = 'darjeeling'
+        catch_signals = None
         handlers = [BaseController]
 
 
