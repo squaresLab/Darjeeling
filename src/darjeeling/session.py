@@ -31,7 +31,7 @@ from .localization import (Localization, ample, genprog, jaccard, ochiai,
 from .events import (DarjeelingEventHandler, DarjeelingEventProducer,
                      EventEchoer, CsvEventLogger)
 from .transformation import Transformation
-from .transformation import find_all as find_all_transformations
+from .transformation import sample_by_localization_and_type as build_transformations  # noqa: pycodestyle
 from .transformation.classic import (DeleteStatement, ReplaceStatement,
                                      PrependStatement)
 
@@ -138,7 +138,7 @@ class Session(DarjeelingEventProducer):
         # FIXME does not allow lazy construction!
         schemas = [Transformation.find_schema(s.name) for s in cfg.transformations.schemas]
         logger.info("constructing transformation database...")
-        tx = list(find_all_transformations(problem, lines, snippets, schemas))
+        tx = list(build_transformations(problem, snippets, localization, schemas, eager=True))
         logger.info("constructed transformation database: %d transformations",  # noqa: pycodestyle
                     len(tx))
 

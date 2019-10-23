@@ -151,7 +151,7 @@ def sample_by_localization_and_type(problem: Problem,
                     localization = localization.without(line)
                 except NoImplicatedLines:
                     logger.debug("no transformations left in search space")
-                    raise StopIteration
+                    return
                 continue
 
             schema = random.choice(list(transformations_by_schema.keys()))
