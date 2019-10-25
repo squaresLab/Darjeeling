@@ -164,6 +164,11 @@ class Session(DarjeelingEventProducer):
         """The repair problem that is being solved in this session."""
         return self.searcher.problem
 
+    @property
+    def coverage(self) -> TestCoverageMap:
+        """The test suite coverage for the program under repair."""
+        return self.problem.coverage
+
     def attach_handler(self, handler: DarjeelingEventHandler) -> None:
         super().attach_handler(handler)
         self.searcher.attach_handler(handler)

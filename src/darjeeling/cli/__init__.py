@@ -4,6 +4,7 @@ import logging.handlers
 from datetime import datetime, timedelta
 from glob import glob
 from threading import Thread, Event
+import json
 import sys
 import random
 import warnings
@@ -93,6 +94,45 @@ class BaseController(cement.Controller):
 
         num = max(used_numbers) + 1
         return os.path.join(os.getcwd(), 'darjeeling.log.{}'.format(num))
+
+    @cement.ex(
+        help='generates a test suite coverage report for a given problem',
+        arguments=[
+            (['filename'],
+             {'help': ('a Darjeeling configuration file describing a faulty '
+                       'program and how it should be repaired.') }),
+            (['--format'],
+             {'help': 'the format that should be used for the coverage report',
+              'default': 'text',
+              'choices': ('text', 'yaml', 'json')})
+        ]
+    )
+    def coverage(self) -> None:
+        """Generates a coverage report for a given program."""
+        # load the configuration file
+        filename = self.app.pargs.filename
+        filename = os.path.abspath(filename)
+        cfg_dir = os.path.dirname(filename)
+        with open(filename, 'r') as f:
+            yml = yaml.safe_load(f)
+        cfg = Config.from_yml(yml, dir_=cfg_dir)
+
+        with bugzoo.server.ephemeral(timeout_connection=120) as client_bugzoo:
+            try:
+                session = Session.from_config(client_bugzoo, cfg)
+            except BadConfigurationException as err:
+                print("ERROR: bad configuration file")
+                sys.exit(1)
+
+            coverage = session.coverage
+
+            # transform to the appropriate format
+            formatter = ({
+                'text': str,
+                'yaml': lambda c: yaml.safe_dump(c.to_dict(), default_flow_style=False),
+                'json': lambda c: json.dumps(c.to_dict(), indent=2)
+            })[self.app.pargs.format]
+            print(formatter(coverage))
 
     @cement.ex(
         help='attempt to automatically repair a given program',
@@ -234,7 +274,10 @@ class BaseController(cement.Controller):
                 first_patch = next(session.patches)
                 print(str(first_patch))
 
-            return session.has_found_patch
+            if session.has_found_patch:
+                sys.exit(0)
+            else:
+                sys.exit(1)
 
 
 class CLI(cement.App):
@@ -246,8 +289,4 @@ class CLI(cement.App):
 
 def main():
     with CLI() as app:
-        found_patch = app.run()
-        if found_patch:
-            sys.exit(0)
-        else:
-            sys.exit(1)
+        app.run()

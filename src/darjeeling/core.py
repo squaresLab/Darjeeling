@@ -119,6 +119,11 @@ class TestCoverage:
         lines = FileLineSet.from_dict(d['lines'])
         return TestCoverage(name, outcome, lines)
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {'name': self.test,
+                'outcome': self.outcome.to_dict(),
+                'lines': self.lines.to_dict()}
+
     def __contains__(self, elem: object) -> bool:
         return elem in self.lines
 
@@ -188,7 +193,7 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
         return TestCoverageMap(name_to_coverage)
 
     def to_dict(self) -> List[Dict[str, Any]]:
-        raise NotImplementedError
+        return [coverage.to_dict() for coverage in self.values()]
 
     def __len__(self) -> int:
         """Returns the number of tests represented in this map."""
