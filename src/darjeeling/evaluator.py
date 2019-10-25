@@ -64,6 +64,9 @@ class Evaluator(DarjeelingEventProducer):
         self.__tests_passing = \
             frozenset(self.__problem.passing_tests)  # type: FrozenSet[Test]
 
+        # FIXME used the precomputed test ordering for now
+        self.__test_ordering = list(self.__problem.tests)
+
         # if the sample size is passed as a fraction, convert that fraction
         # to an integer
         if isinstance(sample_size, float):
@@ -103,8 +106,13 @@ class Evaluator(DarjeelingEventProducer):
         return self.__counter_candidates
 
     def _order_tests(self, tests: Set[Test]) -> List[Test]:
+        """Prioritizes a given set of tests into a sequence."""
         # FIXME implement ordering strategies
-        return list(tests)
+        ordered: List[Test] = []
+        for test in self.__test_ordering:
+            if test in tests:
+                ordered.append(test)
+        return ordered
 
     def _select_tests(self) -> Tuple[List[Test], List[Test]]:
         """Computes a test sequence for a candidate evaluation."""
