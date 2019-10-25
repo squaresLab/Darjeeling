@@ -10,7 +10,8 @@ __all__ = (
 )
 
 from typing import (Dict, Callable, List, Iterator, FrozenSet, Sequence, Any,
-                    Iterable, Optional, Mapping, Set)
+                    Iterable, Optional, Mapping, Set, MutableMapping)
+import functools
 import math
 import json
 import random
@@ -27,9 +28,24 @@ from .config import LocalizationConfig
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
-Metric = Callable[[int, int, int, int], float]
+SuspiciousnessMetric = Callable[[Spectra], MutableMapping[FileLine, float]]
 
 
+def absolute_suspiciousness_metric(f: Callable[[int, int, int, int], float]
+                                  ) -> SuspiciousnessMetric:
+    @functools.wraps(f)
+    def wrapper(spectra: Spectra) -> MutableMapping[FileLine, float]:
+        line_to_score: FileLineMap[float] = FileLineMap({})
+        for line in spectra:
+            row = spectra[line]
+            score = f(row.ep, row.np, row.ef, row.nf)
+            line_to_score[line] = score
+        return line_to_score
+
+    return wrapper
+
+
+@absolute_suspiciousness_metric
 def genprog(ep: int, np: int, ef: int, nf: int) -> float:
     if ef == 0:
         return 0.0
@@ -38,18 +54,53 @@ def genprog(ep: int, np: int, ef: int, nf: int) -> float:
     return 0.1
 
 
+def weighted(spectra: Spectra) -> MutableMapping[FileLine, float]:
+    num_lines_executed_by_only_failing_tests = 0
+    num_lines_executed_by_both_passing_and_failing_tests = 0
+    for line in spectra:
+        row = spectra[line]
+        if row.ef == 0:
+            continue
+        if row.ep == 0:
+            num_lines_executed_by_only_failing_tests += 1
+        else:
+            num_lines_executed_by_both_passing_and_failing_tests += 1
+
+    score_executed_by_only_failing_tests = \
+        1.0 / num_lines_executed_by_only_failing_tests
+    score_executed_by_both_passing_and_failing_tests = \
+        0.1 / num_lines_executed_by_both_passing_and_failing_tests
+
+    line_to_score: FileLineMap[float] = FileLineMap({})
+    for line in spectra:
+        row = spectra[line]
+        if row.ef == 0:
+            continue
+        if row.ep == 0:
+            score = score_executed_by_only_failing_tests
+        else:
+            score = score_executed_by_both_passing_and_failing_tests
+        line_to_score[line] = score
+
+    return line_to_score
+
+
+@absolute_suspiciousness_metric
 def ochiai(ep: int, np: int, ef: int, nf: int) -> float:
     return ef / math.sqrt((ef + ep) * (ef + nf))
 
 
+@absolute_suspiciousness_metric
 def ample(ep: int, np: int, ef: int, nf: int) -> float:
     return abs((ef / (ef + nf)) - (ep / (ep + np)))
 
 
+@absolute_suspiciousness_metric
 def jaccard(ep: int, np: int, ef: int, nf: int) -> float:
     return ef / (ef + nf + ep)
 
 
+@absolute_suspiciousness_metric
 def tarantula(ep: int, np: int, ef: int, nf: int) -> float:
     top = ef / (ef + nf)
     br = ep / (ep + np)
@@ -60,18 +111,16 @@ def tarantula(ep: int, np: int, ef: int, nf: int) -> float:
 class Localization:
     @staticmethod
     def from_coverage(coverage: TestCoverageMap,
-                      metric: Metric
+                      metric: SuspiciousnessMetric
                       ) -> 'Localization':
         spectra = Spectra.from_coverage(coverage)
         return Localization.from_spectra(spectra, metric)
 
     @staticmethod
-    def from_spectra(spectra: Spectra, metric: Metric) -> 'Localization':
-        scores: FileLineMap[float] = FileLineMap({})
-        for line in spectra:
-            row = spectra[line]
-            scores[line] = metric(row.ep, row.np, row.ef, row.nf)
-        return Localization(scores)
+    def from_spectra(spectra: Spectra,
+                     metric: SuspiciousnessMetric
+                     ) -> 'Localization':
+        return Localization(metric(spectra))
 
     @staticmethod
     def from_config(coverage: TestCoverageMap,
@@ -79,8 +128,9 @@ class Localization:
                     ) -> 'Localization':
         # find the suspiciousness metric
         try:
-            supported_metrics = {
+            supported_metrics: Mapping[str, SuspiciousnessMetric] = {
                 'genprog': genprog,
+                'weighted': weighted,
                 'tarantula': tarantula,
                 'ochiai': ochiai,
                 'jaccard': jaccard,
@@ -88,7 +138,7 @@ class Localization:
             }
             logger.info("supported suspiciousness metrics: %s",
                         ', '.join(supported_metrics.keys()))
-            metric = supported_metrics[cfg.metric]
+            metric: SuspiciousnessMetric = supported_metrics[cfg.metric]
         except KeyError:
             m = "suspiciousness metric not supported: {}"
             m = m.format(cfg.metric)
