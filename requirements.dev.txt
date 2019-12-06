@@ -1,0 +1,6 @@
+pycodestyle==2.5.0
+mypy==0.740
+pytest==5.3.0
+ptpython==2.0.6
+tox==3.14.1
+coveralls==1.8.2

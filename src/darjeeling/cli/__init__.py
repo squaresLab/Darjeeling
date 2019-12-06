@@ -1,4 +1,6 @@
-from typing import List, Optional, Dict, Any, Type, Sequence, Tuple, Union
+# -*- coding: utf-8 -*-
+from typing import (List, Optional, Dict, Any, Type, Sequence, Tuple, Union,
+                    Callable)
 import logging
 import logging.handlers
 from datetime import datetime, timedelta
@@ -19,6 +21,7 @@ import yaml
 
 from ..problem import Problem
 from ..version import __version__ as VERSION
+from ..core import TestCoverageMap
 from ..config import Config
 from ..events import CsvEventLogger
 from ..session import Session
@@ -125,10 +128,8 @@ class BaseController(cement.Controller):
                 sys.exit(1)
 
             coverage = session.coverage
-
-            # transform to the appropriate format
             formatter = ({
-                'text': str,
+                'text': lambda c: str(c),
                 'yaml': lambda c: yaml.safe_dump(c.to_dict(), default_flow_style=False),
                 'json': lambda c: json.dumps(c.to_dict(), indent=2)
             })[self.app.pargs.format]

@@ -5,8 +5,8 @@ services:
 python:
 - '3.6'
 install:
-- pip install mypy
-- pip install .
+- pip install -r requirements.dev.txt
+- pip install --upgrade .
 script:
 - mypy src
 - python setup.py test

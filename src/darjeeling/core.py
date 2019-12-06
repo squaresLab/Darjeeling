@@ -44,11 +44,11 @@ class Test:
         raise NotImplementedError
 
 
-@attr.s(frozen=True, slots=True)
+@attr.s(frozen=True, slots=True, auto_attribs=True)
 class TestOutcome:
     """Records the outcome of a test execution."""
-    successful = attr.ib(type=bool)
-    time_taken = attr.ib(type=float)
+    successful: bool
+    time_taken: float
 
     @staticmethod
     def from_bugzoo(outcome: BugZooTestOutcome) -> 'TestOutcome':
@@ -64,11 +64,11 @@ class TestOutcome:
                 'time-taken': self.time_taken}
 
 
-@attr.s(frozen=True, slots=True)
+@attr.s(frozen=True, slots=True, auto_attribs=True)
 class BuildOutcome:
     """Records the outcome of a build attempt."""
-    successful = attr.ib(type=bool)
-    time_taken = attr.ib(type=float)
+    successful: bool
+    time_taken: float
 
 
 class TestOutcomeSet:
@@ -98,12 +98,12 @@ class TestOutcomeSet:
         return TestOutcomeSet(outcomes)
 
 
-@attr.s(frozen=True, slots=True)
+@attr.s(frozen=True, slots=True, auto_attribs=True)
 class TestCoverage:
     """Describes the lines that were executed during a given test execution."""
-    test: str = attr.ib()
-    outcome: TestOutcome = attr.ib()
-    lines: Set[FileLine] = attr.ib()
+    test: str
+    outcome: TestOutcome
+    lines: FileLineSet
 
     @staticmethod
     def from_bugzoo(coverage: BugZooTestCoverage) -> 'TestCoverage':
