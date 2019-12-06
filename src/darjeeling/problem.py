@@ -10,9 +10,7 @@ import functools
 import os
 
 import boggart
-import rooibos
 import bugzoo
-from rooibos import Client as RooibosClient
 from bugzoo.client import Client as BugZooClient
 from bugzoo.core.fileline import FileLine, FileLineSet
 from bugzoo.core.container import Container
@@ -46,7 +44,6 @@ class Problem:
                  program: Program,
                  *,
                  analysis: Optional[Analysis] = None,
-                 client_rooibos: Optional[RooibosClient] = None,
                  settings: Optional[OptimizationsConfig] = None,
                  restrict_to_files: Optional[List[str]] = None
                  ) -> None:
@@ -63,7 +60,6 @@ class Problem:
                 information and the provided suspiciousness metric.
         """
         self.__language = language
-        self.__client_rooibos = client_rooibos
         self.__client_bugzoo = bz
         self.__coverage: TestCoverageMap = coverage
         self.__analysis = analysis
@@ -198,12 +194,6 @@ class Problem:
     def analysis(self) -> Optional[Analysis]:
         """Results of an optional static analysis for the program."""
         return self.__analysis
-
-    @property
-    def rooibos(self) -> RooibosClient:
-        assert self.__client_rooibos is not None
-        assert isinstance(self.__client_rooibos, rooibos.Client)
-        return self.__client_rooibos
 
     @property
     def bug(self) -> Bug:

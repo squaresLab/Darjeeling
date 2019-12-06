@@ -10,11 +10,9 @@ import os
 import random
 
 import attr
-import rooibos
 from kaskara import InsertionPoint
 
 from .base import Transformation, register
-from .rooibos import *
 from .classic import *
 from .line import *
 from ..exceptions import NoImplicatedLines

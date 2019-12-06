@@ -20,7 +20,6 @@ setup(
     python_requires='>=3.6',
     install_requires=[
         'bugzoo~=2.1.31',
-        'rooibos>=0.3.0',
         'boggart>=0.1.16',
         'kaskara>=0.0.5',
         'attrs~=19.2.0',
