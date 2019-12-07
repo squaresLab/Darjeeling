@@ -119,14 +119,6 @@ class StatementTransformation(Transformation):
 class DeleteStatement(StatementTransformation):
     location = attr.ib(type=FileLocationRange)
 
-    @staticmethod
-    def from_dict(d: Dict[str, Any]) -> 'Transformation':
-        location = FileLocationRange.from_string(d['location'])
-        return DeleteStatement(location)
-
-    def _to_dict(self) -> Dict[str, Any]:
-        return {'location': str(self.location)}
-
     def __repr__(self) -> str:
         s = "DeleteStatement<{}>".format(str(self.location))
         return s
@@ -157,16 +149,6 @@ class DeleteStatement(StatementTransformation):
 class ReplaceStatement(StatementTransformation):
     location = attr.ib(type=FileLocationRange)
     replacement = attr.ib(type=Snippet)
-
-    @staticmethod
-    def from_dict(d: Dict[str, Any]) -> 'Transformation':
-        location = FileLocationRange.from_string(d['location'])
-        replacement = Snippet.from_dict(d['replacement'])
-        return ReplaceStatement(location, replacement)
-
-    def _to_dict(self) -> Dict[str, Any]:
-        return {'location': str(self.location),
-                'replacement': self.replacement.to_dict()}
 
     def __repr__(self) -> str:
         s = "ReplaceStatement[{}]<{}>"
@@ -211,16 +193,6 @@ class ReplaceStatement(StatementTransformation):
 class PrependStatement(StatementTransformation):
     location = attr.ib(type=FileLocation)
     statement = attr.ib(type=Snippet)
-
-    @staticmethod
-    def from_dict(d: Dict[str, Any]) -> 'Transformation':
-        location = FileLocation.from_string(d['location'])
-        statement = Snippet.from_dict(d['statement'])
-        return PrependStatement(location, statement)
-
-    def _to_dict(self) -> Dict[str, Any]:
-        return {'location': str(self.location),
-                'statement': self.statement.to_dict()}
 
     def __repr__(self) -> str:
         s = "PrependStatement[{}]<{}>"
