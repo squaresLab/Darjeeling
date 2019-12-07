@@ -35,7 +35,7 @@ from .transformation import sample_by_localization_and_type as build_transformat
 from .transformation.classic import (DeleteStatement, ReplaceStatement,
                                      PrependStatement)
 
-logger = logging.getLogger(__name__)  # type: logging.Logger
+logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
@@ -119,12 +119,12 @@ class Session(DarjeelingEventProducer):
                                           files)
 
         # build problem
-        problem = Problem(bz=client_bugzoo,
-                          language=cfg.language,
-                          program=program,
-                          coverage=coverage,
-                          analysis=analysis,
-                          settings=cfg.optimizations)
+        problem = Problem.build(bugzoo=client_bugzoo,
+                                config=cfg,
+                                language=cfg.language,
+                                program=program,
+                                coverage=coverage,
+                                analysis=analysis)
 
         # build snippet database
         logger.info("constructing database of donor snippets...")

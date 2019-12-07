@@ -9,85 +9,99 @@ import logging
 import functools
 import os
 
-import bugzoo
+import attr
 from bugzoo.client import Client as BugZooClient
 from bugzoo.core.fileline import FileLine, FileLineSet
-from bugzoo.core.container import Container
 from bugzoo.core.bug import Bug
-from bugzoo.core.patch import Patch
-from bugzoo.compiler import CompilationOutcome as BuildOutcome
-from bugzoo.util import indent
 from kaskara.analysis import Analysis
 
 from .core import Language, Test, TestCoverage, TestCoverageMap
+from .config import Config
 from .program import Program
 from .source import ProgramSource
-from .util import get_file_contents
 from .exceptions import NoFailingTests, NoImplicatedLines, BuildFailure
 from .config import OptimizationsConfig
 from .test import TestSuite
 
-logger = logging.getLogger(__name__)  # type: logging.Logger
+logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class Problem:
     """
     Used to provide a description of a problem (i.e., a bug), and to hold
-    information pertinent to its solution (e.g., coverage, transformations).
+    information pertinent to its solution (e.g., coverage).
+
+    Attributes
+    ----------
+    config: Config
+        The repair configuration being used.
+    coverage: TestCoverageMap
+        Line coverage for each test within the test suite for the program
+        under repair.
+    sources: ProgramSource
+        The source code files for the program under repair.
+    analysis: Analysis, optional
+        Results of an optional static analysis for the program.
+    failing_tests: Sequence[Test]
+        The failing tests for this problem.
+    passing_tests: Sequence[Test]
+        The passing tests for this problem.
+    test_ordering: Iterable[Test]
+        The order in which tests should be executed.
     """
-    def __init__(self,
-                 bz: bugzoo.BugZoo,
-                 language: Language,
-                 coverage: TestCoverageMap,
-                 program: Program,
-                 *,
-                 analysis: Optional[Analysis] = None,
-                 settings: Optional[OptimizationsConfig] = None,
-                 restrict_to_files: Optional[List[str]] = None
-                 ) -> None:
-        """Constructs a Darjeeling problem description.
+    bugzoo: BugZooClient
+    config: Config
+    language: Language
+    coverage: TestCoverageMap
+    sources: ProgramSource
+    program: Program
+    failing_tests: Sequence[Test]
+    passing_tests: Sequence[Test]
+    test_ordering: Iterable[Test]
+    analysis: Optional[Analysis]
 
-        Params:
-            bug: A description of the faulty program.
-            coverage: Used to provide coverage information for the program
-                under test.
+    @staticmethod
+    def build(bugzoo: BugZooClient,
+              config: Config,
+              language: Language,
+              coverage: TestCoverageMap,
+              program: Program,
+              *,
+              analysis: Optional[Analysis] = None
+              ) -> 'Problem':
+        """Constructs a problem description.
 
-        Raises:
-            NoFailingTests: if the program under repair has no failing tests.
-            NoImplicatedLines: if no lines are implicated by the coverage
-                information and the provided suspiciousness metric.
+        Raises
+        -------
+        NoFailingTests
+            If the program under repair has no failing tests.
+        NoImplicatedLines
+            If no lines are implicated by the coverage information and the
+            provided suspiciousness metric.
         """
-        self.__language = language
-        self.__client_bugzoo = bz
-        self.__coverage: TestCoverageMap = coverage
-        self.__analysis = analysis
-        self.__settings = settings if settings else OptimizationsConfig()
-        self.__program = program
-        self._dump_coverage()
+        bz = bugzoo
+        logger.debug('using coverage to determine passing and failing tests')
+        failing_tests: Sequence[Test] = \
+            tuple(program.tests[name] for name in sorted(coverage)
+                  if not coverage[name].outcome.successful)
+        passing_tests: Sequence[Test] = \
+            tuple(program.tests[name] for name in sorted(coverage)
+                  if coverage[name].outcome.successful)
 
-        # use coverage to determine the passing and failing tests
-        logger.debug("using test execution used to generate coverage to determine passing and failing tests")
-        test_suite = program.tests
-        self.__tests_failing: Sequence[Test] = \
-            tuple(test_suite[name] for name in sorted(self.__coverage)
-                  if not self.__coverage[name].outcome.successful)
-        self.__tests_passing: Sequence[Test] = \
-            tuple(test_suite[name] for name in sorted(self.__coverage)
-                  if self.__coverage[name].outcome.successful)
-
-        logger.info("determined passing and failing tests")
-        logger.info("* passing tests: %s",
-                    ', '.join([t.name for t in self.__tests_passing]))
-        logger.info("* failing tests: %s",
-                    ', '.join([t.name for t in self.__tests_failing]))
-        if not self.__tests_failing:
+        logger.info('determined passing and failing tests')
+        logger.info('* passing tests: %s',
+                    ', '.join([t.name for t in passing_tests]))
+        logger.info('* failing tests: %s',
+                    ', '.join([t.name for t in failing_tests]))
+        if not failing_tests:
             raise NoFailingTests
 
         # perform test ordering
         def ordering(x: Test, y: Test) -> int:
-            cov_x = self.__coverage[x.name]
-            cov_y = self.__coverage[y.name]
+            cov_x = coverage[x.name]
+            cov_y = coverage[y.name]
             pass_x = cov_x.outcome.successful
             pass_y = cov_y.outcome.successful
             time_x = cov_x.outcome.time_taken
@@ -108,56 +122,29 @@ class Problem:
                 return 0
 
         logger.info("ordering test cases")
-        self.__tests_ordered = \
-            sorted(program.tests,
-                   key=functools.cmp_to_key(ordering)) # type: List[Test]
-        logger.info("test order: %s",
-                    ', '.join(t.name for t in self.__tests_ordered))
+        test_ordering: Sequence[Test] = \
+            tuple(sorted(program.tests, key=functools.cmp_to_key(ordering)))
+        logger.info('test order: %s', ', '.join(t.name for t in test_ordering))
 
-        # TODO cache to disk
-        t_start = timer()
         logger.debug("storing contents of source code files")
-        source_files = set(self.implicated_files)
-        if restrict_to_files:
-            source_files &= set(restrict_to_files)
-        self.__sources = ProgramSource.for_bugzoo_snapshot(bz,
-                                                           program.snapshot,
-                                                           files=source_files)
-        logger.debug("stored contents of source code files (took %.1f seconds)",
-                     timer() - t_start)
+        source_files = set(l.filename for l in coverage.failing.locations)
+        sources = ProgramSource.for_bugzoo_snapshot(bz,
+                                                    program.snapshot,
+                                                    files=source_files)
+        logger.debug("stored contents of source code files")
 
-    def _dump_coverage(self) -> None:
-        logger.debug("[COVERAGE]\n%s\n[/COVERAGE]",
-                     indent(str(self.__coverage), 2))
-
-    def restrict_to_files(self, filenames: List[str]) -> None:
-        """
-        Restricts the scope of the repair to the intersection of the files
-        that are currently within the scope of the repair and a set of
-        provided files.
-        """
-        logger.info("restricting repair to files: %s", filenames)
-        self.__coverage = self.__coverage.restrict_to_files(filenames)
-        logger.info("successfully restricted repair to given files.")
-        self._dump_coverage()
-        self.validate()
-
-    def restrict_to_lines(self, lines: Iterable[FileLine]) -> None:
-        """
-        Restricts the scope of the repair to the intersection of the current
-        set of implicated lines and a provided set of lines.
-        """
-        self.__coverage = self.__coverage.restrict_to_locations(lines)
-        self._dump_coverage()
-        self.validate()
-
-    def restrict_with_filter(self,
-                             fltr: Callable[[str], bool]
-                             ) -> None:
-        """Uses a filter to remove certain lines from the scope of repair."""
-        f = lambda fl: fltr(self.__sources.read_line(fl))
-        filtered = [l for l in self.lines if f(l)]  # type: List[FileLine]
-        self.restrict_to_lines(filtered)
+        problem = Problem(bugzoo=bz,
+                          program=program,
+                          analysis=analysis,
+                          language=language,
+                          coverage=coverage,
+                          sources=sources,
+                          config=config,
+                          passing_tests=passing_tests,
+                          failing_tests=failing_tests,
+                          test_ordering=test_ordering)
+        problem.validate()
+        return problem
 
     def validate(self) -> None:
         """
@@ -166,7 +153,7 @@ class Problem:
         implicated line.
         """
         lines = list(self.lines)
-        files = list(self.implicated_files)
+        files = set(self.implicated_files)
         logger.info("implicated lines [%d]:\n%s", len(lines), lines)
         logger.info("implicated files [%d]:\n* %s", len(files),
                     '\n* '.join(files))
@@ -174,55 +161,22 @@ class Problem:
             raise NoImplicatedLines
 
     @property
-    def program(self) -> Program:
-        return self.__program
-
-    @property
-    def language(self) -> Language:
-        return self.__language
-
-    @property
-    def bugzoo(self) -> BugZooClient:
-        return self.__client_bugzoo
-
-    @property
     def settings(self) -> OptimizationsConfig:
-        return self.__settings
-
-    @property
-    def analysis(self) -> Optional[Analysis]:
-        """Results of an optional static analysis for the program."""
-        return self.__analysis
+        return self.config.optimizations
 
     @property
     def bug(self) -> Bug:
         """A description of the bug, provided by BugZoo."""
-        return self.__program.snapshot
+        return self.program.snapshot
 
     @property
     def tests(self) -> Iterator[Test]:
         """Returns an iterator over the tests for this problem."""
-        yield from self.__tests_ordered
+        yield from self.test_ordering
 
     @property
     def test_suite(self) -> TestSuite:
-        return self.__program.tests
-
-    @property
-    def failing_tests(self) -> Iterator[Test]:
-        yield from self.__tests_failing
-
-    @property
-    def passing_tests(self) -> Iterator[Test]:
-        yield from self.__tests_passing
-
-    @property
-    def coverage(self) -> TestCoverageMap:
-        """
-        Line coverage information for each test within the test suite for the
-        program under repair.
-        """
-        return self.__coverage
+        return self.program.tests
 
     @property
     def lines(self) -> Iterator[FileLine]:
@@ -230,13 +184,8 @@ class Problem:
         Returns an iterator over the lines that are implicated by the
         description of this problem.
         """
-        yield from self.__coverage.failing.locations
+        yield from self.coverage.failing.locations
 
     @property
     def implicated_files(self) -> Iterator[str]:
-        yield from (l.filename for l in self.__coverage.failing.locations)
-
-    @property
-    def sources(self) -> ProgramSource:
-        """The source code files for the program under repair."""
-        return self.__sources
+        yield from set(l.filename for l in self.coverage.failing.locations)

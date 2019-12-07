@@ -31,8 +31,8 @@ class LineTransformation(Transformation):
 
 @attr.s(frozen=True, auto_attribs=True)
 class LineTransformationSchema(TransformationSchema[LineTransformation]):
-    _problem: Problem
-    _snippets: SnippetDatabase
+    _problem: Problem = attr.ib(hash=False)
+    _snippets: SnippetDatabase = attr.ib(hash=False)
 
     @classmethod
     def build(cls,
