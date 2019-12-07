@@ -1,0 +1,23 @@
+version: '1.0'
+snapshot: 'tse2012:zune'
+language: c
+seed: 0
+threads: 16
+localization:
+  type: spectrum
+  metric: tarantula
+  exclude-files:
+    - foo.c
+algorithm:
+  type: exhaustive
+transformations:
+  schemas:
+    - type: delete-statement
+    - type: replace-statement
+    - type: prepend-statement
+optimizations:
+  ignore-equivalent-prepends: yes
+  ignore-dead-code: yes
+  ignore-string-equivalent-snippets: yes
+resource-limits:
+  candidates: 100
