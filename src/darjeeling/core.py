@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 __all__ = ('Replacement', 'FileLine', 'FileLocationRange', 'Location',
-           'TestCoverage', 'TestCoverageMap')
+           'LocationRange', 'FileLocation', 'TestCoverage', 'TestCoverageMap')
 
 from typing import (TypeVar, Sequence, Iterator, Optional, Dict, Generic, Set,
                     Mapping, Iterable, List, Any)
@@ -7,6 +8,7 @@ from collections import OrderedDict
 from enum import Enum
 import abc
 import fnmatch
+import functools
 
 import attr
 import yaml
@@ -16,11 +18,208 @@ from bugzoo.core import TestOutcome as BugZooTestOutcome
 from bugzoo import Container
 from bugzoo import Client as BugZooClient
 from bugzoo.core import FileLine, FileLineMap, FileLineSet
-from boggart.core.replacement import Replacement
-from boggart.core.location import (FileLocationRange,
-                                   Location, LocationRange, FileLocation)
 
 from .exceptions import LanguageNotSupported
+
+
+@attr.s(frozen=True, str=False, auto_attribs=True)
+class Location:
+    """Represents a character location within an arbitrary file.
+
+    Attributes
+    ----------
+    line: int
+        A one-indexed line number.
+    column: int
+        A one-indexed column number.
+    """
+    line: int
+    column: int
+
+    @staticmethod
+    def from_string(s: str) -> 'Location':
+        line, _, column = s.partition(':')
+        return Location(int(line), int(column))
+
+    def __le__(self, other: Any) -> bool:
+        if not isinstance(other, Location):
+            return False
+        if self.line == other.line:
+            return self.column < other.column
+        return self.line < other.line
+
+    def __str__(self) -> str:
+        return f'{self.line}:{self.column}'
+
+
+@attr.s(frozen=True, str=False, auto_attribs=True)
+class FileLocation:
+    """Represents a character location within a particular file.
+
+    Attributes
+    ----------
+    filename: str
+        The name of the file to which the character belongs.
+    location: Location
+        The location of the character within the given file.
+    """
+    filename: str
+    location: Location
+
+    @property
+    def line(self) -> int:
+        """The one-indexed line number for this location."""
+        return self.location.line
+
+    @property
+    def column(self) -> int:
+        """The one-indexed column number for this location."""
+        return self.location.column
+
+    @staticmethod
+    def from_string(s: str) -> 'FileLocation':
+        filename, _, location_string = s.rpartition('@')
+        location = Location.from_string(location_string)
+        return FileLocation(filename, location)
+
+    def __str__(self) -> str:
+        return f'{self.filename}@{str(self.location)}'
+
+
+@attr.s(frozen=True, str=False, auto_attribs=True)
+class LocationRange:
+    """Captures a contiguous, non-inclusive range of locations."""
+    start: Location
+    stop: Location
+
+    @staticmethod
+    def from_string(s: str) -> 'LocationRange':
+        start_s, _, stop_s = s.partition('::')
+        start = Location.from_string(start_s)
+        stop = Location.from_string(stop_s)
+        return LocationRange(start, stop)
+
+    def __str__(self) -> str:
+        return f'{str(self.start)}::{str(self.stop)}'
+
+    def __contains__(self, loc: Location) -> bool:
+        """Determines whether a given location is within this range."""
+        left = loc.line > self.start.line \
+            or (loc.line == self.start.line and loc.column >= self.start.column)
+        right = loc.line < self.stop.line \
+            or (loc.line == self.stop.line and loc.column < self.stop.column)
+        return left and right
+
+
+@attr.s(frozen=True, str=False, auto_attribs=True)
+class FileLocationRange:
+    """Represents a contiguous sequence of characters in a particular file."""
+    filename: str
+    location_range: LocationRange
+
+    @staticmethod
+    def from_string(s: str) -> 'FileLocationRange':
+        filename, _, s_range = s.rpartition('@')
+        location_range = LocationRange.from_string(s_range)
+        return FileLocationRange(filename, location_range)
+
+    @property
+    def start(self) -> Location:
+        """The start of this location range."""
+        return self.location_range.start
+
+    @property
+    def stop(self) -> Location:
+        """The end of this location range."""
+        return self.location_range.stop
+
+    def __str__(self) -> str:
+        return f'{self.filename}@{str(self.location_range)}'
+
+    def __contains__(self, floc: FileLocation) -> bool:
+        """Determines whether a given location is within this range."""
+        in_file = floc.filename == self.filename
+        in_range = floc.location in self.location_range
+        return in_file and in_range
+
+
+@attr.s(frozen=True, str=False, auto_attribs=True)
+class Replacement:
+    """
+    Describes the replacement of a contiguous body of text in a single source
+    code file with a provided text.
+
+    Attributes
+    ----------
+    location: FileLocationRange
+        The contiguous range of text that should be replaced.
+    text: str
+        The source text that should be used as a replacement.
+    """
+    location: FileLocationRange
+    text: str
+
+    @staticmethod
+    def from_dict(d: Dict[str, str]) -> 'Replacement':
+        location = FileLocationRange.from_string(d['location'])
+        return Replacement(location, d['text'])
+
+    @staticmethod
+    def resolve(replacements: Sequence['Replacement']
+                ) -> List['Replacement']:
+        """Resolves all conflicts in a sequence of replacements."""
+        # group by file
+        file_to_reps = {}  # type: Dict[str, List[Replacement]]
+        for rep in replacements:
+            if rep.filename not in file_to_reps:
+                file_to_reps[rep.filename] = []
+            file_to_reps[rep.filename].append(rep)
+
+        # resolve redundant replacements
+        for fn in file_to_reps:
+            reps = file_to_reps[fn]
+
+            def cmp(x, y) -> int:
+                return -1 if x < y else 0 if x == y else 0
+
+            def compare(x, y) -> int:
+                start_x, stop_x = x.location.start, x.location.stop
+                start_y, stop_y = y.location.start, y.location.stop
+                if start_x != start_y:
+                    return cmp(start_x, start_y)
+                # start_x == start_y
+                return -cmp(stop_x, stop_y)
+
+            reps.sort(key=functools.cmp_to_key(compare))
+
+            filtered: List[Replacement] = [reps[0]]
+            i, j = 0, 1
+            while j < len(reps):
+                x, y = reps[i], reps[j]
+                if x.location.stop > y.location.start:
+                    j += 1
+                else:
+                    i += 1
+                    j += 1
+                    filtered.append(y)
+            filtered.reverse()
+            file_to_reps[fn] = filtered
+
+        # collapse into a flat sequence of transformations
+        resolved: List[Replacement] = []
+        for reps in file_to_reps.values():
+            resolved += reps
+        return resolved
+
+    @property
+    def filename(self) -> str:
+        """The name of the file in which the replacement should be made."""
+        return self.location.filename
+
+    def to_dict(self) -> Dict[str, str]:
+        return {'location': str(self.location),
+                'text': self.text}
+
 
 class Language(Enum):
     @classmethod

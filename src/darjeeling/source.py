@@ -71,9 +71,9 @@ class ProgramSourceFile:
         loc_start = at.start
         loc_stop = at.stop
         offset_start = \
-            self.line_col_to_offset(loc_start.line, loc_start.col)
+            self.line_col_to_offset(loc_start.line, loc_start.column)
         offset_stop = \
-            self.line_col_to_offset(loc_stop.line, loc_stop.col)
+            self.line_col_to_offset(loc_stop.line, loc_stop.column)
         return self.contents[offset_start:offset_stop]
 
     def line_to_location_range(self, num: int) -> LocationRange:

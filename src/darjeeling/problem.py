@@ -9,7 +9,6 @@ import logging
 import functools
 import os
 
-import boggart
 import bugzoo
 from bugzoo.client import Client as BugZooClient
 from bugzoo.core.fileline import FileLine, FileLineSet
