@@ -3,8 +3,8 @@
 This module is responsible for describing concrete transformations to source
 code files.
 """
-from typing import List, Iterator, Dict, FrozenSet, Tuple, Iterable, Type, \
-                   Optional, Any
+from typing import (List, Iterator, Dict, FrozenSet, Tuple, Iterable, Type,
+                    Optional, Any, Mapping)
 import logging
 import os
 import random
@@ -36,10 +36,9 @@ def find_all(problem: Problem,
     performed at a given set of lines using provided schemas and snippets.
     """
     for schema in schemas:
-        line_to_trans = schema.all_at_lines(problem, snippets, lines)
+        line_to_trans = schema.all_at_lines(lines)
         for line in lines:
             yield from line_to_trans[line]
-
 
 def sample_by_localization_and_type(problem: Problem,
                                     snippets: SnippetDatabase,
@@ -58,9 +57,9 @@ def sample_by_localization_and_type(problem: Problem,
     lines: List[FileLine] = list(localization)
     try:
         schema_to_transformations_by_line = {
-            s: s.all_at_lines(problem, snippets, lines, threads=threads)
+            s: s.all_at_lines(lines)
             for s in schemas
-        }  # type: Dict[TransformationSchema, Dict[FileLine, Iterator[Transformation]]]  # noqa: pycodestyle
+        }  # type: Dict[TransformationSchema, Mapping[FileLine, Iterator[Transformation]]]  # noqa: pycodestyle
         logger.debug("built schema->line->transformations map")
     except Exception:
         logger.exception("failed to build schema->line->transformations map")

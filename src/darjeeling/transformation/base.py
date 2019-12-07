@@ -6,7 +6,7 @@ transformation schemas inherit.
 __all__ = ('Transformation', 'register')
 
 from typing import (Any, Dict, List, Type, Iterator, Callable, TypeVar,
-                    Generic, ClassVar)
+                    Generic, ClassVar, Mapping)
 import abc
 import logging
 
@@ -53,19 +53,24 @@ class TransformationSchema(Generic[T], abc.ABC):
         """
         yield from _REGISTRY
 
+    @classmethod
+    @abc.abstractmethod
+    def build(cls,
+              problem: Problem,
+              snippets: SnippetDatabase,
+              threads: int
+              ) -> 'TransformationSchema':
+        ...
+
     @abc.abstractmethod
     def all_at_lines(self,
-                     problem: Problem,
-                     snippets: SnippetDatabase,
-                     lines: List[FileLine],
-                     *,
-                     threads: int = 1
-                     ) -> Dict[FileLine, Iterator['Transformation']]:
+                     lines: List[FileLine]
+                     ) -> Mapping[FileLine, Iterator['Transformation']]:
         """
         Returns a dictionary from lines to streams of all the possible
         transformations of this type that can be performed at that line.
         """
-        raise NotImplementedError
+        ...
 
 
 def register(name: str

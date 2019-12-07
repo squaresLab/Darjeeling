@@ -9,7 +9,7 @@ __all__ = [
     'ReplaceLine'
 ]
 
-from typing import List, Iterator, Iterable, Dict, Any, FrozenSet
+from typing import List, Iterator, Iterable, Dict, Any, FrozenSet, Mapping
 import abc
 import logging
 
@@ -29,29 +29,30 @@ class LineTransformation(Transformation):
     """Base class for all line-based transformations."""
 
 
-class LineTransformationSchema(TransformationSchema):
+@attr.s(frozen=True, auto_attribs=True)
+class LineTransformationSchema(TransformationSchema[LineTransformation]):
+    _problem: Problem
+    _snippets: SnippetDatabase
+
+    @classmethod
+    def build(cls,
+              problem: Problem,
+              snippets: SnippetDatabase,
+              threads: int
+              ) -> 'TransformationSchema':
+        return cls(problem=problem, snippets=snippets)
+
     def all_at_lines(self,
-                     problem: Problem,
-                     snippets: SnippetDatabase,
-                     lines: List[FileLine],
-                     *,
-                     threads: int = 1
-                     ) -> Dict[FileLine, Iterator[Transformation]]:
-        return {l: self.all_at_line(problem, snippets, l) for l in lines}
+                     lines: List[FileLine]
+                     ) -> Mapping[FileLine, Iterator[Transformation]]:
+        return {l: self.all_at_line(l) for l in lines}
 
     @abc.abstractmethod
-    def all_at_line(self,
-                    problem: Problem,
-                    snippets: SnippetDatabase,
-                    line: FileLine
-                    ) -> Iterator[Transformation]:
+    def all_at_line(self, line: FileLine) -> Iterator[Transformation]:
         ...
 
-    def viable_insertions(self,
-                          problem: Problem,
-                          context: FileLine
-                          ) -> Iterator[FileLine]:
-        sources = problem.sources
+    def viable_insertions(self, context: FileLine) -> Iterator[FileLine]:
+        sources = self._problem.sources
         filename = context.filename
         for line_num in range(1, sources.num_lines(filename) + 1):
             insertion = FileLine(filename, line_num)
@@ -73,7 +74,7 @@ class DeleteLine(LineTransformation):
     class Schema(LineTransformationSchema):
         NAME = 'delete-line'
 
-        def all_at_line(self, problem, snippets, line):
+        def all_at_line(self, line: FileLine) -> Iterator[Transformation]:
             yield DeleteLine(line)
 
 
@@ -89,11 +90,12 @@ class ReplaceLine(LineTransformation):
         return Replacement(loc, rep)
 
     @register('replace-line')
+    @attr.s(frozen=True, auto_attribs=True)
     class Schema(LineTransformationSchema):
         NAME = 'replace-line'
 
-        def all_at_line(self, problem, snippets, line):
-            for replacement in cls.viable_insertions(problem, line):
+        def all_at_line(self, line: FileLine) -> Iterator[Transformation]:
+            for replacement in self.viable_insertions(line):
                 if replacement != line:
                     yield ReplaceLine(line, replacement)
 
@@ -114,7 +116,7 @@ class InsertLine(LineTransformation):
     class Schema(LineTransformationSchema):
         NAME = 'insert-line'
 
-        def all_at_line(self, problem, snippets, line):
+        def all_at_line(self, line: FileLine) -> Iterator[Transformation]:
             # TODO append after the last line!
-            for ins in self.viable_insertions(problem, line):
+            for ins in self.viable_insertions(line):
                 yield InsertLine(line, ins)
