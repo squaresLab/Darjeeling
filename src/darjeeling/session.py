@@ -111,12 +111,14 @@ class Session(DarjeelingEventProducer):
 
         # determine implicated files and lines
         files = localization.files
-        lines = list(localization)  # type: List[FileLine]
+        lines: List[FileLine] = list(localization)
 
-        # compute analysis
-        analysis = kaskara.Analysis.build(client_bugzoo,
-                                          program.snapshot,
-                                          files)
+        if cfg.language in (Language.CPP, Language.C):
+            analysis = kaskara.Analysis.build(client_bugzoo,
+                                              program.snapshot,
+                                              files)
+        else:
+            analysis = None
 
         # build problem
         problem = Problem.build(bugzoo=client_bugzoo,
