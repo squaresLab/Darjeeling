@@ -18,9 +18,10 @@ import kaskara
 
 from .base import Transformation, TransformationSchema, register
 from ..problem import Problem
-from ..snippet import Snippet, SnippetDatabase
-from ..core import Replacement, FileLine, FileLocationRange, FileLocation, \
-                   FileLineSet, Location, LocationRange
+from ..snippet import StatementSnippet, SnippetDatabase, StatementSnippetDatabase
+from ..core import (Replacement, FileLine, FileLocationRange, FileLocation,
+                    FileLineSet, Location, LocationRange)
+from ..exceptions import BadConfigurationException
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -33,7 +34,7 @@ class StatementTransformation(Transformation):
 @attr.s(frozen=True, auto_attribs=True)
 class StatementTransformationSchema(TransformationSchema[StatementTransformation]):  # noqa: pycodestyle
     _problem: Problem = attr.ib(hash=False)
-    _snippets: SnippetDatabase = attr.ib(hash=False)
+    _snippets: StatementSnippetDatabase = attr.ib(hash=False)
 
     @classmethod
     def build(cls,
@@ -41,6 +42,9 @@ class StatementTransformationSchema(TransformationSchema[StatementTransformation
               snippets: SnippetDatabase,
               threads: int
               ) -> 'TransformationSchema':
+        if not isinstance(snippets, StatementSnippetDatabase):
+            m = 'statement transformations require a statement snippet pool'
+            raise BadConfigurationException(m)
         return cls(problem=problem, snippets=snippets)
 
     def all_at_lines(self,
@@ -74,12 +78,12 @@ class StatementTransformationSchema(TransformationSchema[StatementTransformation
 
     def viable_snippets(self,
                         statement: kaskara.Statement
-                        ) -> Iterator[Snippet]:
+                        ) -> Iterator[StatementSnippet]:
         """
         Returns an iterator over the set of snippets that can be inserted
         immediately before a given statement.
         """
-        snippets = self._snippets
+        snippets: StatementSnippetDatabase = self._snippets
         problem = self._problem
         filename = statement.location.filename
         location = FileLocation(filename, statement.location.start)
@@ -150,7 +154,7 @@ class DeleteStatement(StatementTransformation):
 @attr.s(frozen=True, repr=False, auto_attribs=True)
 class ReplaceStatement(StatementTransformation):
     location: FileLocationRange
-    replacement: Snippet
+    replacement: StatementSnippet
 
     def __repr__(self) -> str:
         s = "ReplaceStatement[{}]<{}>"
@@ -197,7 +201,7 @@ class ReplaceStatement(StatementTransformation):
 @attr.s(frozen=True, repr=False, auto_attribs=True)
 class PrependStatement(StatementTransformation):
     location: FileLocation
-    statement: Snippet
+    statement: StatementSnippet
 
     def __repr__(self) -> str:
         s = "PrependStatement[{}]<{}>"
