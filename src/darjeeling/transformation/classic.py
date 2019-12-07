@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This module provides transformation schemas for each of the classical
 GenProg-style statement operators.
@@ -9,36 +10,38 @@ __all__ = (
 )
 
 from typing import List, Iterator, Iterable, Dict, Any, FrozenSet
+import abc
 import logging
 
 import attr
 import kaskara
 
-from .base import Transformation, register
+from .base import Transformation, TransformationSchema, register
 from ..problem import Problem
 from ..snippet import Snippet, SnippetDatabase
 from ..core import Replacement, FileLine, FileLocationRange, FileLocation, \
                    FileLineSet, Location, LocationRange
 
-logger = logging.getLogger(__name__)  # type: logging.Logger
+logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
 class StatementTransformation(Transformation):
     """Base class for all transformations that are applied to a statement."""
-    @classmethod
-    def all_at_lines(cls,
+
+
+class StatementTransformationSchema(TransformationSchema[StatementTransformation]):  # noqa: pycodestyle
+    def all_at_lines(self,
                      problem: Problem,
                      snippets: SnippetDatabase,
                      lines: List[FileLine],
                      *,
                      threads: int = 1
                      ) -> Dict[FileLine, Iterator[Transformation]]:
-        return {line: cls.all_at_line(problem, snippets, line)
+        return {line: self.all_at_line(problem, snippets, line)
                 for line in lines}
 
-    @classmethod
-    def all_at_line(cls,
+    def all_at_line(self,
                     problem: Problem,
                     snippets: SnippetDatabase,
                     line: FileLine
@@ -53,10 +56,10 @@ class StatementTransformation(Transformation):
             return
         statements = analysis.statements.at_line(line)  # type: Iterator[kaskara.Statement]  # noqa: pycodestyle
         for statement in statements:
-            yield from cls.all_at_statement(problem, snippets, statement)
+            yield from self.all_at_statement(problem, snippets, statement)
 
-    @classmethod
-    def all_at_statement(cls,
+    @abc.abstractmethod
+    def all_at_statement(self,
                          problem: Problem,
                          snippets: SnippetDatabase,
                          statement: kaskara.Statement
@@ -65,10 +68,9 @@ class StatementTransformation(Transformation):
         Returns an iterator over all of the possible transformations of this
         kind that can be performed at a given statement.
         """
-        raise NotImplementedError
+        ...
 
-    @classmethod
-    def viable_snippets(cls,
+    def viable_snippets(self,
                         problem: Problem,
                         snippets: SnippetDatabase,
                         statement: kaskara.Statement
@@ -114,10 +116,9 @@ class StatementTransformation(Transformation):
         yield from sorted(viable)
 
 
-@register("delete-statement")
-@attr.s(frozen=True, repr=False)
+@attr.s(frozen=True, repr=False, auto_attribs=True)
 class DeleteStatement(StatementTransformation):
-    location = attr.ib(type=FileLocationRange)
+    location: FileLocationRange
 
     def __repr__(self) -> str:
         s = "DeleteStatement<{}>".format(str(self.location))
@@ -131,24 +132,24 @@ class DeleteStatement(StatementTransformation):
         return FileLine(self.location.filename,
                         self.location.start.line)
 
-    @classmethod
-    def all_at_statement(cls,
-                         problem: Problem,
-                         snippets: SnippetDatabase,
-                         statement: kaskara.Statement
-                         ) -> Iterator[Transformation]:
-        # do not delete declaration statements
-        if problem.settings.ignore_decls and statement.kind == 'DeclStmt':
-            return
+    @register("delete-statement")
+    class Schema(StatementTransformationSchema):
+        NAME = 'delete-statement'
 
-        yield DeleteStatement(statement.location)
+        def all_at_statement(self,
+                             problem: Problem,
+                             snippets: SnippetDatabase,
+                             statement: kaskara.Statement
+                             ) -> Iterator[Transformation]:
+            if problem.settings.ignore_decls and statement.kind == 'DeclStmt':
+                return
+            yield DeleteStatement(statement.location)
 
 
-@register("replace-statement")
-@attr.s(frozen=True, repr=False)
+@attr.s(frozen=True, repr=False, auto_attribs=True)
 class ReplaceStatement(StatementTransformation):
-    location = attr.ib(type=FileLocationRange)
-    replacement = attr.ib(type=Snippet)
+    location: FileLocationRange
+    replacement: Snippet
 
     def __repr__(self) -> str:
         s = "ReplaceStatement[{}]<{}>"
@@ -163,36 +164,38 @@ class ReplaceStatement(StatementTransformation):
         return FileLine(self.location.filename,
                         self.location.start.line)
 
-    @classmethod
-    def all_at_statement(cls,
-                         problem: Problem,
-                         snippets: SnippetDatabase,
-                         statement: kaskara.Statement
-                         ) -> Iterator[Transformation]:
-        # do not replace declaration statements
-        if problem.settings.ignore_decls and statement.kind == 'DeclStmt':
-            return
+    @register("replace-statement")
+    class Schema(StatementTransformationSchema):
+        NAME = 'replace-statement'
 
-        check_equiv = problem.settings.ignore_string_equivalent_snippets
-        for snippet in cls.viable_snippets(problem, snippets, statement):
-            logger.debug("using snippet: %s", snippet.content)
-            eq_content = \
-                not check_equiv and snippet.content == statement.content
-            eq_canonical = \
-                check_equiv and snippet.content == statement.canonical
-            if eq_content or eq_canonical:
-                logger.debug("prevented self-replacement of statement [%s]",
-                             statement.location)
-            else:
-                logger.debug("replace with snippet: %s", snippet.content)
-                yield ReplaceStatement(statement.location, snippet)
+        def all_at_statement(self,
+                             problem: Problem,
+                             snippets: SnippetDatabase,
+                             statement: kaskara.Statement
+                             ) -> Iterator[Transformation]:
+            # do not replace declaration statements
+            if problem.settings.ignore_decls and statement.kind == 'DeclStmt':
+                return
+
+            check_equiv = problem.settings.ignore_string_equivalent_snippets
+            for snippet in self.viable_snippets(problem, snippets, statement):
+                logger.debug("using snippet: %s", snippet.content)
+                eq_content = \
+                    not check_equiv and snippet.content == statement.content
+                eq_canonical = \
+                    check_equiv and snippet.content == statement.canonical
+                if eq_content or eq_canonical:
+                    logger.debug("prevented self-replacement of statement [%s]",
+                                 statement.location)
+                else:
+                    logger.debug("replace with snippet: %s", snippet.content)
+                    yield ReplaceStatement(statement.location, snippet)
 
 
-@register("prepend-statement")
-@attr.s(frozen=True, repr=False)
+@attr.s(frozen=True, repr=False, auto_attribs=True)
 class PrependStatement(StatementTransformation):
-    location = attr.ib(type=FileLocation)
-    statement = attr.ib(type=Snippet)
+    location: FileLocation
+    statement: Snippet
 
     def __repr__(self) -> str:
         s = "PrependStatement[{}]<{}>"
@@ -209,30 +212,29 @@ class PrependStatement(StatementTransformation):
                               LocationRange(self.location.location, self.location.location))
         return Replacement(r, self.statement.content)
 
-    @classmethod
-    def should_insert_at_location(cls,
-                                  problem: Problem,
-                                  location: FileLocation
-                                  ) -> bool:
-        """
-        Determines whether an insertion of this kind should be made at a given
-        location.
-        """
-        if not problem.analysis:
-            return True
-        if not problem.analysis.is_inside_function(location):
-            return False
-        return True
+    @register("prepend-statement")
+    class Schema(StatementTransformationSchema):
+        NAME = 'prepend-statement'
 
-    @classmethod
-    def all_at_statement(cls,
-                         problem: Problem,
-                         snippets: SnippetDatabase,
-                         statement: kaskara.Statement
-                         ) -> Iterator[Transformation]:
-        location = FileLocation(statement.location.filename,
-                                statement.location.start)
-        if not cls.should_insert_at_location(problem, location):
-            yield from []
-        for snippet in cls.viable_snippets(problem, snippets, statement):
-            yield PrependStatement(location, snippet)
+        def should_insert_at_location(self,
+                                      problem: Problem,
+                                      location: FileLocation
+                                      ) -> bool:
+            """Determines whether an insertion should be made at a location."""
+            if not problem.analysis:
+                return True
+            if not problem.analysis.is_inside_function(location):
+                return False
+            return True
+
+        def all_at_statement(self,
+                             problem: Problem,
+                             snippets: SnippetDatabase,
+                             statement: kaskara.Statement
+                             ) -> Iterator[Transformation]:
+            location = FileLocation(statement.location.filename,
+                                    statement.location.start)
+            if not self.should_insert_at_location(problem, location):
+                yield from []
+            for snippet in self.viable_snippets(problem, snippets, statement):
+                yield PrependStatement(location, snippet)

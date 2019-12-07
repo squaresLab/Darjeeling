@@ -12,7 +12,7 @@ import random
 import attr
 from kaskara import InsertionPoint
 
-from .base import Transformation, register
+from .base import Transformation, TransformationSchema, register
 from .classic import *
 from .line import *
 from ..exceptions import NoImplicatedLines
@@ -22,14 +22,14 @@ from ..snippet import Snippet, SnippetDatabase
 from ..core import Replacement, FileLine, FileLocationRange, FileLocation, \
                    FileLineSet, Location, LocationRange
 
-logger = logging.getLogger(__name__)  # type: logging.Logger
+logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
 def find_all(problem: Problem,
              lines: List[FileLine],
              snippets: SnippetDatabase,
-             schemas: List[Type[Transformation]]
+             schemas: List[TransformationSchema]
              ) -> Iterator[Transformation]:
     """
     Returns an iterator over the set of all transformations that can be
@@ -44,7 +44,7 @@ def find_all(problem: Problem,
 def sample_by_localization_and_type(problem: Problem,
                                     snippets: SnippetDatabase,
                                     localization: Localization,
-                                    schemas: List[Type[Transformation]],
+                                    schemas: List[TransformationSchema],
                                     *,
                                     eager: bool = False,
                                     randomize: bool = False,
@@ -55,12 +55,12 @@ def sample_by_localization_and_type(problem: Problem,
     contained within the fault localization in accordance to the probability
     distribution defined by their suspiciousness scores.
     """
-    lines = list(localization)  # type: List[FileLine]
+    lines: List[FileLine] = list(localization)
     try:
         schema_to_transformations_by_line = {
             s: s.all_at_lines(problem, snippets, lines, threads=threads)
             for s in schemas
-        }  # type: Dict[Type[Transformation], Dict[FileLine, Iterator[Transformation]]]  # noqa: pycodestyle
+        }  # type: Dict[TransformationSchema, Dict[FileLine, Iterator[Transformation]]]  # noqa: pycodestyle
         logger.debug("built schema->line->transformations map")
     except Exception:
         logger.exception("failed to build schema->line->transformations map")
@@ -70,7 +70,7 @@ def sample_by_localization_and_type(problem: Problem,
         line_to_transformations_by_schema = {
             line: {sc: schema_to_transformations_by_line[sc].get(line, iter([])) for sc in schemas}  # noqa: pycodestyle
             for line in lines
-        } # type: Dict[FileLine, Dict[Type[Transformation], Iterator[Transformation]]]  # noqa: pycodestyle
+        } # type: Dict[FileLine, Dict[TransformationSchema, Iterator[Transformation]]]  # noqa: pycodestyle
         logger.debug("built line->schema->transformations map")
     except Exception:
         logger.exception("failed to build line->schema->transformations map")
@@ -82,17 +82,15 @@ def sample_by_localization_and_type(problem: Problem,
             line: {sc: list(line_to_transformations_by_schema[line][sc])
                    for sc in schemas}
             for line in lines
-        }  # type: Dict[FileLine, Dict[Type[Transformation], List[Transformation]]]
+        }  # type: Dict[FileLine, Dict[TransformationSchema, List[Transformation]]]
         logger.info('finished eagerly computing entire transformation space')
 
         # compute stats
-        num_transformations_by_line = {
-            line: 0 for line in lines
-        }  # type: Dict[FileLine, int]
-        num_transformations_by_schema = {
-            schema: 0 for schema in schemas
-        }  # type: Dict[Type[Transformation], int]
-        num_transformations_by_file = {}  # type: Dict[str, int]
+        num_transformations_by_line: Dict[FileLine, int] = {
+            line: 0 for line in lines}
+        num_transformations_by_schema: Dict[TransformationSchema, int] = {
+            schema: 0 for schema in schemas}
+        num_transformations_by_file: Dict[str, int] = {}
 
         for line in lines:
             sc_to_tx = collect_transformations[line]
@@ -120,7 +118,7 @@ def sample_by_localization_and_type(problem: Problem,
                      "\n".join(['  * {}: {}'.format(fn, num)
                                 for (fn, num) in num_transformations_by_file.items()]))  # noqa: pycodestyle
         logger.debug("# transformations by schema:\n%s",
-                     "\n".join(['  * {}: {}'.format(sc.__name__, num)
+                     "\n".join(['  * {}: {}'.format(sc.NAME, num)
                                 for (sc, num) in num_transformations_by_schema.items()]))  # noqa: pycodestyle
         logger.debug("# transformations by line:\n%s",
                      "\n".join(['  * {}: {}'.format(str(line), num)
@@ -155,7 +153,7 @@ def sample_by_localization_and_type(problem: Problem,
             schema = random.choice(list(transformations_by_schema.keys()))
             transformations = transformations_by_schema[schema]
             logger.debug("generating transformation using %s at %s",
-                         schema.__name__, line)
+                         schema.NAME, line)
 
             # attempt to fetch the next transformation for the line and schema
             # if none are left, we remove the schema choice
@@ -164,16 +162,16 @@ def sample_by_localization_and_type(problem: Problem,
                 logger.debug("sampled transformation: %s", t)
                 yield t
             except StopIteration:
-                logger.debug("no %s left at %s", schema.__name__, line)
+                logger.debug("no %s left at %s", str(schema), line)
                 try:
                     del transformations_by_schema[schema]
                     logger.debug("removed entry for schema %s at line %s",
-                             schema.__name__, line)
+                             str(schema), line)
                 except Exception:
                     logger.exception(
                         "failed to remove entry for %s at %s.\nchoices: %s",
-                        schema.__name__, line,
-                        [s.__name__ for s in transformations_by_schema.keys()])
+                        schema.NAME, line,
+                        [s.NAME for s in transformations_by_schema.keys()])
                     raise
 
     yield from sample(localization)

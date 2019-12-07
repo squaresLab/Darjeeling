@@ -5,7 +5,9 @@ transformation schemas inherit.
 """
 __all__ = ('Transformation', 'register')
 
-from typing import Any, Dict, List, Type, Iterator, Callable
+from typing import (Any, Dict, List, Type, Iterator, Callable, TypeVar,
+                    Generic, ClassVar)
+import abc
 import logging
 
 from ..exceptions import NameInUseException, \
@@ -14,22 +16,26 @@ from ..problem import Problem
 from ..snippet import SnippetDatabase
 from ..core import Replacement, FileLine
 
-logger = logging.getLogger(__name__)  # type: logging.Logger
+logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-REGISTRY = {}  # type: Dict[str, Type[Transformation]]
+T = TypeVar('T', bound='Transformation')
+
+_REGISTRY: Dict[str, Type['TransformationSchema']] = {}
 
 
-class Transformation:
+class Transformation(abc.ABC):
     """Represents a source code transformation."""
     def to_replacement(self, problem: Problem) -> Replacement:
-        """
-        Converts a transformation into a concrete source code replacement.
-        """
-        raise NotImplementedError
+        """Converts a transformation into a source code replacement."""
+        ...
+
+
+class TransformationSchema(Generic[T], abc.ABC):
+    NAME: ClassVar[str]
 
     @staticmethod
-    def find_schema(name: str) -> 'Type[Transformation]':
+    def find(name: str) -> Type['TransformationSchema']:
         """
         Retrieves the transformation schema that is registered under a given
         name.
@@ -37,7 +43,7 @@ class Transformation:
         Raises:
             KeyError: if no schema is found under that name.
         """
-        return REGISTRY[name]
+        return _REGISTRY[name]
 
     @staticmethod
     def schemas() -> Iterator[str]:
@@ -45,10 +51,10 @@ class Transformation:
         Returns an iterator over the names of the transformation schemas
         that have been registered.
         """
-        yield from REGISTRY
+        yield from _REGISTRY
 
-    @classmethod
-    def all_at_lines(cls,
+    @abc.abstractmethod
+    def all_at_lines(self,
                      problem: Problem,
                      snippets: SnippetDatabase,
                      lines: List[FileLine],
@@ -63,7 +69,8 @@ class Transformation:
 
 
 def register(name: str
-             ) -> Callable[[Type[Transformation]], Type[Transformation]]:
+             ) -> Callable[[Type[TransformationSchema]],
+                            Type[TransformationSchema]]:
     """
     Registers a given transformation schema under a provided name.
 
@@ -71,15 +78,15 @@ def register(name: str
         NameInUseException: if the given name is being used by another
             transformation schema.
     """
-    def decorator(schema: Type[Transformation]) -> Type[Transformation]:
+    def decorator(schema: Type[TransformationSchema]
+                 ) -> Type[TransformationSchema]:
         logger.debug("registering transformation schema [%s] under name [%s]",
                      schema, name)
-        global REGISTRY
-        if name in REGISTRY:
+        global _REGISTRY
+        if name in _REGISTRY:
             raise NameInUseException
 
-        schema.NAME = name  # type: ignore
-        REGISTRY[name] = schema  # type: ignore
+        _REGISTRY[name] = schema
         logger.debug("registered transformation schema [%s] under name [%s]",
                      schema, name)
         return schema
