@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-__all__ = ('Snippet', 'TextSnippet', 'StatementSnippet', 'SnippetDatabase',
-           'StatementSnippetDatabase')
+__all__ = ('Snippet', 'SnippetDatabase',
+           'LineSnippet',
+           'StatementSnippet', 'StatementSnippetDatabase')
 
 from typing import (List, Iterator, Set, Optional, Dict, Generic,
                     Any, FrozenSet, MutableSet, TypeVar, Collection)
@@ -42,6 +43,11 @@ class Snippet(abc.ABC):
     
     def __hash__(self) -> int:
         return hash(self.content)
+
+
+@attr.s(slots=True, frozen=True, eq=False, hash=False, str=False, auto_attribs=True)
+class LineSnippet(Snippet):
+    content: str
 
 
 @attr.s(slots=True, frozen=True, eq=False, hash=False, str=False, auto_attribs=True)
@@ -136,6 +142,7 @@ class SnippetDatabase(Generic[T], Collection[T], abc.ABC):
         if location is not None:
             self.__index_snippet_by_file(snippet, location.filename)
             self.__record_snippet_location(snippet, location)
+
 
 class StatementSnippetDatabase(SnippetDatabase[StatementSnippet]):
     @staticmethod
