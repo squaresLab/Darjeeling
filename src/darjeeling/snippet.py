@@ -12,7 +12,7 @@ import attr
 from kaskara import Statement as KaskaraStatement
 from kaskara.analysis import Analysis as KaskaraAnalysis
 
-from .core import FileLocationRange, FileLine
+from .core import FileLocationRange, FileLine, FileLineSet
 from .config import Config
 from .problem import Problem
 
@@ -29,11 +29,6 @@ class Snippet(abc.ABC):
     def content(self) -> str:
         ...
 
-    @property
-    @abc.abstractmethod
-    def locations(self) -> MutableSet[FileLocationRange]:
-        ...
-
     def __lt__(self, other: Any) -> bool:
         if not isinstance(other, Snippet):
             return False
@@ -48,12 +43,8 @@ class Snippet(abc.ABC):
     def __hash__(self) -> int:
         return hash(self.content)
 
-    @property
-    def occurrences(self) -> int:
-        return len(self.locations)
 
-
-@attr.s(slots=True, eq=False, hash=False, str=False, auto_attribs=True)
+@attr.s(slots=True, frozen=True, eq=False, hash=False, str=False, auto_attribs=True)
 class StatementSnippet(Snippet):
     """A snippet of code that may be inserted into a program."""
     content: str
@@ -62,7 +53,6 @@ class StatementSnippet(Snippet):
     writes: FrozenSet[str]
     declares: FrozenSet[str]
     requires_syntax: FrozenSet[str]
-    locations: MutableSet[FileLocationRange] = attr.ib(factory=set, repr=False)
 
     @property
     def requires_break(self) -> bool:
@@ -77,21 +67,14 @@ class StatementSnippet(Snippet):
         """The names of the variables used by this snippet."""
         return self.reads | self.writes
 
-    @property
-    def lines(self) -> Iterator[FileLine]:
-        """
-        Returns an iterator over the file lines at which this snippet has
-        been observed.
-        """
-        for location in self.locations:
-            yield FileLine(location.filename, location.start.line)
-
 
 class SnippetDatabase(Generic[T], Collection[T], abc.ABC):
     def __init__(self) -> None:
         """Constructs an empty snippet database."""
         self.__content_to_snippet: OrderedDict[str, T] = OrderedDict()
         self.__filename_to_snippets: Dict[str, MutableSet[T]] = {}
+        self.__content_to_lines: Dict[str, MutableSet[FileLine]] = \
+            OrderedDict()
 
     def __iter__(self) -> Iterator[T]:
         """Returns an iterator over the snippets in this database."""
@@ -109,25 +92,50 @@ class SnippetDatabase(Generic[T], Collection[T], abc.ABC):
         """Returns an iterator over all snippets in a given file."""
         yield from self.__filename_to_snippets.get(filename, [])
 
-    def __index_snippet(self, snippet: T) -> None:
-        index = self.__filename_to_snippets
-        for location in snippet.locations:
-            filename = location.filename
-            if filename not in self.__filename_to_snippets:
-                self.__filename_to_snippets[filename] = set()
-            self.__filename_to_snippets[filename].add(snippet)
+    def lines_for_snippet(self, snippet: Snippet) -> Iterator[FileLine]:
+        """Returns an iterator over all lines at which a snippet appears."""
+        yield from self.__content_to_lines.get(snippet.content, [])
 
-    def add(self, snippet: T) -> None:
-        """Adds a snippet to this database."""
+    def __index_snippet_by_file(self,
+                                snippet: T,
+                                filename: str
+                                ) -> None:
+        if filename not in self.__filename_to_snippets:
+            self.__filename_to_snippets[filename] = set()
+        self.__filename_to_snippets[filename].add(snippet)
+
+    def __record_snippet_location(self,
+                                  snippet: T,
+                                  location: FileLocationRange
+                                  ) -> None:
         content = snippet.content
-        if content in self.__content_to_snippet:
-            canonical_snippet = self.__content_to_snippet[content]
-            for location in snippet.locations:
-                canonical_snippet.locations.add(location)
-        else:
-            self.__content_to_snippet[content] = snippet
-        self.__index_snippet(snippet)
+        line = FileLine(location.filename, location.start.line)
+        if content not in self.__content_to_lines:
+            self.__content_to_lines[content] = set()
+        self.__content_to_lines[content].add(line)
 
+    def add(self,
+            snippet: T,
+            location: Optional[FileLocationRange] = None
+            ) -> None:
+        """Adds a snippet to this database.
+        
+        Parameters
+        ----------
+        snippet: T
+            The snippet to be added to the database.
+        location: FileLocationRange, optional
+            The location in the code at which the snippet was found.
+        """
+        content = snippet.content
+        if not content in self.__content_to_snippet:
+            self.__content_to_snippet[content] = snippet
+        else:
+            snippet = self.__content_to_snippet[content]
+
+        if location is not None:
+            self.__index_snippet_by_file(snippet, location.filename)
+            self.__record_snippet_location(snippet, location)
 
 class StatementSnippetDatabase(SnippetDatabase[StatementSnippet]):
     @staticmethod
@@ -152,11 +160,7 @@ class StatementSnippetDatabase(SnippetDatabase[StatementSnippet]):
                 writes=frozenset(stmt.writes if stmt.writes else []),
                 declares=frozenset(stmt.declares if stmt.declares else []),
                 requires_syntax=requires_syntax)
-
-            if stmt.location is not None:
-                snippet.locations.add(stmt.location)
-
-            db.add(snippet)
+            db.add(snippet, stmt.location)
 
         logger.debug("constructed snippet database from snippets")
         logger.debug("snippets:\n%s",

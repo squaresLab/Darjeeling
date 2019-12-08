@@ -88,10 +88,11 @@ class StatementTransformationSchema(TransformationSchema[StatementTransformation
         filename = statement.location.filename
         location = FileLocation(filename, statement.location.start)
         viable = snippets.in_file(filename)
+        get_lines = snippets.lines_for_snippet
 
         if problem.settings.only_insert_executed_code:
             executed = problem.coverage.locations
-            viable = filter(lambda s: any(l in executed for l in s.lines),
+            viable = filter(lambda s: any(l in executed for l in get_lines(s)),
                             viable)
 
         # do not insert declaration statements
