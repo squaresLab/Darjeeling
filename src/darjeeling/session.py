@@ -24,7 +24,8 @@ from .searcher import Searcher
 from .program import Program
 from .problem import Problem
 from .config import Config, OptimizationsConfig
-from .snippet import SnippetDatabase, StatementSnippetDatabase
+from .snippet import (SnippetDatabase, StatementSnippetDatabase,
+                      LineSnippetDatabase)
 from .exceptions import BadConfigurationException, LanguageNotSupported
 from .localization import (Localization, ample, genprog, jaccard, ochiai,
                            tarantula)
@@ -129,8 +130,11 @@ class Session(DarjeelingEventProducer):
                                 analysis=analysis)
 
         logger.info("constructing database of donor snippets...")
-        snippets: SnippetDatabase = \
-            StatementSnippetDatabase.from_kaskara(analysis, cfg)
+        snippets: SnippetDatabase
+        if analysis is not None:
+            snippets = StatementSnippetDatabase.from_kaskara(analysis, cfg)
+        else:
+            snippets = LineSnippetDatabase.for_problem(problem)
         logger.info("constructed database of donor snippets: %d snippets",
                     len(snippets))
 

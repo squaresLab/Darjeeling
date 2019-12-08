@@ -3,11 +3,11 @@
 This module implements GenProg-style operators for individual source code
 lines.
 """
-__all__ = [
+__all__ = (
     'InsertLine',
     'DeleteLine',
     'ReplaceLine'
-]
+)
 
 from typing import List, Iterator, Iterable, Dict, Any, FrozenSet, Mapping
 import abc
@@ -17,9 +17,10 @@ import attr
 
 from .base import Transformation, TransformationSchema, register
 from ..problem import Problem
-from ..snippet import Snippet, SnippetDatabase
-from ..core import Replacement, FileLine, FileLocationRange, FileLocation, \
-                   FileLineSet, Location, LocationRange
+from ..snippet import Snippet, SnippetDatabase, LineSnippetDatabase
+from ..core import (Replacement, FileLine, FileLocationRange, FileLocation,
+                    FileLineSet, Location, LocationRange)
+from ..exceptions import BadConfigurationException
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -32,7 +33,7 @@ class LineTransformation(Transformation):
 @attr.s(frozen=True, auto_attribs=True)
 class LineTransformationSchema(TransformationSchema[LineTransformation]):
     _problem: Problem = attr.ib(hash=False)
-    _snippets: SnippetDatabase = attr.ib(hash=False)
+    _snippets: LineSnippetDatabase = attr.ib(hash=False)
 
     @classmethod
     def build(cls,
@@ -40,6 +41,9 @@ class LineTransformationSchema(TransformationSchema[LineTransformation]):
               snippets: SnippetDatabase,
               threads: int
               ) -> 'TransformationSchema':
+        if not isinstance(snippets, LineSnippetDatabase):
+            m = 'line transformations require a line snippet pool'
+            raise BadConfigurationException(m)
         return cls(problem=problem, snippets=snippets)
 
     def all_at_lines(self,

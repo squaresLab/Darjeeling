@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 __all__ = ('Snippet', 'SnippetDatabase',
-           'LineSnippet',
+           'LineSnippet', 'LineSnippetDatabase',
            'StatementSnippet', 'StatementSnippetDatabase')
 
 from typing import (List, Iterator, Set, Optional, Dict, Generic,
@@ -172,4 +172,13 @@ class StatementSnippetDatabase(SnippetDatabase[StatementSnippet]):
         logger.debug("constructed snippet database from snippets")
         logger.debug("snippets:\n%s",
                      '\n'.join([f' * {s.content}' for s in db]))
+        return db
+
+
+class LineSnippetDatabase(SnippetDatabase[LineSnippet]):
+    @staticmethod
+    def for_problem(problem: Problem) -> 'LineSnippetDatabase':
+        logger.debug('constructing line snippet database')
+        db = LineSnippetDatabase()
+        logger.debug('constructed database of %d line snippets', len(db))
         return db
