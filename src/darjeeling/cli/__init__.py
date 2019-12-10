@@ -14,6 +14,7 @@ import shutil
 import os
 
 import bugzoo
+import bugzoo.server
 import cement
 import pyroglyph
 import attr
