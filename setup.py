@@ -18,15 +18,6 @@ setup(
     url='https://github.com/squaresLab/Darjeeling',
     license='apache',
     python_requires='>=3.6',
-    install_requires=[
-        'bugzoo~=2.1.31',
-        'kaskara>=0.0.5',
-        'attrs~=19.2.0',
-        'pyroglyph~=0.0.5',
-        'cement~=3.0.4',
-        'requests',
-        'flask'
-    ],
     setup_requires=[
         'pytest-runner'
     ],
@@ -34,9 +25,6 @@ setup(
         'pytest'
     ],
     include_package_data=True,
-    packages=find_packages('src'),
-    package_dir={'': 'src'},
-    py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
     classifiers=[
         'Natural Language :: English',
         'Programming Language :: Python',
