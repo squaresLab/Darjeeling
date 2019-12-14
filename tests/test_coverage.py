@@ -23,3 +23,8 @@ def coverage() -> TestCoverage:
 
 def test_length(coverage):
     assert len(coverage) == 3
+
+
+def test_contains(coverage):
+    assert ln(1) in coverage
+    assert ln(999) not in coverage
