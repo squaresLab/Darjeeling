@@ -117,19 +117,19 @@ class Evaluator(DarjeelingEventProducer):
     def _select_tests(self) -> Tuple[List[Test], List[Test]]:
         """Computes a test sequence for a candidate evaluation."""
         # sample passing tests
-        sample = set()  # type: Set[Test]
+        sample: Set[Test] = set()
         if self.__sample_size:
             sample = \
                 set(random.sample(self.__tests_passing, self.__sample_size))
         else:
             sample = set(self.__tests_passing)
 
-        selected = sample | self.__tests_failing  # type: Set[Test]
-        remainder = set(self.__tests_passing - sample)  # type: Set[Test]
+        selected: Set[Test] = sample | self.__tests_failing
+        remainder: Set[Test] = set(self.__tests_passing - sample)
 
         # order tests
-        ordered_selected = self._order_tests(selected)  # type: List[Test]
-        ordered_remainder = self._order_tests(remainder)  # type: List[Test]
+        ordered_selected: List[Test] = self._order_tests(selected)
+        ordered_remainder: List[Test] = self._order_tests(remainder)
         return ordered_selected, ordered_remainder
 
     def _filter_redundant_tests(self,
@@ -143,8 +143,8 @@ class Evaluator(DarjeelingEventProducer):
         if not lines_changed:
             return (tests, set())
 
-        keep = []  # type: List[Test]
-        drop = set()  # type: Set[Test]
+        keep: List[Test] = []
+        drop: Set[Test] = set()
         for test in tests:
             test_line_coverage = line_coverage_by_test[test.name]
             if not any(line in test_line_coverage for line in lines_changed):

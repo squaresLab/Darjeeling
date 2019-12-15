@@ -11,7 +11,8 @@ from bugzoo import (Client as BugZooClient,
                     Container as BugZooContainer)
 
 from .config import CoverageConfig
-from .core import FileLine, TestCoverageMap, Test, TestCoverage, TestOutcome
+from .core import (FileLineSet, FileLine, TestCoverageMap, Test, TestCoverage,
+                   TestOutcome)
 from .test import TestSuite
 from .program import Program
 
@@ -78,5 +79,6 @@ def coverage_for_test(bz: BugZooClient,
     logger.debug("test outcome [%s]: %s", test.name, outcome)
     logger.debug("extracting coverage for test [%s]", test.name)
     lines: Set[FileLine] = bz.containers.extract_coverage(container)
+    lines = FileLineSet.from_iter(lines)
     logger.debug("extracted coverage for test [%s]:\n%s", test.name, lines)
     return TestCoverage(test=test.name, outcome=outcome, lines=lines)
