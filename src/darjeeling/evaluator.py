@@ -11,9 +11,8 @@ import threading
 import concurrent.futures
 import random
 
-from bugzoo import Container as BugZooContainer
-
 from .candidate import Candidate
+from .container import ProgramContainer
 from .outcome import CandidateOutcome, \
                      OutcomeManager, \
                      TestOutcomeSet, \
@@ -150,7 +149,7 @@ class Evaluator(DarjeelingEventProducer):
         return (keep, drop)
 
     def _run_test(self,
-                  container: BugZooContainer,
+                  container: ProgramContainer,
                   candidate: Candidate,
                   test: Test
                   ) -> TestOutcome:
@@ -158,7 +157,7 @@ class Evaluator(DarjeelingEventProducer):
         logger.debug("executing test: %s [%s]", test.name, candidate)
         self.dispatch(TestExecutionStarted(candidate, test))
         self.__counter_tests += 1
-        outcome = self.__test_suite.execute(container, test)
+        outcome = self.__program.execute(container, test)
         if not outcome.successful:
             logger.debug("* test failed: %s (%s)", test.name, candidate)
         else:
@@ -167,7 +166,6 @@ class Evaluator(DarjeelingEventProducer):
         return outcome
 
     def _evaluate(self, candidate: Candidate) -> CandidateOutcome:
-        bz = self.__problem.environment.bugzoo
         patch = candidate.to_diff(self.__problem)
         logger.info("evaluating candidate: %s\n%s\n", candidate, patch)
 

@@ -4,9 +4,11 @@ __all__ = ('ProgramSource', 'ProgramSourceFile', 'ProgramSourceLoader')
 from typing import (List, Union, Dict, Optional, Iterator, Iterable, Mapping,
                     Collection, Tuple, Sequence)
 from difflib import unified_diff
+import os
 import logging
 
 import attr
+import dockerblade
 from bugzoo.client import Client as BugZooClient
 from bugzoo.core.patch import Patch
 from bugzoo.core.bug import Bug as Snapshot
@@ -14,6 +16,9 @@ from bugzoo.core.bug import Bug as Snapshot
 from . import exceptions 
 from .core import (Replacement, FileLine, FileLocationRange, Location,
                    LocationRange)
+from .environment import Environment
+from .program import Program
+from .container import ProgramContainer
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -174,32 +179,47 @@ class ProgramSource(Mapping[str, ProgramSourceFile]):
 @attr.s(frozen=True, auto_attribs=True)
 class ProgramSourceLoader:
     """Used to load program source files."""
-    _bugzoo: BugZooClient
+    _environment: Environment
 
-    def for_bugzoo_snapshot(self,
-                            snapshot: Snapshot,
-                            files: Iterable[str]
-                            ) -> 'ProgramSource':
-        bz = self._bugzoo
+    def for_program(self,
+                    program: Program,
+                    files: Iterable[str]
+                    ) -> 'ProgramSource':
+        """Loads the sources for a program."""
+        with ProgramContainer.for_bugzoo_snapshot(self._environment,
+                                                  program.snapshot,
+                                                  ) as container:
+            return self.for_container(program, container, files)
+
+    def for_container(self,
+                      program: Program,
+                      container: ProgramContainer,
+                      files: Iterable[str]
+                      ) -> 'ProgramSource':
+        """Loads the sources for a program given its container."""
+        filesystem = container.filesystem
         file_to_content: Dict[str, str] = {}
-        logger.debug("provisioning container to fetch file contents")
-        container = bz.containers.provision(snapshot)
-        try:
-            for filename in files:
-                content = bz.files.read(container, filename)
-                file_to_content[filename] = content
-        except KeyError:
-            logger.exception("failed to read source file, "
-                             f"'{snapshot.name}/{filename}': file not found")
-            raise exceptions.FileNotFound(filename)
-        finally:
-            del bz.containers[container.uid]
+
+        for relative_filename in files:
+            absolute_filename = os.path.join(program.source_directory,
+                                             relative_filename)
+            try:
+                content = filesystem.read(absolute_filename)
+            except dockerblade.exceptions.ContainerFileNotFound as err:
+                filename = err.path
+                logger.exception("failed to read source file "
+                                 f"[{filename}]: file not found")
+                raise exceptions.FileNotFound(filename)
+            file_to_content[relative_filename] = content
+
         logger.debug("fetched file contents")
         return self.from_file_contents(file_to_content)
 
     def from_file_contents(self,
                            file_to_contents: Mapping[str, str]
                            ) -> 'ProgramSource':
+        """Constructs a set of program sources from a mapping of filenames
+        to file contents."""
         files = [ProgramSourceFile(fn, contents)
                  for fn, contents in file_to_contents.items()]
         return ProgramSource(files)

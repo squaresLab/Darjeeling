@@ -9,6 +9,7 @@ from bugzoo import Bug, Client as BugZooClient, Container as BugZooContainer
 
 from .core import TestOutcome, Test
 from .config import TestSuiteConfig
+from .container import ProgramContainer
 from .environment import Environment
 from .util import dynamically_registered
 
@@ -52,7 +53,7 @@ class TestSuite(Generic[T, C]):
         return self.__name_to_test[name]
 
     @abc.abstractmethod
-    def execute(self, container: BugZooContainer, test: T) -> TestOutcome:
+    def execute(self, container: ProgramContainer, test: T) -> TestOutcome:
         raise NotImplementedError
 
 
@@ -90,9 +91,9 @@ class BugZooTestSuite(TestSuite):
         return BugZooTestSuite(environment, tests)
 
     def execute(self,
-                container: bugzoo.Container,
+                container: ProgramContainer,
                 test: BugZooTest
                 ) -> TestOutcome:
         bz = self._environment.bugzoo
-        bz_outcome = bz.containers.test(container, test._test)
+        bz_outcome = bz.containers.test(container._bugzoo, test._test)
         return TestOutcome(bz_outcome.passed, bz_outcome.duration)

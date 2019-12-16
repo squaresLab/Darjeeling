@@ -5,16 +5,18 @@ from typing import Iterator
 import contextlib
 import logging
 
-from bugzoo import Bug as Snapshot
-from bugzoo.core.container import Container
-from bugzoo.core.patch import Patch
 import attr
+from bugzoo import Bug as Snapshot
+from bugzoo.core.patch import Patch
 
 from .core import Test, TestOutcome
+from .container import ProgramContainer
 from .environment import Environment
 from .test import TestSuite, BugZooTestSuite
 from .config import Config
-from .exceptions import BadConfigurationException, BuildFailure
+from .exceptions import (BadConfigurationException,
+                         BuildFailure,
+                         FailedToApplyPatch)
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -32,11 +34,15 @@ class Program:
         The BugZoo snapshot for this program.
     tests: TestSuite
         The test suite for this program.
+    source_directory: str
+        The absolute path to the source directory for this program inside
+        its associated Docker image.
     """
     _environment: Environment
     image: str
     snapshot: Snapshot
     tests: TestSuite
+    source_directory: str
 
     @staticmethod
     def from_config(environment: Environment, cfg: Config) -> 'Program':
@@ -57,18 +63,20 @@ class Program:
         snapshot = bz.bugs[cfg.snapshot]
         image = snapshot.image
         tests = TestSuite.from_config(cfg.tests, environment, snapshot)
+        source_directory = snapshot.source_dir
 
         return Program(environment=environment,
                        image=image,
                        snapshot=snapshot,
+                       source_directory=source_directory,
                        tests=tests)
 
-    def execute(self, container: Container, test: Test) -> TestOutcome:
+    def execute(self, container: ProgramContainer, test: Test) -> TestOutcome:
         """Executes a given test in a container."""
         return self.tests.execute(container, test)
 
     @contextlib.contextmanager
-    def build(self, patch: Patch) -> Iterator[Container]:
+    def build(self, patch: Patch) -> Iterator[ProgramContainer]:
         """Builds a container for a given patch.
 
         Yields
@@ -82,17 +90,18 @@ class Program:
         BuildFailure
             If the program failed to build.
         """
-        mgr_ctr = self._environment.bugzoo.containers
-        container = None
-        try:
-            container = mgr_ctr.provision(self.snapshot)
-            if not mgr_ctr.patch(container, patch):
+        with ProgramContainer.for_bugzoo_snapshot(self._environment,
+                                                  self.snapshot
+                                                  ) as container:
+            try:
+                container.patch(patch)
+            except FailedToApplyPatch:
                 logger.debug("failed to apply patch: %s", patch)
                 raise BuildFailure
-            outcome = mgr_ctr.build(container)
+
+            mgr_ctr = self._environment.bugzoo.containers
+            outcome = mgr_ctr.build(container._bugzoo)
             if not outcome.successful:
                 raise BuildFailure
+
             yield container
-        finally:
-            if container is not None:
-                del mgr_ctr[container.uid]

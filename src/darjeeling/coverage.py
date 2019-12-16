@@ -9,6 +9,7 @@ import functools
 from bugzoo import Bug as Snapshot, Container as BugZooContainer
 
 from .config import CoverageConfig
+from .container import ProgramContainer
 from .core import (FileLineSet, FileLine, TestCoverageMap, Test, TestCoverage,
                    TestOutcome)
 from .environment import Environment
@@ -49,29 +50,27 @@ def coverage_for_snapshot(environment: Environment,
                           snapshot: Snapshot,
                           tests: TestSuite
                           ) -> TestCoverageMap:
-    bz = environment.bugzoo
-    logger.debug("computing coverage for snapshot: %s", snapshot.name)
-    container: BugZooContainer = bz.containers.provision(snapshot)
-    try:
+    with ProgramContainer.for_bugzoo_snapshot(environment,
+                                              snapshot
+                                              ) as container:
+        logger.debug("computing coverage for snapshot: %s", snapshot.name)
         return coverage_for_container(environment, container, tests)
-    finally:
-        del bz.containers[container.uid]
 
 
 def coverage_for_container(environment: Environment,
-                           container: BugZooContainer,
+                           container: ProgramContainer,
                            tests: TestSuite
                            ) -> TestCoverageMap:
     bz = environment.bugzoo
     logger.debug("instrumenting container for coverage...")
-    bz.containers.instrument(container)
+    bz.containers.instrument(container._bugzoo)
     logger.debug("instrumented container for coverage")
     coverage = functools.partial(coverage_for_test, environment, container, tests)
     return TestCoverageMap({test.name: coverage(test) for test in tests})
 
 
 def coverage_for_test(environment: Environment,
-                      container: BugZooContainer,
+                      container: ProgramContainer,
                       tests: TestSuite,
                       test: Test
                       ) -> TestCoverage:
@@ -80,7 +79,7 @@ def coverage_for_test(environment: Environment,
     outcome: TestOutcome = tests.execute(container, test)
     logger.debug("test outcome [%s]: %s", test.name, outcome)
     logger.debug("extracting coverage for test [%s]", test.name)
-    lines: Set[FileLine] = bz.containers.extract_coverage(container)
+    lines: Set[FileLine] = bz.containers.extract_coverage(container._bugzoo)
     lines = FileLineSet.from_iter(lines)
     logger.debug("extracted coverage for test [%s]:\n%s", test.name, lines)
     return TestCoverage(test=test.name, outcome=outcome, lines=lines)

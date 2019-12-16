@@ -23,6 +23,10 @@ class FileNotFound(DarjeelingError):
     filename: str
 
 
+class FailedToApplyPatch(DarjeelingError):
+    """Failed to apply a patch to the program."""
+
+
 class TimeLimitReached(DarjeelingError):
     """The search has halted after reaching its time limit."""
 

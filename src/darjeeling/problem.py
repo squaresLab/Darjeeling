@@ -81,7 +81,6 @@ class Problem:
             If no lines are implicated by the coverage information and the
             provided suspiciousness metric.
         """
-        bz = environment.bugzoo
         logger.debug('using coverage to determine passing and failing tests')
         failing_tests: Sequence[Test] = \
             tuple(program.tests[name] for name in sorted(coverage)
@@ -128,9 +127,8 @@ class Problem:
 
         logger.debug("storing contents of source code files")
         source_files = set(l.filename for l in coverage.failing.locations)
-        source_loader = ProgramSourceLoader(bz)
-        sources = source_loader.for_bugzoo_snapshot(program.snapshot,
-                                                    files=source_files)
+        source_loader = ProgramSourceLoader(environment)
+        sources = source_loader.for_program(program, files=source_files)
         logger.debug("stored contents of source code files")
 
         problem = Problem(environment=environment,
