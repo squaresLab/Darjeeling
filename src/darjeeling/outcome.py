@@ -19,12 +19,12 @@ from .core import TestOutcome, TestOutcomeSet, BuildOutcome
 from .candidate import Candidate
 
 
-@attr.s(frozen=True)
-class CandidateOutcome(object):
+@attr.s(frozen=True, slots=True, auto_attribs=True)
+class CandidateOutcome:
     """Records the outcome of a candidate patch evaluation."""
-    build = attr.ib(type=BuildOutcome)
-    tests = attr.ib(type=TestOutcomeSet)
-    is_repair = attr.ib(type=bool)
+    build: BuildOutcome
+    tests: TestOutcomeSet
+    is_repair: bool
 
     def with_test_outcome(self,
                           test: str,
@@ -44,10 +44,10 @@ class CandidateOutcome(object):
                                 self.is_repair and other_is_repair)
 
 
-class OutcomeManager(object):
+class OutcomeManager:
     # FIXME hash candidate outcomes
     def __init__(self) -> None:
-        self.__outcomes = {} # type: Dict[Candidate, CandidateOutcome]
+        self.__outcomes: Dict[Candidate, CandidateOutcome] = {}
 
     def __getitem__(self, candidate: Candidate) -> CandidateOutcome:
         return self.__outcomes[candidate]

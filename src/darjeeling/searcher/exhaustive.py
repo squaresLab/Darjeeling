@@ -4,11 +4,10 @@ __all__ = ('ExhaustiveSearcher',)
 from typing import Iterable, Optional, Iterator, Dict, Any, List
 import datetime
 
-from bugzoo import Client as BugZooClient
-
 from .base import Searcher
 from ..config import SearcherConfig
 from ..candidate import Candidate, all_single_edit_patches
+from ..environment import Environment
 from ..problem import Problem
 from ..transformation import Transformation
 from ..exceptions import SearchExhausted
@@ -45,15 +44,13 @@ class ExhaustiveSearcher(Searcher):
                     candidate_limit: Optional[int] = None,
                     time_limit: Optional[datetime.timedelta] = None
                     ) -> 'ExhaustiveSearcher':
-        return ExhaustiveSearcher(problem.bugzoo,
-                                  problem,
+        return ExhaustiveSearcher(problem,
                                   transformations,
                                   threads=threads,
                                   candidate_limit=candidate_limit,
                                   time_limit=time_limit)
 
     def __init__(self,
-                 bugzoo: BugZooClient,
                  problem: Problem,
                  transformations: List[Transformation],
                  *,
@@ -63,8 +60,7 @@ class ExhaustiveSearcher(Searcher):
                  ) -> None:
         # FIXME for now!
         self.__candidates = all_single_edit_patches(transformations)
-        super().__init__(bugzoo=bugzoo,
-                         problem=problem,
+        super().__init__(problem=problem,
                          threads=threads,
                          time_limit=time_limit,
                          candidate_limit=candidate_limit)

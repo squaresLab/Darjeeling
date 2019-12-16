@@ -11,9 +11,7 @@ import threading
 import concurrent.futures
 import random
 
-import bugzoo
-from bugzoo import Client as BugZooClient
-from bugzoo.core import FileLine
+from bugzoo import Container as BugZooContainer
 
 from .candidate import Candidate
 from .outcome import CandidateOutcome, \
@@ -35,13 +33,12 @@ from .util import Stopwatch
 
 Evaluation = Tuple[Candidate, CandidateOutcome]
 
-logger = logging.getLogger(__name__)  # type: logging.Logger
+logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
 class Evaluator(DarjeelingEventProducer):
     def __init__(self,
-                 client_bugzoo: BugZooClient,
                  problem: Problem,
                  *,
                  num_workers: int = 1,
@@ -50,7 +47,6 @@ class Evaluator(DarjeelingEventProducer):
                  outcomes: Optional[OutcomeManager] = None
                  ) -> None:
         super().__init__()
-        self.__bugzoo = client_bugzoo
         self.__problem = problem
         self.__program = problem.program
         self.__test_suite = problem.test_suite
@@ -154,7 +150,7 @@ class Evaluator(DarjeelingEventProducer):
         return (keep, drop)
 
     def _run_test(self,
-                  container: bugzoo.Container,
+                  container: BugZooContainer,
                   candidate: Candidate,
                   test: Test
                   ) -> TestOutcome:
@@ -171,7 +167,7 @@ class Evaluator(DarjeelingEventProducer):
         return outcome
 
     def _evaluate(self, candidate: Candidate) -> CandidateOutcome:
-        bz = self.__bugzoo
+        bz = self.__problem.environment.bugzoo
         patch = candidate.to_diff(self.__problem)
         logger.info("evaluating candidate: %s\n%s\n", candidate, patch)
 

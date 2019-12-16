@@ -9,6 +9,7 @@ from bugzoo import Bug, Client as BugZooClient, Container as BugZooContainer
 
 from .core import TestOutcome, Test
 from .config import TestSuiteConfig
+from .environment import Environment
 from .util import dynamically_registered
 
 T = TypeVar('T', bound=Test)
@@ -19,10 +20,11 @@ C = TypeVar('C', bound=TestSuiteConfig)
                         lookup='_for_config_type')
 class TestSuite(Generic[T, C]):
     CONFIG: ClassVar[Type[C]]
+    _environment: Environment
 
-    def __init__(self, bz: BugZooClient, tests: Sequence[T]) -> None:
+    def __init__(self, environment: Environment, tests: Sequence[T]) -> None:
         self.__name_to_test = {t.name: t for t in tests}
-        self._bugzoo = bz
+        self._environment = environment
 
     @staticmethod
     def _for_config_type(type_config: Type[TestSuiteConfig]
@@ -32,9 +34,13 @@ class TestSuite(Generic[T, C]):
 
     @classmethod
     @abc.abstractmethod
-    def from_config(cls, cfg: C, bz: BugZooClient, bug: Bug) -> 'TestSuite':
+    def from_config(cls,
+                    cfg: C,
+                    environment: Environment,
+                    bug: Bug
+                    ) -> 'TestSuite':
         type_ = TestSuite._for_config_type(cfg.__class__)
-        return type_.from_config(cfg, bz, bug)
+        return type_.from_config(cfg, environment, bug)
 
     def __len__(self) -> int:
         return len(self.__name_to_test)
@@ -77,16 +83,16 @@ class BugZooTestSuite(TestSuite):
     @classmethod
     def from_config(cls,
                     cfg: BugZooTestSuiteConfig,
-                    bz: BugZooClient,
+                    environment: Environment,
                     bug: Bug
                     ) -> 'TestSuite':
         tests = tuple(BugZooTest(t) for t in bug.tests)
-        return BugZooTestSuite(bz, tests)
+        return BugZooTestSuite(environment, tests)
 
     def execute(self,
                 container: bugzoo.Container,
                 test: BugZooTest
                 ) -> TestOutcome:
-        bz = self._bugzoo
+        bz = self._environment.bugzoo
         bz_outcome = bz.containers.test(container, test._test)
         return TestOutcome(bz_outcome.passed, bz_outcome.duration)

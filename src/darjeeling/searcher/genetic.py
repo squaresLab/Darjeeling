@@ -8,17 +8,16 @@ import random
 import datetime
 
 import attr
-import bugzoo
-from bugzoo.client import Client as BugZooClient
 
 from .base import Searcher
 from ..config import SearcherConfig
 from ..candidate import Candidate
+from ..environment import Environment
 from ..transformation import Transformation
 from ..problem import Problem
 from ..outcome import CandidateOutcome
 
-logger = logging.getLogger(__name__)  # type: logging.Logger
+logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 Population = List[Candidate]
@@ -68,8 +67,7 @@ class GeneticSearcher(Searcher):
                     candidate_limit: Optional[int] = None,
                     time_limit: Optional[datetime.timedelta] = None
                     ) -> 'GeneticSearcher':
-        return GeneticSearcher(problem.bugzoo,
-                               problem,
+        return GeneticSearcher(problem,
                                transformations,
                                threads=threads,
                                num_generations=cfg.num_generations,
@@ -82,7 +80,6 @@ class GeneticSearcher(Searcher):
                                time_limit=time_limit)
 
     def __init__(self,
-                 bugzoo: bugzoo.BugZoo,
                  problem: Problem,
                  transformations: List[Transformation],
                  *,
@@ -116,8 +113,7 @@ class GeneticSearcher(Searcher):
                     self.__rate_mutation,
                     self.__rate_crossover)
 
-        super().__init__(bugzoo,
-                         problem,
+        super().__init__(problem,
                          threads=threads,
                          time_limit=time_limit,
                          test_sample_size=test_sample_size,

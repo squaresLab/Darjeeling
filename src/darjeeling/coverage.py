@@ -6,13 +6,12 @@ from typing import Set
 import logging
 import functools
 
-from bugzoo import (Client as BugZooClient,
-                    Bug as Snapshot,
-                    Container as BugZooContainer)
+from bugzoo import Bug as Snapshot, Container as BugZooContainer
 
 from .config import CoverageConfig
 from .core import (FileLineSet, FileLine, TestCoverageMap, Test, TestCoverage,
                    TestOutcome)
+from .environment import Environment
 from .test import TestSuite
 from .program import Program
 
@@ -20,7 +19,7 @@ logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-def coverage_for_config(bz: BugZooClient,
+def coverage_for_config(environment: Environment,
                         program: Program,
                         cfg: CoverageConfig
                         ) -> TestCoverageMap:
@@ -29,7 +28,7 @@ def coverage_for_config(bz: BugZooClient,
         logger.info("loading coverage from file: %s", fn_coverage)
         coverage = TestCoverageMap.from_file(fn_coverage)
     else:
-        coverage = coverage_for_program(bz, program)
+        coverage = coverage_for_program(environment, program)
 
     if cfg.restrict_to_files:
         coverage = coverage.restrict_to_files(cfg.restrict_to_files)
@@ -40,40 +39,43 @@ def coverage_for_config(bz: BugZooClient,
     return coverage
 
 
-def coverage_for_program(bz: BugZooClient,
+def coverage_for_program(environment: Environment,
                          program: Program
                          ) -> TestCoverageMap:
-    return coverage_for_snapshot(bz, program.snapshot, program.tests)
+    return coverage_for_snapshot(environment, program.snapshot, program.tests)
 
 
-def coverage_for_snapshot(bz: BugZooClient,
+def coverage_for_snapshot(environment: Environment,
                           snapshot: Snapshot,
                           tests: TestSuite
                           ) -> TestCoverageMap:
+    bz = environment.bugzoo
     logger.debug("computing coverage for snapshot: %s", snapshot.name)
     container: BugZooContainer = bz.containers.provision(snapshot)
     try:
-        return coverage_for_container(bz, container, tests)
+        return coverage_for_container(environment, container, tests)
     finally:
         del bz.containers[container.uid]
 
 
-def coverage_for_container(bz: BugZooClient,
+def coverage_for_container(environment: Environment,
                            container: BugZooContainer,
                            tests: TestSuite
                            ) -> TestCoverageMap:
+    bz = environment.bugzoo
     logger.debug("instrumenting container for coverage...")
     bz.containers.instrument(container)
     logger.debug("instrumented container for coverage")
-    coverage = functools.partial(coverage_for_test, bz, container, tests)
+    coverage = functools.partial(coverage_for_test, environment, container, tests)
     return TestCoverageMap({test.name: coverage(test) for test in tests})
 
 
-def coverage_for_test(bz: BugZooClient,
+def coverage_for_test(environment: Environment,
                       container: BugZooContainer,
                       tests: TestSuite,
                       test: Test
                       ) -> TestCoverage:
+    bz = environment.bugzoo
     logger.debug("computing coverage for test [%s]", test.name)
     outcome: TestOutcome = tests.execute(container, test)
     logger.debug("test outcome [%s]: %s", test.name, outcome)

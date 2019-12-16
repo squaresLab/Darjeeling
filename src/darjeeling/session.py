@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+__all__ = ('Session',)
+
 from typing import List, Dict, Any, Type, Optional, Iterator
 import glob
 import os
@@ -18,6 +20,7 @@ from bugzoo import Bug as Snapshot
 
 from .core import Language, TestCoverageMap
 from .coverage import coverage_for_config
+from .environment import Environment
 from .test import BugZooTestSuite, TestSuite
 from .candidate import Candidate
 from .searcher import Searcher
@@ -43,18 +46,20 @@ logger.setLevel(logging.DEBUG)
 @attr.s
 class Session(DarjeelingEventProducer):
     """Used to manage and inspect an interactive repair session."""
-    dir_patches = attr.ib(type=str)
-    searcher = attr.ib(type=Searcher)
-    _problem = attr.ib(type=Problem)
-    terminate_early = attr.ib(type=bool, default=True)
-    _patches = attr.ib(type=List[Candidate], factory=list)
+    dir_patches: str = attr.ib()
+    searcher: Searcher = attr.ib()
+    _problem: Problem = attr.ib()
+    terminate_early: bool = attr.ib(default=True)
+    _patches: List[Candidate] = attr.ib(factory=list)
 
     def __attrs_post_init__(self) -> None:
         DarjeelingEventProducer.__init__(self)
 
     @staticmethod
-    def from_config(client_bugzoo: bugzoo.Client, cfg: Config) -> 'Session':
+    def from_config(environment: Environment, cfg: Config) -> 'Session':
         """Creates a new repair session according to a given configuration."""
+        client_bugzoo = environment.bugzoo
+
         # create the patch directory
         dir_patches = cfg.dir_patches
         if os.path.exists(dir_patches):
@@ -95,12 +100,12 @@ class Session(DarjeelingEventProducer):
 
         # build program
         logger.debug("building program...")
-        program = Program.from_config(client_bugzoo, cfg)
+        program = Program.from_config(environment, cfg)
         logger.debug("built program: %s", program)
 
         # compute coverage
         logger.info("computing coverage information...")
-        coverage = coverage_for_config(client_bugzoo, program, cfg.coverage)
+        coverage = coverage_for_config(environment, program, cfg.coverage)
         logger.info("computed coverage information")
         logger.debug("coverage: %s", coverage)
 
@@ -122,7 +127,7 @@ class Session(DarjeelingEventProducer):
             analysis = None
 
         # build problem
-        problem = Problem.build(bugzoo=client_bugzoo,
+        problem = Problem.build(environment=environment,
                                 config=cfg,
                                 language=cfg.language,
                                 program=program,

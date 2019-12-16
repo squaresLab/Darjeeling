@@ -20,6 +20,7 @@ import pyroglyph
 import attr
 import yaml
 
+from ..environment import Environment
 from ..problem import Problem
 from ..version import __version__ as VERSION
 from ..core import TestCoverageMap
@@ -29,7 +30,7 @@ from ..session import Session
 from ..exceptions import BadConfigurationException
 from ..util import duration_str
 
-logger = logging.getLogger(__name__)  # type: logging.Logger
+logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 BANNER = 'DARJEELING'
@@ -122,8 +123,9 @@ class BaseController(cement.Controller):
         cfg = Config.from_yml(yml, dir_=cfg_dir)
 
         with bugzoo.server.ephemeral(timeout_connection=120) as client_bugzoo:
+            environment = Environment(bugzoo=client_bugzoo)
             try:
-                session = Session.from_config(client_bugzoo, cfg)
+                session = Session.from_config(environment, cfg)
             except BadConfigurationException as err:
                 print("ERROR: bad configuration file")
                 sys.exit(1)
@@ -247,8 +249,9 @@ class BaseController(cement.Controller):
         logger.info("connecting to BugZoo server")
         with bugzoo.server.ephemeral(timeout_connection=120) as client_bugzoo:
             logger.info("connected to BugZoo server")
+            environment = Environment(bugzoo=client_bugzoo)
             try:
-                session = Session.from_config(client_bugzoo, cfg)
+                session = Session.from_config(environment, cfg)
             except BadConfigurationException as err:
                 logger.error(str(err))
                 sys.exit(1)

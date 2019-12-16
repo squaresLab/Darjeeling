@@ -5,28 +5,29 @@ from typing import Iterator
 import contextlib
 import logging
 
-from bugzoo import Client as BugZooClient, Bug as Snapshot
+from bugzoo import Bug as Snapshot
 from bugzoo.core.container import Container
 from bugzoo.core.patch import Patch
 import attr
 
 from .core import Test, TestOutcome
+from .environment import Environment
 from .test import TestSuite, BugZooTestSuite
 from .config import Config
 from .exceptions import BadConfigurationException, BuildFailure
 
-logger = logging.getLogger(__name__)  # type: logging.Logger
+logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
 class Program:
-    _bugzoo: BugZooClient
+    _environment: Environment
     snapshot: Snapshot
     tests: TestSuite
 
     @staticmethod
-    def from_config(bz: BugZooClient, cfg: Config) -> 'Program':
+    def from_config(environment: Environment, cfg: Config) -> 'Program':
         """Loads a program from a given configuration.
 
         Raises
@@ -36,18 +37,19 @@ class Program:
         BadConfigurationException
             If the given BugZoo snapshot is not installed.
         """
+        bz = environment.bugzoo
         if not cfg.snapshot in bz.bugs:
             m = f"snapshot not found: {cfg.snapshot}"
             raise BadConfigurationException(m)
 
         snapshot = bz.bugs[cfg.snapshot]
-        tests = TestSuite.from_config(cfg.tests, bz, snapshot)
+        tests = TestSuite.from_config(cfg.tests, environment, snapshot)
 
         if not bz.bugs.is_installed(snapshot):
             m = f"snapshot not installed: {cfg.snapshot}"
             raise BadConfigurationException(m)
 
-        return Program(bz, snapshot, tests)
+        return Program(environment, snapshot, tests)
 
     def execute(self, container: Container, test: Test) -> TestOutcome:
         """Executes a given test in a container."""
@@ -68,7 +70,7 @@ class Program:
         BuildFailure
             If the program failed to build.
         """
-        mgr_ctr = self._bugzoo.containers
+        mgr_ctr = self._environment.bugzoo.containers
         container = None
         try:
             container = mgr_ctr.provision(self.snapshot)

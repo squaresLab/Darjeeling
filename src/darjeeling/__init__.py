@@ -5,6 +5,7 @@ import pkgutil as _pkgutil
 
 from . import exceptions
 from .version import __version__
+from .environment import Environment
 from .problem import Problem
 from .events import (DarjeelingEvent, DarjeelingEventHandler,
                      DarjeelingEventProducer)

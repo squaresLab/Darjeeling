@@ -10,13 +10,13 @@ import functools
 import os
 
 import attr
-from bugzoo.client import Client as BugZooClient
 from bugzoo.core.fileline import FileLine, FileLineSet
 from bugzoo.core.bug import Bug
 from kaskara.analysis import Analysis
 
 from .core import Language, Test, TestCoverage, TestCoverageMap
 from .config import Config
+from .environment import Environment
 from .program import Program
 from .source import ProgramSource, ProgramSourceLoader
 from .exceptions import NoFailingTests, NoImplicatedLines, BuildFailure
@@ -51,7 +51,7 @@ class Problem:
     test_ordering: Iterable[Test]
         The order in which tests should be executed.
     """
-    bugzoo: BugZooClient
+    environment: Environment
     config: Config
     language: Language
     coverage: TestCoverageMap
@@ -63,7 +63,7 @@ class Problem:
     analysis: Optional[Analysis]
 
     @staticmethod
-    def build(bugzoo: BugZooClient,
+    def build(environment: Environment,
               config: Config,
               language: Language,
               coverage: TestCoverageMap,
@@ -81,7 +81,7 @@ class Problem:
             If no lines are implicated by the coverage information and the
             provided suspiciousness metric.
         """
-        bz = bugzoo
+        bz = environment.bugzoo
         logger.debug('using coverage to determine passing and failing tests')
         failing_tests: Sequence[Test] = \
             tuple(program.tests[name] for name in sorted(coverage)
@@ -133,7 +133,7 @@ class Problem:
                                                     files=source_files)
         logger.debug("stored contents of source code files")
 
-        problem = Problem(bugzoo=bz,
+        problem = Problem(environment=environment,
                           program=program,
                           analysis=analysis,
                           language=language,

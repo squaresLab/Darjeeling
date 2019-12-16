@@ -18,6 +18,7 @@ import bugzoo
 from ..events import DarjeelingEventProducer, DarjeelingEventHandler
 from ..core import FileLine
 from ..config import SearcherConfig
+from ..environment import Environment
 from ..candidate import Candidate
 from ..problem import Problem
 from ..outcome import OutcomeManager, CandidateOutcome
@@ -67,7 +68,6 @@ class Searcher(Generic[T], DarjeelingEventProducer, abc.ABC):
                                          time_limit=time_limit)
 
     def __init__(self,
-                 bugzoo: bugzoo.BugZoo,
                  problem: Problem,
                  *,
                  threads: int = 1,
@@ -79,29 +79,30 @@ class Searcher(Generic[T], DarjeelingEventProducer, abc.ABC):
         """
         Constructs a new searcher.
 
-        Parameters:
-            bugzoo: a connection to the BugZoo server that should be used to
-                evaluate candidate patches.
-            problem: a description of the problem.
-            threads: the number of threads that should be made available to
-                the search process.
-            time_limit: an optional limit on the amount of time given to the
-                searcher.
-            candidate_limit: an optional limit on the number of candidate
-                patches that may be generated.
+        Parameters
+        ----------
+        problem: Problem
+            a description of the problem.
+        threads: int
+            the number of threads that should be made available to
+            the search process.
+        time_limit: datetime.timedelta, optional
+            an optional limit on the amount of time given to the
+            searcher.
+        candidate_limit: int, optional
+            an optional limit on the number of candidate patches that may
+            be generated.
         """
         logger.debug("constructing searcher")
         super().__init__()
         assert time_limit is None or time_limit > datetime.timedelta(), \
             "if specified, time limit should be greater than zero."
 
-        self.__bugzoo = bugzoo
         self.__problem = problem
         self.__time_limit = time_limit
         self.__candidate_limit = candidate_limit
         self.__outcomes = OutcomeManager()
-        self.__evaluator = Evaluator(bugzoo,
-                                     problem,
+        self.__evaluator = Evaluator(problem,
                                      num_workers=threads,
                                      terminate_early=terminate_early,
                                      outcomes=self.__outcomes,
@@ -133,6 +134,10 @@ class Searcher(Generic[T], DarjeelingEventProducer, abc.ABC):
     def problem(self) -> Problem:
         """A description of the problem being solved."""
         return self.__problem
+
+    @property
+    def environment(self) -> Environment:
+        return self.problem.environment
 
     @property
     def history(self) -> List[Candidate]:
