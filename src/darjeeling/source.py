@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-__all__ = ('ProgramSource', 'ProgramSourceFile')
+__all__ = ('ProgramSource', 'ProgramSourceFile', 'ProgramSourceLoader')
 
 from typing import (List, Union, Dict, Optional, Iterator, Iterable, Mapping,
                     Collection, Tuple, Sequence)
@@ -106,35 +106,6 @@ class ProgramSourceFile:
 # FIXME add option to save to disk
 class ProgramSource(Mapping[str, ProgramSourceFile]):
     """Stores the source code for a given program."""
-    @classmethod
-    def for_bugzoo_snapshot(cls,
-                            client_bugzoo: BugZooClient,
-                            snapshot: Snapshot,
-                            files: Iterable[str]
-                            ) -> 'ProgramSource':
-        file_to_content: Dict[str, str] = {}
-        logger.debug("provisioning container to fetch file contents")
-        container = client_bugzoo.containers.provision(snapshot)
-        try:
-            for filename in files:
-                content = client_bugzoo.files.read(container, filename)
-                file_to_content[filename] = content
-        except KeyError:
-            logger.exception("failed to read source file, "
-                             f"'{snapshot.name}/{filename}': file not found")
-            raise exceptions.FileNotFound(filename)
-        finally:
-            del client_bugzoo.containers[container.uid]
-        logger.debug("fetched file contents")
-        return cls.from_file_contents(file_to_content)
-
-    @staticmethod
-    def from_file_contents(file_to_contents: Mapping[str, str]
-                          ) -> 'ProgramSource':
-        files = [ProgramSourceFile(fn, contents)
-                 for fn, contents in file_to_contents.items()]
-        return ProgramSource(files)
-
     def __init__(self, files: Collection[ProgramSourceFile]) -> None:
         self.__files: Mapping[str, ProgramSourceFile] = \
             {f.filename: f for f in files}
@@ -198,3 +169,37 @@ class ProgramSource(Mapping[str, ProgramSourceFile]):
                                         filename))
             file_diffs.append(diff)
         return Patch.from_unidiff('\n'.join(file_diffs))
+
+
+@attr.s(frozen=True, auto_attribs=True)
+class ProgramSourceLoader:
+    """Used to load program source files."""
+    _bugzoo: BugZooClient
+
+    def for_bugzoo_snapshot(self,
+                            snapshot: Snapshot,
+                            files: Iterable[str]
+                            ) -> 'ProgramSource':
+        bz = self._bugzoo
+        file_to_content: Dict[str, str] = {}
+        logger.debug("provisioning container to fetch file contents")
+        container = bz.containers.provision(snapshot)
+        try:
+            for filename in files:
+                content = bz.files.read(container, filename)
+                file_to_content[filename] = content
+        except KeyError:
+            logger.exception("failed to read source file, "
+                             f"'{snapshot.name}/{filename}': file not found")
+            raise exceptions.FileNotFound(filename)
+        finally:
+            del bz.containers[container.uid]
+        logger.debug("fetched file contents")
+        return self.from_file_contents(file_to_content)
+
+    def from_file_contents(self,
+                           file_to_contents: Mapping[str, str]
+                           ) -> 'ProgramSource':
+        files = [ProgramSourceFile(fn, contents)
+                 for fn, contents in file_to_contents.items()]
+        return ProgramSource(files)

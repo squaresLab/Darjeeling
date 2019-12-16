@@ -18,7 +18,7 @@ from kaskara.analysis import Analysis
 from .core import Language, Test, TestCoverage, TestCoverageMap
 from .config import Config
 from .program import Program
-from .source import ProgramSource
+from .source import ProgramSource, ProgramSourceLoader
 from .exceptions import NoFailingTests, NoImplicatedLines, BuildFailure
 from .config import OptimizationsConfig
 from .test import TestSuite
@@ -128,8 +128,8 @@ class Problem:
 
         logger.debug("storing contents of source code files")
         source_files = set(l.filename for l in coverage.failing.locations)
-        sources = ProgramSource.for_bugzoo_snapshot(bz,
-                                                    program.snapshot,
+        source_loader = ProgramSourceLoader(bz)
+        sources = source_loader.for_bugzoo_snapshot(program.snapshot,
                                                     files=source_files)
         logger.debug("stored contents of source code files")
 
