@@ -22,7 +22,19 @@ logger.setLevel(logging.DEBUG)
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
 class Program:
+    """Provides a description of a program.
+
+    Attributes
+    ----------
+    image: str
+        The name of the Docker image for this progrma.
+    snapshot:
+        The BugZoo snapshot for this program.
+    tests: TestSuite
+        The test suite for this program.
+    """
     _environment: Environment
+    image: str
     snapshot: Snapshot
     tests: TestSuite
 
@@ -43,13 +55,13 @@ class Program:
             raise BadConfigurationException(m)
 
         snapshot = bz.bugs[cfg.snapshot]
+        image = snapshot.image
         tests = TestSuite.from_config(cfg.tests, environment, snapshot)
 
-        if not bz.bugs.is_installed(snapshot):
-            m = f"snapshot not installed: {cfg.snapshot}"
-            raise BadConfigurationException(m)
-
-        return Program(environment, snapshot, tests)
+        return Program(environment=environment,
+                       image=image,
+                       snapshot=snapshot,
+                       tests=tests)
 
     def execute(self, container: Container, test: Test) -> TestOutcome:
         """Executes a given test in a container."""
