@@ -9,6 +9,7 @@ import attr
 from bugzoo import Bug as Snapshot
 from bugzoo.core.patch import Patch
 
+from .build_instructions import BuildInstructions
 from .core import Test, TestOutcome
 from .container import ProgramContainer
 from .environment import Environment
@@ -30,6 +31,11 @@ class Program:
     ----------
     image: str
         The name of the Docker image for this progrma.
+    build_instructions: BuildInstructions
+        Executable instructions for building the program.
+    build_instructions_for_coverage: BuildInstructions
+        Executable instructions for building the program with coverage
+        instrumentation.
     snapshot:
         The BugZoo snapshot for this program.
     tests: TestSuite
@@ -41,6 +47,8 @@ class Program:
     _environment: Environment
     image: str
     snapshot: Snapshot
+    build_instructions: BuildInstructions
+    build_instructions_for_coverage: BuildInstructions
     tests: TestSuite
     source_directory: str
 
@@ -64,9 +72,13 @@ class Program:
         image = snapshot.image
         tests = TestSuite.from_config(cfg.tests, environment, snapshot)
         source_directory = snapshot.source_dir
+        build_instructions, build_instructions_for_coverage = \
+            BuildInstructions.from_bugzoo(snapshot)
 
         return Program(environment=environment,
                        image=image,
+                       build_instructions=build_instructions,
+                       build_instructions_for_coverage=build_instructions_for_coverage,
                        snapshot=snapshot,
                        source_directory=source_directory,
                        tests=tests)

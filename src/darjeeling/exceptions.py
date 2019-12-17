@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
+import typing as _typing
+
 import attr as _attr
+
+if _typing.TYPE_CHECKING:
+    from .build_instructions import BuildStep
 
 
 class DarjeelingError(Exception):
@@ -21,6 +26,15 @@ class SearchAlreadyStarted(DarjeelingError):
 class FileNotFound(DarjeelingError):
     """A given file could not be found."""
     filename: str
+
+
+@_attr.s(auto_exc=True, auto_attribs=True)
+class BuildStepFailed(DarjeelingError):
+    """A step in the build process failed."""
+    step: 'BuildStep'
+    returncode: int
+    duration: float
+    output: _typing.Optional[str]
 
 
 class FailedToApplyPatch(DarjeelingError):
