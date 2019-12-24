@@ -53,31 +53,29 @@ class GeneticSearcherConfig(SearcherConfig):
                                      tournament_size=tournament_size,
                                      sample_size=sample_size)
 
-
-class GeneticSearcher(Searcher):
-    CONFIG = GeneticSearcherConfig
-
-    @classmethod
-    def from_config(cls,
-                    cfg: GeneticSearcherConfig,
-                    problem: Problem,
-                    transformations: List[Transformation],
-                    *,
-                    threads: int = 1,
-                    candidate_limit: Optional[int] = None,
-                    time_limit: Optional[datetime.timedelta] = None
-                    ) -> 'GeneticSearcher':
+    def build(self,
+              problem: Problem,
+              transformations: List[Transformation],
+              *,
+              threads: int = 1,
+              candidate_limit: Optional[int] = None,
+              time_limit: Optional[datetime.timedelta] = None
+              ) -> Searcher:
         return GeneticSearcher(problem,
                                transformations,
                                threads=threads,
-                               num_generations=cfg.num_generations,
-                               population_size=cfg.population_size,
-                               rate_crossover=cfg.rate_crossover,
-                               rate_mutation=cfg.rate_mutation,
-                               tournament_size=cfg.tournament_size,
-                               test_sample_size=cfg.sample_size,
+                               num_generations=self.num_generations,
+                               population_size=self.population_size,
+                               rate_crossover=self.rate_crossover,
+                               rate_mutation=self.rate_mutation,
+                               tournament_size=self.tournament_size,
+                               test_sample_size=self.sample_size,
                                candidate_limit=candidate_limit,
                                time_limit=time_limit)
+
+
+class GeneticSearcher(Searcher):
+    CONFIG = GeneticSearcherConfig
 
     def __init__(self,
                  problem: Problem,

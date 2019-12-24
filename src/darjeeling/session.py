@@ -155,11 +155,11 @@ class Session(DarjeelingEventProducer):
         logger.info("constructed transformation database: %d transformations",  # noqa: pycodestyle
                     len(tx))
 
-        # build the search strategy
-        searcher = Searcher.from_config(cfg.search, problem, tx,
-                                        threads=cfg.threads,
-                                        candidate_limit=cfg.limit_candidates,
-                                        time_limit=cfg.limit_time)
+        searcher = cfg.search.build(problem,
+                                    transformations=tx,
+                                    threads=cfg.threads,
+                                    candidate_limit=cfg.limit_candidates,
+                                    time_limit=cfg.limit_time)
 
         # build session
         return Session(dir_patches=dir_patches,

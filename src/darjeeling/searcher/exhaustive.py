@@ -30,25 +30,23 @@ class ExhaustiveSearcherConfig(SearcherConfig):
                   ) -> 'SearcherConfig':
         return ExhaustiveSearcherConfig()
 
-
-class ExhaustiveSearcher(Searcher):
-    CONFIG = ExhaustiveSearcherConfig
-
-    @classmethod
-    def from_config(cls,
-                    cfg: ExhaustiveSearcherConfig,
-                    problem: Problem,
-                    transformations: List[Transformation],
-                    *,
-                    threads: int = 1,
-                    candidate_limit: Optional[int] = None,
-                    time_limit: Optional[datetime.timedelta] = None
-                    ) -> 'ExhaustiveSearcher':
+    def build(self,
+              problem: Problem,
+              transformations: List[Transformation],
+              *,
+              threads: int = 1,
+              candidate_limit: Optional[int] = None,
+              time_limit: Optional[datetime.timedelta] = None
+              ) -> Searcher:
         return ExhaustiveSearcher(problem,
                                   transformations,
                                   threads=threads,
                                   candidate_limit=candidate_limit,
                                   time_limit=time_limit)
+
+
+class ExhaustiveSearcher(Searcher):
+    CONFIG = ExhaustiveSearcherConfig
 
     def __init__(self,
                  problem: Problem,

@@ -38,34 +38,8 @@ logger.setLevel(logging.DEBUG)
 T = TypeVar('T', bound=SearcherConfig)
 
 
-@dynamically_registered('CONFIG',
-                        lookup='_searcher_for_config_type',
-                        iterator=None)
 class Searcher(Generic[T], DarjeelingEventProducer, abc.ABC):
     CONFIG: ClassVar[Type[T]]
-
-    @staticmethod
-    def _searcher_for_config_type(type_cfg: Type[SearcherConfig]
-                                 ) -> Type['Searcher']:
-        """Retrieves associated searcher for a given configuration class."""
-        ...
-
-    @classmethod
-    @abc.abstractmethod
-    def from_config(cls,
-                    cfg: T,
-                    problem: Problem,
-                    tx: List[Transformation],
-                    *,
-                    threads: int = 1,
-                    candidate_limit: Optional[int] = None,
-                    time_limit: Optional[datetime.timedelta] = None
-                    ) -> 'Searcher':
-        type_searcher = Searcher._searcher_for_config_type(cfg.__class__)
-        return type_searcher.from_config(cfg, problem, tx,
-                                         threads=threads,
-                                         candidate_limit=candidate_limit,
-                                         time_limit=time_limit)
 
     def __init__(self,
                  problem: Problem,

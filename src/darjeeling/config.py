@@ -7,6 +7,7 @@ __all__ = ('Config', 'OptimizationsConfig', 'SchemaConfig',
 from typing import (Optional, Collection, Tuple, Dict, Any, List, Set,
                     FrozenSet, Iterator, Type, NoReturn)
 import abc
+import datetime
 import sys
 import typing
 import random
@@ -22,8 +23,11 @@ from .util import dynamically_registered
 from .exceptions import BadConfigurationException, LanguageNotSupported
 
 if typing.TYPE_CHECKING:
-    from .test import TestSuite
     from .environment import Environment
+    from .problem import Problem
+    from .searcher import Searcher
+    from .test import TestSuite
+    from .transformation import Transformation
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -53,6 +57,17 @@ class SearcherConfig(abc.ABC):
         name_type: str = d['type']
         type_: Type[SearcherConfig] = SearcherConfig.lookup(name_type)
         return type_.from_dict(d, dir_)
+
+    @abc.abstractmethod
+    def build(self,
+              problem: 'Problem',
+              transformations: List['Transformation'],
+              *,
+              threads: int = 1,
+              candidate_limit: Optional[int] = None,
+              time_limit: Optional[datetime.timedelta] = None
+              ) -> 'Searcher':
+        ...
 
 
 @dynamically_registered(lookup='lookup', length=None, iterator=None)
