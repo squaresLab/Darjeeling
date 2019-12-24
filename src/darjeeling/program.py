@@ -86,8 +86,30 @@ class ProgramDescription:
                     source_directory=source_directory,
                     tests=tests)
 
-    def execute(self, container: ProgramContainer, test: Test) -> TestOutcome:
-        """Executes a given test in a container."""
+    def execute(self,
+                container: ProgramContainer,
+                test: Test,
+                *,
+                coverage: bool = False
+                ) -> TestOutcome:
+        """Executes a given test in a container.
+
+        Parameters
+        ----------
+        container: ProgramContainer
+            The container for the program under test.
+        test: Test
+            The test case that should be executed.
+        coverage: bool
+            If :code:`True`, the test harness will be instructed to run the
+            test in coverage collection mode. If no such mode is supported,
+            the test will be run as usual.
+
+        Returns
+        -------
+        TestOutcome
+            A concise summary of the test execution.
+        """
         return self.tests.execute(container, test)
 
     @contextlib.contextmanager

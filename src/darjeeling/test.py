@@ -53,7 +53,30 @@ class TestSuite(Generic[T, C]):
         return self.__name_to_test[name]
 
     @abc.abstractmethod
-    def execute(self, container: ProgramContainer, test: T) -> TestOutcome:
+    def execute(self,
+                container: ProgramContainer,
+                test: T,
+                *,
+                coverage: bool = False
+                ) -> TestOutcome:
+        """Executes a given test inside a container.
+
+        Parameters
+        ----------
+        container: ProgramContainer
+            The container in which the test should be executed.
+        test: T
+            The test that should be executed.
+        coverage: bool
+            If :code:`True`, the test harness will be instructed to run the
+            test in coverage collection mode. If no such mode is supported,
+            the test will be run as usual.
+
+        Returns
+        -------
+        TestOutcome
+            A concise summary of the test execution.
+        """
         raise NotImplementedError
 
 
@@ -92,7 +115,9 @@ class BugZooTestSuite(TestSuite):
 
     def execute(self,
                 container: ProgramContainer,
-                test: BugZooTest
+                test: BugZooTest,
+                *,
+                coverage: bool = False
                 ) -> TestOutcome:
         bz = self._environment.bugzoo
         bz_outcome = bz.containers.test(container._bugzoo, test._test)
