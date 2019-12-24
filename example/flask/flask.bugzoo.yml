@@ -1,0 +1,21 @@
+version: "1.0"
+
+blueprints:
+  - type: docker
+    tag: darjeeling/example:flask
+
+bugs:
+  - name: darjeeling:flask
+    program: flask
+    image: darjeeling/example:flask
+    languages:
+    - python
+    source-location: /opt/flask
+    compiler:
+      time-limit: 20
+      type: simple
+      context: /experiment/source
+      command: gcc zune.c -o zune
+      command_with_instrumentation: gcc zune.c -o zune --coverage
+    test-harness:
+      type: empty

@@ -1,0 +1,40 @@
+version: '1.0'
+snapshot: 'darjeeling:flask'
+language: text
+seed: 0
+threads: 1
+localization:
+  type: spectrum
+  metric: tarantula
+algorithm:
+  type: exhaustive
+coverage:
+  load-from-file: coverage.yml
+tests:
+  type: pytest
+  workdir: /opt/flask
+  tests:
+    - tests/test_config.py::test_get_namespace
+    - tests/test_config.py::test_config_from_pyfile
+    - tests/test_config.py::test_config_from_object
+      #    - tests/test_config.py::test_config_from_file
+      #    - tests/test_config.py::test_config_from_mapping
+      #    - tests/test_config.py::test_config_from_class
+      #    - tests/test_config.py::test_config_from_envvar
+      #    - tests/test_config.py::test_config_from_envvar_missing
+      #    - tests/test_config.py::test_config_missing
+      #    - tests/test_config.py::test_config_missing_file
+      #    - tests/test_config.py::test_custom_config_class
+      #    - tests/test_config.py::test_session_lifetime
+      #    - tests/test_config.py::test_send_file_max_age
+      #    - tests/test_config.py::test_get_namespace
+      #    - tests/test_config.py::test_from_pyfile_weird_encoding[utf-8]
+      #    - tests/test_config.py::test_from_pyfile_weird_encoding[iso-8859-15]
+      #    - tests/test_config.py::test_from_pyfile_weird_encoding[latin-1]
+transformations:
+  schemas:
+    - type: delete-line
+    - type: replace-line
+    - type: insert-line
+resource-limits:
+  candidates: 100
