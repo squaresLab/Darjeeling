@@ -14,14 +14,14 @@ from .core import (FileLineSet, FileLine, TestCoverageMap, Test, TestCoverage,
                    TestOutcome)
 from .environment import Environment
 from .test import TestSuite
-from .program import Program
+from .program import ProgramDescription
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
 def coverage_for_config(environment: Environment,
-                        program: Program,
+                        program: ProgramDescription,
                         cfg: CoverageConfig
                         ) -> TestCoverageMap:
     if cfg.load_from_file:
@@ -41,7 +41,7 @@ def coverage_for_config(environment: Environment,
 
 
 def coverage_for_program(environment: Environment,
-                         program: Program
+                         program: ProgramDescription
                          ) -> TestCoverageMap:
     return coverage_for_snapshot(environment, program.snapshot, program.tests)
 

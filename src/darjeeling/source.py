@@ -17,7 +17,7 @@ from . import exceptions
 from .core import (Replacement, FileLine, FileLocationRange, Location,
                    LocationRange)
 from .environment import Environment
-from .program import Program
+from .program import ProgramDescription
 from .container import ProgramContainer
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -182,7 +182,7 @@ class ProgramSourceLoader:
     _environment: Environment
 
     def for_program(self,
-                    program: Program,
+                    program: ProgramDescription,
                     files: Iterable[str]
                     ) -> 'ProgramSource':
         """Loads the sources for a program."""
@@ -192,7 +192,7 @@ class ProgramSourceLoader:
             return self.for_container(program, container, files)
 
     def for_container(self,
-                      program: Program,
+                      program: ProgramDescription,
                       container: ProgramContainer,
                       files: Iterable[str]
                       ) -> 'ProgramSource':

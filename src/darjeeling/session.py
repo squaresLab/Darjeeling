@@ -24,7 +24,7 @@ from .environment import Environment
 from .test import BugZooTestSuite, TestSuite
 from .candidate import Candidate
 from .searcher import Searcher
-from .program import Program
+from .program import ProgramDescription
 from .problem import Problem
 from .config import Config, OptimizationsConfig
 from .snippet import (SnippetDatabase, StatementSnippetDatabase,
@@ -100,7 +100,7 @@ class Session(DarjeelingEventProducer):
 
         # build program
         logger.debug("building program...")
-        program = Program.from_config(environment, cfg)
+        program = ProgramDescription.from_config(environment, cfg)
         logger.debug("built program: %s", program)
 
         # compute coverage

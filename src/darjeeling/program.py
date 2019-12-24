@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-__all__ = ('Program',)
+__all__ = ('ProgramDescription',)
 
 from typing import Iterator
 import contextlib
@@ -24,7 +24,7 @@ logger.setLevel(logging.DEBUG)
 
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
-class Program:
+class ProgramDescription:
     """Provides a description of a program.
 
     Attributes
@@ -53,7 +53,9 @@ class Program:
     source_directory: str
 
     @staticmethod
-    def from_config(environment: Environment, cfg: Config) -> 'Program':
+    def from_config(environment: Environment,
+                    cfg: Config
+                    ) -> 'ProgramDescription':
         """Loads a program from a given configuration.
 
         Raises
@@ -75,13 +77,14 @@ class Program:
         build_instructions, build_instructions_for_coverage = \
             BuildInstructions.from_bugzoo(snapshot)
 
-        return Program(environment=environment,
-                       image=image,
-                       build_instructions=build_instructions,
-                       build_instructions_for_coverage=build_instructions_for_coverage,
-                       snapshot=snapshot,
-                       source_directory=source_directory,
-                       tests=tests)
+        return ProgramDescription(
+                    environment=environment,
+                    image=image,
+                    build_instructions=build_instructions,
+                    build_instructions_for_coverage=build_instructions_for_coverage,
+                    snapshot=snapshot,
+                    source_directory=source_directory,
+                    tests=tests)
 
     def execute(self, container: ProgramContainer, test: Test) -> TestOutcome:
         """Executes a given test in a container."""

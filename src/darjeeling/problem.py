@@ -17,7 +17,7 @@ from kaskara.analysis import Analysis
 from .core import Language, Test, TestCoverage, TestCoverageMap
 from .config import Config
 from .environment import Environment
-from .program import Program
+from .program import ProgramDescription
 from .source import ProgramSource, ProgramSourceLoader
 from .exceptions import NoFailingTests, NoImplicatedLines, BuildFailure
 from .config import OptimizationsConfig
@@ -56,7 +56,7 @@ class Problem:
     language: Language
     coverage: TestCoverageMap
     sources: ProgramSource
-    program: Program
+    program: ProgramDescription
     failing_tests: Sequence[Test]
     passing_tests: Sequence[Test]
     test_ordering: Iterable[Test]
@@ -67,7 +67,7 @@ class Problem:
               config: Config,
               language: Language,
               coverage: TestCoverageMap,
-              program: Program,
+              program: ProgramDescription,
               *,
               analysis: Optional[Analysis] = None
               ) -> 'Problem':
