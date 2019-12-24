@@ -5,13 +5,12 @@ import abc
 
 import attr
 import bugzoo
-from bugzoo import Bug, Client as BugZooClient, Container as BugZooContainer
 
-from .core import TestOutcome, Test
-from .config import TestSuiteConfig
-from .container import ProgramContainer
-from .environment import Environment
-from .util import dynamically_registered
+from ..core import TestOutcome, Test
+from ..config import TestSuiteConfig
+from ..container import ProgramContainer
+from ..environment import Environment
+from ..util import dynamically_registered
 
 T = TypeVar('T', bound=Test)
 C = TypeVar('C', bound=TestSuiteConfig)
@@ -38,7 +37,7 @@ class TestSuite(Generic[T, C]):
     def from_config(cls,
                     cfg: C,
                     environment: Environment,
-                    bug: Bug
+                    bug: bugzoo.Bug
                     ) -> 'TestSuite':
         type_ = TestSuite._for_config_type(cfg.__class__)
         return type_.from_config(cfg, environment, bug)
@@ -78,47 +77,3 @@ class TestSuite(Generic[T, C]):
             A concise summary of the test execution.
         """
         raise NotImplementedError
-
-
-@attr.s(frozen=True)
-class BugZooTestSuiteConfig(TestSuiteConfig):
-    NAME = 'bugzoo'
-
-    @classmethod
-    def from_dict(cls,
-                  d: Dict[str, Any],
-                  dir_: Optional[str] = None
-                  ) -> TestSuiteConfig:
-        return BugZooTestSuiteConfig()
-
-
-@attr.s(frozen=True, slots=True, auto_attribs=True)
-class BugZooTest(Test):
-    _test: bugzoo.core.TestCase
-
-    @property
-    def name(self) -> str:
-        return self._test.name
-
-
-class BugZooTestSuite(TestSuite):
-    CONFIG = BugZooTestSuiteConfig
-
-    @classmethod
-    def from_config(cls,
-                    cfg: BugZooTestSuiteConfig,
-                    environment: Environment,
-                    bug: Bug
-                    ) -> 'TestSuite':
-        tests = tuple(BugZooTest(t) for t in bug.tests)
-        return BugZooTestSuite(environment, tests)
-
-    def execute(self,
-                container: ProgramContainer,
-                test: BugZooTest,
-                *,
-                coverage: bool = False
-                ) -> TestOutcome:
-        bz = self._environment.bugzoo
-        bz_outcome = bz.containers.test(container._bugzoo, test._test)
-        return TestOutcome(bz_outcome.passed, bz_outcome.duration)
