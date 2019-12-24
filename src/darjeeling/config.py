@@ -8,16 +8,22 @@ from typing import (Optional, Collection, Tuple, Dict, Any, List, Set,
                     FrozenSet, Iterator, Type, NoReturn)
 import abc
 import sys
+import typing
 import random
 import datetime
 import logging
 import os
 
 import attr
+import bugzoo
 
 from .core import Language, FileLine, FileLineSet
 from .util import dynamically_registered
 from .exceptions import BadConfigurationException, LanguageNotSupported
+
+if typing.TYPE_CHECKING:
+    from .test import TestSuite
+    from .environment import Environment
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -69,6 +75,13 @@ class TestSuiteConfig(abc.ABC):
             name_type = d['type']
         type_: Type[TestSuiteConfig] = TestSuiteConfig.lookup(name_type)
         return type_.from_dict(d, dir_)
+
+    @abc.abstractmethod
+    def build(self,
+              environment: 'Environment',
+              bug: bugzoo.Bug
+              ) -> 'TestSuite':
+        ...
 
 
 @attr.s(frozen=True)

@@ -72,7 +72,7 @@ class ProgramDescription:
 
         snapshot = bz.bugs[cfg.snapshot]
         image = snapshot.image
-        tests = TestSuite.from_config(cfg.tests, environment, snapshot)
+        tests = cfg.tests.build(environment, snapshot)
         source_directory = snapshot.source_dir
         build_instructions, build_instructions_for_coverage = \
             BuildInstructions.from_bugzoo(snapshot)

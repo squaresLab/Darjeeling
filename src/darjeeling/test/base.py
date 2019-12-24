@@ -16,8 +16,6 @@ T = TypeVar('T', bound=Test)
 C = TypeVar('C', bound=TestSuiteConfig)
 
 
-@dynamically_registered('CONFIG', length=None, iterator=None,
-                        lookup='_for_config_type')
 class TestSuite(Generic[T, C]):
     CONFIG: ClassVar[Type[C]]
     _environment: Environment
@@ -25,22 +23,6 @@ class TestSuite(Generic[T, C]):
     def __init__(self, environment: Environment, tests: Sequence[T]) -> None:
         self.__name_to_test = {t.name: t for t in tests}
         self._environment = environment
-
-    @staticmethod
-    def _for_config_type(type_config: Type[TestSuiteConfig]
-                        ) -> Type['TestSuite']:
-        """Fetches the TestSuite class for a given TestSuiteConfig class."""
-        ...
-
-    @classmethod
-    @abc.abstractmethod
-    def from_config(cls,
-                    cfg: C,
-                    environment: Environment,
-                    bug: bugzoo.Bug
-                    ) -> 'TestSuite':
-        type_ = TestSuite._for_config_type(cfg.__class__)
-        return type_.from_config(cfg, environment, bug)
 
     def __len__(self) -> int:
         return len(self.__name_to_test)

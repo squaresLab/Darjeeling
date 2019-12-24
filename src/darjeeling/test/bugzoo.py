@@ -14,7 +14,6 @@ from ..container import ProgramContainer
 from ..environment import Environment
 
 
-@attr.s(frozen=True)
 class BugZooTestSuiteConfig(TestSuiteConfig):
     NAME = 'bugzoo'
 
@@ -24,6 +23,10 @@ class BugZooTestSuiteConfig(TestSuiteConfig):
                   dir_: Optional[str] = None
                   ) -> TestSuiteConfig:
         return BugZooTestSuiteConfig()
+
+    def build(self, environment: Environment, bug: Bug) -> 'TestSuite':
+        tests = tuple(BugZooTest(t) for t in bug.tests)
+        return BugZooTestSuite(environment, tests)
 
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
@@ -37,15 +40,6 @@ class BugZooTest(Test):
 
 class BugZooTestSuite(TestSuite):
     CONFIG = BugZooTestSuiteConfig
-
-    @classmethod
-    def from_config(cls,
-                    cfg: BugZooTestSuiteConfig,
-                    environment: Environment,
-                    bug: Bug
-                    ) -> 'TestSuite':
-        tests = tuple(BugZooTest(t) for t in bug.tests)
-        return BugZooTestSuite(environment, tests)
 
     def execute(self,
                 container: ProgramContainer,
