@@ -8,14 +8,17 @@ from typing import (List, Iterator, Set, Optional, Dict, Generic,
 from collections import OrderedDict
 import abc
 import logging
+import typing
 
 import attr
 from kaskara import Statement as KaskaraStatement
 from kaskara.analysis import Analysis as KaskaraAnalysis
 
 from .core import FileLocationRange, FileLine, FileLineSet
-from .config import Config
 from .problem import Problem
+
+if typing.TYPE_CHECKING:
+    from .config import Config
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -147,7 +150,7 @@ class SnippetDatabase(Generic[T], Collection[T], abc.ABC):
 class StatementSnippetDatabase(SnippetDatabase[StatementSnippet]):
     @staticmethod
     def from_kaskara(analysis: KaskaraAnalysis,
-                     config: Config
+                     config: 'Config'
                      ) -> 'StatementSnippetDatabase':
         logger.debug("constructing snippet database from statements")
         use_canonical_form = \

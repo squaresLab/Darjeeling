@@ -5,6 +5,7 @@ from typing import (List, Optional, Dict, Iterator, Callable, Set, Iterable,
                     Mapping, Sequence)
 from timeit import default_timer as timer
 import tempfile
+import typing
 import logging
 import functools
 import os
@@ -15,13 +16,15 @@ from bugzoo.core.bug import Bug
 from kaskara.analysis import Analysis
 
 from .core import Language, Test, TestCoverage, TestCoverageMap
-from .config import Config
 from .environment import Environment
 from .program import ProgramDescription
 from .source import ProgramSource, ProgramSourceLoader
 from .exceptions import NoFailingTests, NoImplicatedLines, BuildFailure
 from .config import OptimizationsConfig
 from .test import TestSuite
+
+if typing.TYPE_CHECKING:
+    from .config import Config
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -52,7 +55,7 @@ class Problem:
         The order in which tests should be executed.
     """
     environment: Environment
-    config: Config
+    config: 'Config'
     language: Language
     coverage: TestCoverageMap
     sources: ProgramSource
@@ -64,7 +67,7 @@ class Problem:
 
     @staticmethod
     def build(environment: Environment,
-              config: Config,
+              config: 'Config',
               language: Language,
               coverage: TestCoverageMap,
               program: ProgramDescription,

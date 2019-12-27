@@ -3,6 +3,7 @@ __all__ = ('ProgramDescription',)
 
 from typing import Iterator
 import contextlib
+import typing
 import logging
 
 import attr
@@ -14,10 +15,12 @@ from .core import Test, TestOutcome
 from .container import ProgramContainer
 from .environment import Environment
 from .test import TestSuite, BugZooTestSuite
-from .config import Config
 from .exceptions import (BadConfigurationException,
                          BuildFailure,
                          FailedToApplyPatch)
+
+if typing.TYPE_CHECKING:
+    from .config import Config
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -54,7 +57,7 @@ class ProgramDescription:
 
     @staticmethod
     def from_config(environment: Environment,
-                    cfg: Config
+                    cfg: 'Config'
                     ) -> 'ProgramDescription':
         """Loads a program from a given configuration.
 
