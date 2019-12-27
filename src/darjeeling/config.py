@@ -22,6 +22,7 @@ from .util import dynamically_registered
 from .exceptions import BadConfigurationException, LanguageNotSupported
 from .test import TestSuiteConfig
 from .searcher.config import SearcherConfig
+from .coverage import CoverageConfig
 
 if typing.TYPE_CHECKING:
     from .environment import Environment
@@ -32,64 +33,6 @@ if typing.TYPE_CHECKING:
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-
-
-@attr.s(frozen=True)
-class CoverageConfig:
-    """Holds instructions for collecting and processing coverage.
-
-    Attributes
-    ----------
-    restrict_to_files: Set[str], optional
-        An optional set of files to which coverage should be restricted.
-    load_from_file: str, optional
-        The name of the file, if any, that coverage information should be
-        read from.
-
-    Raises
-    ------
-    ValueError
-        If coverage is restricted to the empty set of files.
-    """
-    restrict_to_files: Optional[FrozenSet[str]] = attr.ib(default=None)
-    restrict_to_lines: Optional[Set[FileLine]] = attr.ib(default=None)
-    load_from_file: Optional[str] = attr.ib(default=None)
-
-    @restrict_to_files.validator
-    def validate_restrict_to_files(self, attr, value) -> None:
-        if value is None:
-            return
-        if not value:
-            raise ValueError("cannot restrict to empty set of files")
-
-    @restrict_to_lines.validator
-    def validate_restrict_to_lines(self, attr, value) -> None:
-        if value is None:
-            return
-        if not value:
-            raise ValueError("cannot restrict to empty set of lines")
-
-    @staticmethod
-    def from_dict(d: Dict[str, Any],
-                  dir_: Optional[str] = None
-                  ) -> 'CoverageConfig':
-        restrict_to_files: Optional[FrozenSet[str]] = None
-        restrict_to_lines: Optional[Set[FileLine]] = None
-        load_from_file: Optional[str] = None
-        if 'load-from-file' in d:
-            load_from_file = d['load-from-file']
-            assert load_from_file is not None
-            if not os.path.isabs(load_from_file):
-                assert dir_ is not None
-                load_from_file = os.path.join(dir_, load_from_file)
-        if 'restrict-to-files' in d:
-            restrict_to_files_list: List[str] = d['restrict-to-files']
-            restrict_to_files = frozenset(restrict_to_files_list)
-        if 'restrict-to-lines' in d:
-            restrict_to_lines = FileLineSet.from_dict(d['restrict-to-lines'])
-        return CoverageConfig(restrict_to_files=restrict_to_files,
-                              restrict_to_lines=restrict_to_lines,
-                              load_from_file=load_from_file)
 
 
 @attr.s(frozen=True)
