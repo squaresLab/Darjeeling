@@ -19,7 +19,6 @@ from bugzoo.core import FileLine, Patch
 from bugzoo import Bug as Snapshot
 
 from .core import Language, TestCoverageMap
-from .coverage import coverage_for_config
 from .environment import Environment
 from .test import BugZooTestSuite, TestSuite
 from .candidate import Candidate
@@ -105,7 +104,7 @@ class Session(DarjeelingEventProducer):
 
         # compute coverage
         logger.info("computing coverage information...")
-        coverage = coverage_for_config(environment, program, cfg.coverage)
+        coverage = cfg.coverage.build(environment, program)
         logger.info("computed coverage information")
         logger.debug("coverage: %s", coverage)
 
