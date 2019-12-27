@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __all__ = ('Config', 'OptimizationsConfig', 'SchemaConfig',
            'CoverageConfig',
-           'SearcherConfig', 'TestSuiteConfig',
+           'SearcherConfig',
            'TransformationsConfig', 'LocalizationConfig')
 
 from typing import (Optional, Collection, Tuple, Dict, Any, List, Set,
@@ -21,6 +21,7 @@ import bugzoo
 from .core import Language, FileLine, FileLineSet
 from .util import dynamically_registered
 from .exceptions import BadConfigurationException, LanguageNotSupported
+from .test.config import TestSuiteConfig
 
 if typing.TYPE_CHECKING:
     from .environment import Environment
@@ -67,35 +68,6 @@ class SearcherConfig(abc.ABC):
               candidate_limit: Optional[int] = None,
               time_limit: Optional[datetime.timedelta] = None
               ) -> 'Searcher':
-        ...
-
-
-@dynamically_registered(lookup='lookup', length=None, iterator=None)
-class TestSuiteConfig(abc.ABC):
-    """Describes a test suite configuration."""
-    @staticmethod
-    def lookup(name: str) -> Type['TestSuiteConfig']:
-        ...
-
-    @classmethod
-    @abc.abstractmethod
-    def from_dict(cls,
-                  d: Dict[str, Any],
-                  dir_: Optional[str] = None
-                  ) -> 'TestSuiteConfig':
-        if 'type' not in d:
-            logger.debug("using default BugZoo test suite")
-            name_type = 'bugzoo'
-        else:
-            name_type = d['type']
-        type_: Type[TestSuiteConfig] = TestSuiteConfig.lookup(name_type)
-        return type_.from_dict(d, dir_)
-
-    @abc.abstractmethod
-    def build(self,
-              environment: 'Environment',
-              bug: bugzoo.Bug
-              ) -> 'TestSuite':
         ...
 
 

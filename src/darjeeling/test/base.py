@@ -6,8 +6,8 @@ import abc
 import attr
 import bugzoo
 
+from .config import TestSuiteConfig
 from ..core import TestOutcome, Test
-from ..config import TestSuiteConfig
 from ..container import ProgramContainer
 from ..environment import Environment
 from ..util import dynamically_registered
