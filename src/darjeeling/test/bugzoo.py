@@ -2,16 +2,19 @@
 __all__ = ('BugZooTest', 'BugZooTestSuite', 'BugZooTestSuiteConfig')
 
 from typing import Dict, Any, Optional
+import typing
 
 import attr
 import bugzoo
 from bugzoo import Bug
 
 from .base import TestSuite, TestSuiteConfig
+from .config import TestSuiteConfig
 from ..core import TestOutcome, Test
-from ..config import TestSuiteConfig
-from ..container import ProgramContainer
-from ..environment import Environment
+
+if typing.TYPE_CHECKING:
+    from ..container import ProgramContainer
+    from ..environment import Environment
 
 
 class BugZooTestSuiteConfig(TestSuiteConfig):
@@ -24,7 +27,7 @@ class BugZooTestSuiteConfig(TestSuiteConfig):
                   ) -> TestSuiteConfig:
         return BugZooTestSuiteConfig()
 
-    def build(self, environment: Environment, bug: Bug) -> 'TestSuite':
+    def build(self, environment: 'Environment', bug: Bug) -> 'TestSuite':
         tests = tuple(BugZooTest(t) for t in bug.tests)
         return BugZooTestSuite(environment, tests)
 
@@ -40,7 +43,7 @@ class BugZooTest(Test):
 
 class BugZooTestSuite(TestSuite[BugZooTest]):
     def execute(self,
-                container: ProgramContainer,
+                container: 'ProgramContainer',
                 test: BugZooTest,
                 *,
                 coverage: bool = False

@@ -10,6 +10,11 @@ localization:
     - foo.c
 algorithm:
   type: exhaustive
+coverage:
+  method:
+    type: gcov
+    files-to-instrument:
+      - zune.c
 transformations:
   schemas:
     - type: delete-statement

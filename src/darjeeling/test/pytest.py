@@ -2,15 +2,18 @@
 __all__ = ('PyTestCase', 'PyTestSuite', 'PyTestSuiteConfig')
 
 from typing import Optional, Sequence, Dict, Any
+import typing
 
 import attr
 import bugzoo
 
 from .base import TestSuite
-from ..config import TestSuiteConfig
+from .config import TestSuiteConfig
 from ..core import TestOutcome, Test
-from ..container import ProgramContainer
-from ..environment import Environment
+
+if typing.TYPE_CHECKING:
+    from ..container import ProgramContainer
+    from ..environment import Environment
 
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
@@ -40,7 +43,7 @@ class PyTestSuiteConfig(TestSuiteConfig):
 
         return PyTestSuiteConfig(workdir, test_names, time_limit_seconds)
 
-    def build(self, environment: Environment, bug: bugzoo.Bug) -> 'TestSuite':
+    def build(self, environment: 'Environment', bug: bugzoo.Bug) -> 'TestSuite':
         # TODO automatically discover tests via pytest --setup-only
         tests = tuple(PyTestCase(t) for t in self.test_names)
         return PyTestSuite(environment=environment,
@@ -51,7 +54,7 @@ class PyTestSuiteConfig(TestSuiteConfig):
 
 class PyTestSuite(TestSuite[PyTestCase]):
     def __init__(self,
-                 environment: Environment,
+                 environment: 'Environment',
                  tests: Sequence[PyTestCase],
                  workdir: str,
                  time_limit_seconds: int
@@ -61,7 +64,7 @@ class PyTestSuite(TestSuite[PyTestCase]):
         self._time_limit_seconds = time_limit_seconds
 
     def execute(self,
-                container: ProgramContainer,
+                container: 'ProgramContainer',
                 test: PyTestCase,
                 *,
                 coverage: bool = False

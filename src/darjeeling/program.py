@@ -10,17 +10,18 @@ import attr
 from bugzoo import Bug as Snapshot
 from bugzoo.core.patch import Patch
 
+from . import exceptions as exc
 from .build_instructions import BuildInstructions
 from .core import Test, TestOutcome
 from .container import ProgramContainer
-from .environment import Environment
-from .test import TestSuite, BugZooTestSuite
 from .exceptions import (BadConfigurationException,
                          BuildFailure,
                          FailedToApplyPatch)
 
 if typing.TYPE_CHECKING:
     from .config import Config
+    from .environment import Environment
+    from .test import TestSuite
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -47,16 +48,16 @@ class ProgramDescription:
         The absolute path to the source directory for this program inside
         its associated Docker image.
     """
-    _environment: Environment
+    _environment: 'Environment'
     image: str
     snapshot: Snapshot
     build_instructions: BuildInstructions
     build_instructions_for_coverage: BuildInstructions
-    tests: TestSuite
+    tests: 'TestSuite'
     source_directory: str
 
     @staticmethod
-    def from_config(environment: Environment,
+    def from_config(environment: 'Environment',
                     cfg: 'Config'
                     ) -> 'ProgramDescription':
         """Loads a program from a given configuration.
@@ -142,9 +143,9 @@ class ProgramDescription:
                 logger.debug("failed to apply patch: %s", patch)
                 raise BuildFailure
 
-            mgr_ctr = self._environment.bugzoo.containers
-            outcome = mgr_ctr.build(container._bugzoo)
-            if not outcome.successful:
+            try:
+                self.build_instructions.execute(container)
+            except exc.BuildStepFailed:
                 raise BuildFailure
 
             yield container

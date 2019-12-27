@@ -20,9 +20,9 @@ import bugzoo
 from .core import Language, FileLine, FileLineSet
 from .util import dynamically_registered
 from .exceptions import BadConfigurationException, LanguageNotSupported
-from .test import TestSuiteConfig
+from .test.config import TestSuiteConfig
 from .searcher.config import SearcherConfig
-from .coverage import CoverageConfig
+from .coverage.config import CoverageConfig
 
 if typing.TYPE_CHECKING:
     from .environment import Environment
@@ -156,7 +156,7 @@ class TransformationsConfig:
         return TransformationsConfig(schemas)
 
 
-@attr.s(frozen=True)
+@attr.s(frozen=True, auto_attribs=True)
 class Config:
     """A configuration for Darjeeling.
 
@@ -186,16 +186,16 @@ class Config:
     tests: TestSuiteConfig
         A configuration for the test suite.
     """
-    snapshot: str = attr.ib()
-    language: Language = attr.ib()
+    snapshot: str
+    language: Language
     dir_patches: str = attr.ib()
-    transformations: TransformationsConfig = attr.ib()
-    localization: LocalizationConfig = attr.ib()
-    search: SearcherConfig = attr.ib()
-    tests: TestSuiteConfig = attr.ib()
+    transformations: TransformationsConfig
+    localization: LocalizationConfig
+    search: SearcherConfig
+    tests: TestSuiteConfig
+    coverage: CoverageConfig
     seed: int = attr.ib(default=0)
     optimizations: OptimizationsConfig = attr.ib(factory=OptimizationsConfig)
-    coverage: CoverageConfig = attr.ib(factory=CoverageConfig)
     terminate_early: bool = attr.ib(default=True)
     threads: int = attr.ib(default=1)
     limit_candidates: Optional[int] = attr.ib(default=None)
@@ -326,7 +326,8 @@ class Config:
         if 'coverage' in yml:
             coverage = CoverageConfig.from_dict(yml['coverage'], dir_)
         else:
-            coverage = CoverageConfig()
+            m = "'coverage' section is expected"
+            raise BadConfigurationException(m)
 
         # fetch the transformation schemas
         if 'transformations' not in yml:

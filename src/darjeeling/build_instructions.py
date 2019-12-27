@@ -107,5 +107,5 @@ class BuildInstructions(Sequence[BuildStep]):
             for step in self.steps:
                 time_left: Optional[int] = None
                 if self.time_limit:
-                    time_left = int(max(0, timer - self.time_limit))
+                    time_left = int(max(0, timer.duration - self.time_limit))
                 step.execute(container, time_limit=time_left)

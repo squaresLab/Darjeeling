@@ -20,7 +20,6 @@ from bugzoo import Bug as Snapshot
 
 from .core import Language, TestCoverageMap
 from .environment import Environment
-from .test import BugZooTestSuite, TestSuite
 from .candidate import Candidate
 from .searcher import Searcher
 from .program import ProgramDescription

@@ -8,6 +8,8 @@ import typing
 
 import attr
 
+from .. import exceptions as exc
+from .collector import CoverageCollectorConfig
 from ..container import ProgramContainer
 from ..core import (FileLineSet, FileLine, TestCoverageMap, Test, TestCoverage,
                     TestOutcome)
@@ -27,8 +29,13 @@ class CoverageConfig:
 
     Attributes
     ----------
+    collector_config: CoverageCollectorConfig
+        The configuration that should be used to instrument the program and
+        to collect coverage.
     restrict_to_files: Set[str], optional
         An optional set of files to which coverage should be restricted.
+    restrict_to_lines: Set[FileLine], optional
+        An optional set of lines to which coverage should be restricted.
     load_from_file: str, optional
         The name of the file, if any, that coverage information should be
         read from.
@@ -38,6 +45,7 @@ class CoverageConfig:
     ValueError
         If coverage is restricted to the empty set of files.
     """
+    collector_config: CoverageCollectorConfig = attr.ib()
     restrict_to_files: Optional[FrozenSet[str]] = attr.ib(default=None)
     restrict_to_lines: Optional[Set[FileLine]] = attr.ib(default=None)
     load_from_file: Optional[str] = attr.ib(default=None)
@@ -74,36 +82,17 @@ class CoverageConfig:
             restrict_to_files = frozenset(restrict_to_files_list)
         if 'restrict-to-lines' in d:
             restrict_to_lines = FileLineSet.from_dict(d['restrict-to-lines'])
-        return CoverageConfig(restrict_to_files=restrict_to_files,
+
+        if 'method' not in d:
+            m = 'missing expected section [method] in coverage section'
+            raise exc.BadConfigurationException(m)
+        collector_config = \
+            CoverageCollectorConfig.from_dict(d['method'], dir_)
+
+        return CoverageConfig(collector_config=collector_config,
+                              restrict_to_files=restrict_to_files,
                               restrict_to_lines=restrict_to_lines,
                               load_from_file=load_from_file)
-
-    def _collect(self,
-                 environment: 'Environment',
-                 program: 'ProgramDescription'
-                 ) -> TestCoverageMap:
-        bz = environment.bugzoo
-        snapshot = program.snapshot
-        tests = program.tests
-        with program.provision() as container:
-            logger.debug("computing coverage for snapshot: %s", snapshot.name)
-            logger.debug("instrumenting container for coverage...")
-            bz.containers.instrument(container._bugzoo)
-            logger.debug("instrumented container for coverage")
-
-            name_to_coverage: Dict[str, TestCoverage] = {}
-            for test in tests:
-                logger.debug("computing coverage for test [%s]", test.name)
-                outcome: TestOutcome = tests.execute(container, test, coverage=True)
-                logger.debug("test outcome [%s]: %s", test.name, outcome)
-                logger.debug("extracting coverage for test [%s]", test.name)
-                lines: Set[FileLine] = bz.containers.extract_coverage(container._bugzoo)
-                lines = FileLineSet.from_iter(lines)
-                logger.debug("extracted coverage for test [%s]:\n%s", test.name, lines)
-                test_coverage = TestCoverage(test=test.name, outcome=outcome, lines=lines)
-                name_to_coverage[test.name] = test_coverage
-
-            return TestCoverageMap(name_to_coverage)
 
     def build(self,
               environment: 'Environment',
@@ -117,7 +106,8 @@ class CoverageConfig:
             logger.info('loading coverage from file: %s', fn_coverage)
             coverage = TestCoverageMap.from_file(fn_coverage)
         else:
-            coverage = self._collect(environment, program)
+            collector = self.collector_config.build(environment, program)
+            coverage = collector.collect()
 
         if self.restrict_to_files:
             coverage = coverage.restrict_to_files(self.restrict_to_files)
