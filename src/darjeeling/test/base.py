@@ -13,11 +13,9 @@ from ..environment import Environment
 from ..util import dynamically_registered
 
 T = TypeVar('T', bound=Test)
-C = TypeVar('C', bound=TestSuiteConfig)
 
 
-class TestSuite(Generic[T, C]):
-    CONFIG: ClassVar[Type[C]]
+class TestSuite(Generic[T]):
     _environment: Environment
 
     def __init__(self, environment: Environment, tests: Sequence[T]) -> None:

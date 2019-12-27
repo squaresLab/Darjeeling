@@ -49,7 +49,7 @@ class PyTestSuiteConfig(TestSuiteConfig):
                            time_limit_seconds=self.time_limit_seconds)
 
 
-class PyTestSuite(TestSuite):
+class PyTestSuite(TestSuite[PyTestCase]):
     def __init__(self,
                  environment: Environment,
                  tests: Sequence[PyTestCase],

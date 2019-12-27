@@ -38,9 +38,7 @@ class BugZooTest(Test):
         return self._test.name
 
 
-class BugZooTestSuite(TestSuite):
-    CONFIG = BugZooTestSuiteConfig
-
+class BugZooTestSuite(TestSuite[BugZooTest]):
     def execute(self,
                 container: ProgramContainer,
                 test: BugZooTest,
