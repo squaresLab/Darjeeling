@@ -3,19 +3,22 @@ __all__ = ('GeneticSearcher',)
 
 from typing import Iterator, List, Optional, Dict, Any, Union
 import concurrent.futures
+import datetime
 import logging
 import random
-import datetime
+import typing
 
 import attr
 
 from .base import Searcher
-from ..config import SearcherConfig
+from .config import SearcherConfig
 from ..candidate import Candidate
 from ..environment import Environment
 from ..transformation import Transformation
-from ..problem import Problem
 from ..outcome import CandidateOutcome
+
+if typing.TYPE_CHECKING:
+    from ..problem import Problem
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -54,7 +57,7 @@ class GeneticSearcherConfig(SearcherConfig):
                                      sample_size=sample_size)
 
     def build(self,
-              problem: Problem,
+              problem: 'Problem',
               transformations: List[Transformation],
               *,
               threads: int = 1,
@@ -78,7 +81,7 @@ class GeneticSearcher(Searcher):
     CONFIG = GeneticSearcherConfig
 
     def __init__(self,
-                 problem: Problem,
+                 problem: 'Problem',
                  transformations: List[Transformation],
                  *,
                  population_size: int = 40,

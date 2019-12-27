@@ -9,12 +9,15 @@ from typing import (Any, Dict, List, Type, Iterator, Callable, TypeVar,
                     Generic, ClassVar, Mapping)
 import abc
 import logging
+import typing
 
 from ..exceptions import NameInUseException, \
                          UnknownTransformationSchemaException
-from ..problem import Problem
 from ..snippet import SnippetDatabase
 from ..core import Replacement, FileLine
+
+if typing.TYPE_CHECKING:
+    from ..problem import Problem
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -26,7 +29,7 @@ _REGISTRY: Dict[str, Type['TransformationSchema']] = {}
 
 class Transformation(abc.ABC):
     """Represents a source code transformation."""
-    def to_replacement(self, problem: Problem) -> Replacement:
+    def to_replacement(self, problem: 'Problem') -> Replacement:
         """Converts a transformation into a source code replacement."""
         ...
 
@@ -56,7 +59,7 @@ class TransformationSchema(Generic[T], abc.ABC):
     @classmethod
     @abc.abstractmethod
     def build(cls,
-              problem: Problem,
+              problem: 'Problem',
               snippets: SnippetDatabase,
               threads: int
               ) -> 'TransformationSchema':

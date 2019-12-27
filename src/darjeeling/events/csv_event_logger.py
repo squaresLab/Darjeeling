@@ -4,8 +4,9 @@ __all__ = ('CsvEventLogger',)
 from typing import Sequence, TextIO, Optional
 from typing_extensions import Protocol
 from threading import Lock
-import os
 import csv
+import os
+import typing
 
 import attr
 
@@ -15,7 +16,9 @@ from .event import (DarjeelingEvent,
                     CandidateEvaluationError,
                     TestExecutionStarted, TestExecutionFinished)
 from .handler import DarjeelingEventHandler
-from ..problem import Problem
+
+if typing.TYPE_CHECKING:
+    from ..problem import Problem
 
 
 class _CSVWriter(Protocol):
@@ -33,7 +36,7 @@ class CsvEventLogger(DarjeelingEventHandler):
         The absolute path to the file to which events should be relayed.
     """
     filename: str = attr.ib()
-    problem: Problem = attr.ib()
+    problem: 'Problem' = attr.ib()
     _file: TextIO = attr.ib(init=False, repr=False)
     _writer: _CSVWriter = attr.ib(init=False, repr=False)
 

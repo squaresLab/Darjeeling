@@ -1,22 +1,26 @@
-__all__ = ['Candidate', 'all_single_edit_patches']
+# -*- coding: utf-8 -*-
+__all__ = ('Candidate', 'all_single_edit_patches')
 
 from typing import List, Iterator, Dict, FrozenSet, Iterable, Tuple
+import typing
 
 import attr
 from bugzoo.core.patch import Patch
 
 from .core import Replacement, FileLine
-from .problem import Problem
 from .transformation import Transformation
+
+if typing.TYPE_CHECKING:
+    from .problem import Problem
 
 
 @attr.s(frozen=True, repr=False)
-class Candidate(object):
+class Candidate:
     """Represents a repair as a set of atomic program transformations."""
     transformations = attr.ib(type=Tuple[Transformation],
                               converter=tuple)  # type: ignore  # bug in mypy (should be fixed in v0.610)  # noqa: pycodestyle
 
-    def to_diff(self, problem: Problem) -> Patch:
+    def to_diff(self, problem: 'Problem') -> Patch:
         """Transforms this candidate patch into a concrete, unified diff."""
         replacements = \
             map(lambda t: t.to_replacement(problem), self.transformations)
@@ -29,7 +33,7 @@ class Candidate(object):
         # FIXME order each collection of replacements by location
         return problem.sources.replacements_to_diff(replacements_by_file)
 
-    def lines_changed(self, problem: Problem) -> List[FileLine]:
+    def lines_changed(self, problem: 'Problem') -> List[FileLine]:
         """
         Returns a list of source lines that are changed by this candidate
         patch.

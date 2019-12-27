@@ -11,21 +11,22 @@ __all__ = (
 
 from typing import (Dict, Callable, List, Iterator, FrozenSet, Sequence, Any,
                     Iterable, Optional, Mapping, Set, MutableMapping)
-import functools
-import math
-import json
-import random
 import bisect
-import logging
 import functools
+import json
+import logging
+import math
+import random
+import typing
 
-from .problem import Problem
 from .core import FileLine, FileLineMap, FileLineSet, TestCoverageMap
 from .spectra import Spectra
 from .exceptions import NoImplicatedLines, BadConfigurationException
-from .config import LocalizationConfig
 
-logger = logging.getLogger(__name__)  # type: logging.Logger
+if typing.TYPE_CHECKING:
+    from .config import LocalizationConfig
+
+logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 SuspiciousnessMetric = Callable[[Spectra], MutableMapping[FileLine, float]]
@@ -124,7 +125,7 @@ class Localization:
 
     @staticmethod
     def from_config(coverage: TestCoverageMap,
-                    cfg: LocalizationConfig
+                    cfg: 'LocalizationConfig'
                     ) -> 'Localization':
         # find the suspiciousness metric
         try:

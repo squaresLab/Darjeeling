@@ -9,18 +9,18 @@ import abc
 import logging
 import datetime
 import threading
+import typing
 import inspect
 import time
 import signal
 
 import bugzoo
 
+from .config import SearcherConfig
 from ..events import DarjeelingEventProducer, DarjeelingEventHandler
 from ..core import FileLine
-from ..config import SearcherConfig
 from ..environment import Environment
 from ..candidate import Candidate
-from ..problem import Problem
 from ..outcome import OutcomeManager, CandidateOutcome
 from ..transformation import Transformation
 from ..evaluator import Evaluator, Evaluation
@@ -32,6 +32,9 @@ from ..exceptions import BuildFailure, \
     BadConfigurationException
 from ..util import Stopwatch, dynamically_registered
 
+if typing.TYPE_CHECKING:
+    from ..problem import Problem
+
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
@@ -42,7 +45,7 @@ class Searcher(Generic[T], DarjeelingEventProducer, abc.ABC):
     CONFIG: ClassVar[Type[T]]
 
     def __init__(self,
-                 problem: Problem,
+                 problem: 'Problem',
                  *,
                  threads: int = 1,
                  time_limit: Optional[datetime.timedelta] = None,
@@ -105,7 +108,7 @@ class Searcher(Generic[T], DarjeelingEventProducer, abc.ABC):
         return self.__evaluator.num_workers
 
     @property
-    def problem(self) -> Problem:
+    def problem(self) -> 'Problem':
         """A description of the problem being solved."""
         return self.__problem
 

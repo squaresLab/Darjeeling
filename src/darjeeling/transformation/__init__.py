@@ -8,6 +8,7 @@ from typing import (List, Iterator, Dict, FrozenSet, Tuple, Iterable, Type,
 import logging
 import os
 import random
+import typing
 
 import attr
 from kaskara import InsertionPoint
@@ -17,16 +18,18 @@ from .classic import *
 from .line import *
 from ..exceptions import NoImplicatedLines
 from ..localization import Localization
-from ..problem import Problem
 from ..snippet import Snippet, SnippetDatabase
 from ..core import Replacement, FileLine, FileLocationRange, FileLocation, \
                    FileLineSet, Location, LocationRange
+
+if typing.TYPE_CHECKING:
+    from ..problem import Problem
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-def find_all(problem: Problem,
+def find_all(problem: 'Problem',
              lines: List[FileLine],
              snippets: SnippetDatabase,
              schemas: List[TransformationSchema]
@@ -40,7 +43,7 @@ def find_all(problem: Problem,
         for line in lines:
             yield from line_to_trans[line]
 
-def sample_by_localization_and_type(problem: Problem,
+def sample_by_localization_and_type(problem: 'Problem',
                                     snippets: SnippetDatabase,
                                     localization: Localization,
                                     schemas: List[TransformationSchema],

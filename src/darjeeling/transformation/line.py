@@ -12,15 +12,18 @@ __all__ = (
 from typing import List, Iterator, Iterable, Dict, Any, FrozenSet, Mapping
 import abc
 import logging
+import typing
 
 import attr
 
 from .base import Transformation, TransformationSchema, register
-from ..problem import Problem
 from ..snippet import Snippet, SnippetDatabase, LineSnippetDatabase
 from ..core import (Replacement, FileLine, FileLocationRange, FileLocation,
                     FileLineSet, Location, LocationRange)
 from ..exceptions import BadConfigurationException
+
+if typing.TYPE_CHECKING:
+    from ..problem import Problem
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -32,12 +35,12 @@ class LineTransformation(Transformation):
 
 @attr.s(frozen=True, auto_attribs=True)
 class LineTransformationSchema(TransformationSchema[LineTransformation]):
-    _problem: Problem = attr.ib(hash=False)
+    _problem: 'Problem' = attr.ib(hash=False)
     _snippets: LineSnippetDatabase = attr.ib(hash=False)
 
     @classmethod
     def build(cls,
-              problem: Problem,
+              problem: 'Problem',
               snippets: SnippetDatabase,
               threads: int
               ) -> 'TransformationSchema':
@@ -70,7 +73,7 @@ class LineTransformationSchema(TransformationSchema[LineTransformation]):
 class DeleteLine(LineTransformation):
     line: FileLine
 
-    def to_replacement(self, problem: Problem) -> Replacement:
+    def to_replacement(self, problem: 'Problem') -> Replacement:
         loc = problem.sources.line_to_location_range(self.line)
         return Replacement(loc, '')
 
@@ -87,7 +90,7 @@ class ReplaceLine(LineTransformation):
     line: FileLine
     replacement: FileLine
 
-    def to_replacement(self, problem: Problem) -> Replacement:
+    def to_replacement(self, problem: 'Problem') -> Replacement:
         sources = problem.sources
         loc = sources.line_to_location_range(self.line)
         rep = sources.read_line(self.replacement, keep_newline=True)
@@ -109,7 +112,7 @@ class InsertLine(LineTransformation):
     line: FileLine
     insertion: FileLine
 
-    def to_replacement(self, problem: Problem) -> Replacement:
+    def to_replacement(self, problem: 'Problem') -> Replacement:
         sources = problem.sources
         r = sources.line_to_location_range(self.line)
         r = FileLocationRange(r.filename, LocationRange(r.start, r.start))

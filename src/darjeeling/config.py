@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 __all__ = ('Config', 'OptimizationsConfig', 'SchemaConfig',
            'CoverageConfig',
-           'SearcherConfig',
            'TransformationsConfig', 'LocalizationConfig')
 
 from typing import (Optional, Collection, Tuple, Dict, Any, List, Set,
@@ -21,7 +20,8 @@ import bugzoo
 from .core import Language, FileLine, FileLineSet
 from .util import dynamically_registered
 from .exceptions import BadConfigurationException, LanguageNotSupported
-from .test.config import TestSuiteConfig
+from .test import TestSuiteConfig
+from .searcher.config import SearcherConfig
 
 if typing.TYPE_CHECKING:
     from .environment import Environment
@@ -32,43 +32,6 @@ if typing.TYPE_CHECKING:
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-
-
-@dynamically_registered(lookup='lookup')
-class SearcherConfig(abc.ABC):
-    """Describes a search algorithm configuration."""
-    @staticmethod
-    def __iter__() -> Iterator[str]:
-        ...
-
-    @staticmethod
-    def __len__() -> int:
-        ...
-
-    @staticmethod
-    def lookup(name: str) -> Type['SearcherConfig']:
-        ...
-
-    @classmethod
-    @abc.abstractmethod
-    def from_dict(cls,
-                  d: Dict[str, Any],
-                  dir_: Optional[str] = None
-                  ) -> 'SearcherConfig':
-        name_type: str = d['type']
-        type_: Type[SearcherConfig] = SearcherConfig.lookup(name_type)
-        return type_.from_dict(d, dir_)
-
-    @abc.abstractmethod
-    def build(self,
-              problem: 'Problem',
-              transformations: List['Transformation'],
-              *,
-              threads: int = 1,
-              candidate_limit: Optional[int] = None,
-              time_limit: Optional[datetime.timedelta] = None
-              ) -> 'Searcher':
-        ...
 
 
 @attr.s(frozen=True)

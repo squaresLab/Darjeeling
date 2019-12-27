@@ -3,14 +3,17 @@ __all__ = ('ExhaustiveSearcher',)
 
 from typing import Iterable, Optional, Iterator, Dict, Any, List
 import datetime
+import typing
 
 from .base import Searcher
-from ..config import SearcherConfig
+from .config import SearcherConfig
 from ..candidate import Candidate, all_single_edit_patches
 from ..environment import Environment
-from ..problem import Problem
 from ..transformation import Transformation
 from ..exceptions import SearchExhausted
+
+if typing.TYPE_CHECKING:
+    from ..problem import Problem
 
 
 class ExhaustiveSearcherConfig(SearcherConfig):
@@ -31,7 +34,7 @@ class ExhaustiveSearcherConfig(SearcherConfig):
         return ExhaustiveSearcherConfig()
 
     def build(self,
-              problem: Problem,
+              problem: 'Problem',
               transformations: List[Transformation],
               *,
               threads: int = 1,
@@ -49,7 +52,7 @@ class ExhaustiveSearcher(Searcher):
     CONFIG = ExhaustiveSearcherConfig
 
     def __init__(self,
-                 problem: Problem,
+                 problem: 'Problem',
                  transformations: List[Transformation],
                  *,
                  threads: int = 1,

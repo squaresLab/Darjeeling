@@ -15,10 +15,10 @@ from kaskara import Statement as KaskaraStatement
 from kaskara.analysis import Analysis as KaskaraAnalysis
 
 from .core import FileLocationRange, FileLine, FileLineSet
-from .problem import Problem
 
 if typing.TYPE_CHECKING:
     from .config import Config
+    from .problem import Problem
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -180,7 +180,7 @@ class StatementSnippetDatabase(SnippetDatabase[StatementSnippet]):
 
 class LineSnippetDatabase(SnippetDatabase[LineSnippet]):
     @staticmethod
-    def for_problem(problem: Problem) -> 'LineSnippetDatabase':
+    def for_problem(problem: 'Problem') -> 'LineSnippetDatabase':
         logger.debug('constructing line snippet database')
         db = LineSnippetDatabase()
         logger.debug('constructed database of %d line snippets', len(db))

@@ -12,16 +12,19 @@ __all__ = (
 from typing import List, Iterator, Iterable, Dict, Any, FrozenSet, Mapping
 import abc
 import logging
+import typing
 
 import attr
 import kaskara
 
 from .base import Transformation, TransformationSchema, register
-from ..problem import Problem
 from ..snippet import StatementSnippet, SnippetDatabase, StatementSnippetDatabase
 from ..core import (Replacement, FileLine, FileLocationRange, FileLocation,
                     FileLineSet, Location, LocationRange)
 from ..exceptions import BadConfigurationException
+
+if typing.TYPE_CHECKING:
+    from ..problem import Problem
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -33,12 +36,12 @@ class StatementTransformation(Transformation):
 
 @attr.s(frozen=True, auto_attribs=True)
 class StatementTransformationSchema(TransformationSchema[StatementTransformation]):  # noqa: pycodestyle
-    _problem: Problem = attr.ib(hash=False)
+    _problem: 'Problem' = attr.ib(hash=False)
     _snippets: StatementSnippetDatabase = attr.ib(hash=False)
 
     @classmethod
     def build(cls,
-              problem: Problem,
+              problem: 'Problem',
               snippets: SnippetDatabase,
               threads: int
               ) -> 'TransformationSchema':
@@ -131,7 +134,7 @@ class DeleteStatement(StatementTransformation):
         s = "DeleteStatement<{}>".format(str(self.location))
         return s
 
-    def to_replacement(self, problem: Problem) -> Replacement:
+    def to_replacement(self, problem: 'Problem') -> Replacement:
         return Replacement(self.location, '')
 
     @property
@@ -162,7 +165,7 @@ class ReplaceStatement(StatementTransformation):
         s = s.format(repr(self.replacement.content), str(self.location))
         return s
 
-    def to_replacement(self, problem: Problem) -> Replacement:
+    def to_replacement(self, problem: 'Problem') -> Replacement:
         return Replacement(self.location, str(self.replacement.content))
 
     @property
@@ -214,7 +217,7 @@ class PrependStatement(StatementTransformation):
         return FileLine(self.location.filename,
                         self.location.line)
 
-    def to_replacement(self, problem: Problem) -> Replacement:
+    def to_replacement(self, problem: 'Problem') -> Replacement:
         r = FileLocationRange(self.location.filename,
                               LocationRange(self.location.location, self.location.location))
         return Replacement(r, self.statement.content)

@@ -4,11 +4,12 @@ __all__ = ('Evaluator',)
 from typing import Tuple, List, Optional, Iterator, Set, Union, FrozenSet
 from timeit import default_timer as timer
 from concurrent.futures import Future
+import concurrent.futures
 import math
 import logging
 import queue
 import threading
-import concurrent.futures
+import typing
 import random
 
 from .candidate import Candidate
@@ -18,7 +19,6 @@ from .outcome import CandidateOutcome, \
                      TestOutcomeSet, \
                      TestOutcome, \
                      BuildOutcome
-from .problem import Problem
 from .events import (DarjeelingEventHandler, DarjeelingEventProducer,
                      DarjeelingEvent)
 from .events import (BuildStarted, BuildFinished,
@@ -30,6 +30,9 @@ from .core import Test
 from .test import TestSuite
 from .util import Stopwatch
 
+if typing.TYPE_CHECKING:
+    from .problem import Problem
+
 Evaluation = Tuple[Candidate, CandidateOutcome]
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -38,7 +41,7 @@ logger.setLevel(logging.DEBUG)
 
 class Evaluator(DarjeelingEventProducer):
     def __init__(self,
-                 problem: Problem,
+                 problem: 'Problem',
                  *,
                  num_workers: int = 1,
                  terminate_early: bool = True,
