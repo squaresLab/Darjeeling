@@ -112,6 +112,11 @@ class ProgramDescription:
         """
         return self.tests.execute(container, test)
 
+    def provision(self) -> ProgramContainer:
+        """Provisions a container for this program."""
+        return ProgramContainer.for_bugzoo_snapshot(self._environment,
+                                                    self.snapshot)
+
     @contextlib.contextmanager
     def build(self, patch: Patch) -> Iterator[ProgramContainer]:
         """Builds a container for a given patch.
@@ -127,9 +132,7 @@ class ProgramDescription:
         BuildFailure
             If the program failed to build.
         """
-        with ProgramContainer.for_bugzoo_snapshot(self._environment,
-                                                  self.snapshot
-                                                  ) as container:
+        with self.provision() as container:
             try:
                 container.patch(patch)
             except FailedToApplyPatch:
