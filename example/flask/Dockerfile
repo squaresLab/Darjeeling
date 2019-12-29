@@ -16,4 +16,4 @@ WORKDIR /opt/flask
 RUN git clone https://github.com/pallets/flask /opt/flask
 COPY bug.diff /opt/flask
 RUN git apply bug.diff \
- && pip3 install .
+ && pip3 install -e .

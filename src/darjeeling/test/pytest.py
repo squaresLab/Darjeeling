@@ -70,12 +70,12 @@ class PyTestSuite(TestSuite[PyTestCase]):
                 coverage: bool = False
                 ) -> TestOutcome:
         if coverage:
-            command = f'coverage -m pytest {test.name}'
+            command = f'coverage run -m pytest {test.name}'
         else:
             command = 'pytest {test.name}'
 
         outcome = container.shell.run(command,
                                       cwd=self._workdir,
                                       time_limit=self._time_limit_seconds)  # noqa
-        successful = outcome.retcode == 0
+        successful = outcome.returncode == 0
         return TestOutcome(successful=successful, time_taken=outcome.duration)

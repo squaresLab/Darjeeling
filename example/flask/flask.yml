@@ -9,7 +9,8 @@ localization:
 algorithm:
   type: exhaustive
 coverage:
-  load-from-file: coverage.yml
+  method:
+    type: coverage.py
 tests:
   type: pytest
   workdir: /opt/flask

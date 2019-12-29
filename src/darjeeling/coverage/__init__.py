@@ -3,3 +3,4 @@ from .config import CoverageConfig
 from .collector import CoverageCollector, CoverageCollectorConfig
 
 from . import gcov
+from . import coveragepy
