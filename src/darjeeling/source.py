@@ -186,9 +186,7 @@ class ProgramSourceLoader:
                     files: Iterable[str]
                     ) -> 'ProgramSource':
         """Loads the sources for a program."""
-        with ProgramContainer.for_bugzoo_snapshot(self._environment,
-                                                  program.snapshot,
-                                                  ) as container:
+        with program.provision() as container:
             return self.for_container(program, container, files)
 
     def for_container(self,

@@ -71,7 +71,7 @@ class Session(DarjeelingEventProducer):
         random.seed(cfg.seed)
 
         logger.info("using %d threads", cfg.threads)
-        logger.info("using language: %s", cfg.language.value)
+        logger.info("using language: %s", cfg.program.language.value)
         logger.info("using optimizations: %s", cfg.optimizations)
         logger.info("using coverage config: %s", cfg.coverage)
         logger.info("using random number generator seed: %d", cfg.seed)
@@ -98,7 +98,7 @@ class Session(DarjeelingEventProducer):
 
         # build program
         logger.debug("building program...")
-        program = ProgramDescription.from_config(environment, cfg)
+        program = cfg.program.build(environment)
         logger.debug("built program: %s", program)
 
         # compute coverage
@@ -117,17 +117,19 @@ class Session(DarjeelingEventProducer):
         files = localization.files
         lines: List[FileLine] = list(localization)
 
-        if cfg.language in (Language.CPP, Language.C):
-            analysis = kaskara.Analysis.build(client_bugzoo,
-                                              program.snapshot,
-                                              files)
+        if program.language in (Language.CPP, Language.C):
+            kaskara_project = kaskara.Project(dockerblade=environment.dockerblade,
+                                              image=program.image,
+                                              directory=program.source_directory,
+                                              files=files)
+            analysis = kaskara.Analysis.build(kaskara_project)
         else:
             analysis = None
 
         # build problem
         problem = Problem.build(environment=environment,
                                 config=cfg,
-                                language=cfg.language,
+                                language=program.language,
                                 program=program,
                                 coverage=coverage,
                                 analysis=analysis)

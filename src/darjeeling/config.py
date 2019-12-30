@@ -23,6 +23,7 @@ from .exceptions import BadConfigurationException, LanguageNotSupported
 from .test.config import TestSuiteConfig
 from .searcher.config import SearcherConfig
 from .coverage.config import CoverageConfig
+from .program import ProgramDescriptionConfig
 
 if typing.TYPE_CHECKING:
     from .environment import Environment
@@ -162,10 +163,6 @@ class Config:
 
     Attributes
     ----------
-    snapshot: str
-        The name of the BugZoo snapshot that should be repaired.
-    language: Language
-        The language that is used by the program under repair.
     dir_patches: str
         The absolute path to the directory to which patches should be saved.
     seed: int
@@ -183,16 +180,14 @@ class Config:
         searching for an acceptable patch.
     search: SearcherConfig
         The configuration used by the search algorithm.
-    tests: TestSuiteConfig
-        A configuration for the test suite.
+    program: ProgramDescriptionConfig
+        A description of the program under transformation.
     """
-    snapshot: str
-    language: Language
     dir_patches: str = attr.ib()
+    program: ProgramDescriptionConfig
     transformations: TransformationsConfig
     localization: LocalizationConfig
     search: SearcherConfig
-    tests: TestSuiteConfig
     coverage: CoverageConfig
     seed: int = attr.ib(default=0)
     optimizations: OptimizationsConfig = attr.ib(factory=OptimizationsConfig)
@@ -267,12 +262,6 @@ class Config:
                 err("'save-patches-to' must be specified for non-file-based configurations")
             dir_patches = os.path.join(dir_, 'patches')
 
-        if 'snapshot' not in yml:
-            err("'snapshot' property is missing")
-        if not isinstance(yml['snapshot'], str):
-            err("'snapshot' property should be a string")
-        snapshot: str = yml['snapshot']
-
         if threads is None and 'threads' in yml:
             if not isinstance(yml['threads'], int):
                 err("'threads' property should be an int")
@@ -289,20 +278,6 @@ class Config:
         elif seed is None:
             random.seed(datetime.datetime.now())
             seed = random.randint(0, sys.maxsize)
-
-        # determine the language
-        if 'language' not in yml:
-            err("'language' property is missing")
-        if not isinstance(yml['language'], str):
-            err("'language' property should be a string")
-        try:
-            language: Language = Language.find(yml['language'])
-        except LanguageNotSupported:
-            supported = ', '.join([l.value for l in Language])
-            supported = "(supported languages: {})".format(supported)
-            m = "unsupported language [{}]. {}"
-            m = m.format(yml['language'], supported)
-            err(m)
 
         has_candidate_override = limit_candidates is not None
         has_candidate_limit = \
@@ -345,20 +320,18 @@ class Config:
             err("'algorithm' section is missing")
         search = SearcherConfig.from_dict(yml['algorithm'], dir_)
 
-        if 'tests' in yml and not isinstance(yml['tests'], dict):
-            err("'tests' section should be an object")
-        tests = TestSuiteConfig.from_dict(yml.get('tests', {}), dir_)
+        if 'program' not in yml:
+            err("'program' section is missing")
+        program = ProgramDescriptionConfig.from_dict(yml['program'], dir_)
 
-        return Config(snapshot=snapshot,
-                      language=language,
-                      seed=seed,
+        return Config(seed=seed,
                       threads=threads,
                       terminate_early=terminate_early,
                       limit_time_minutes=limit_time_minutes,
                       limit_candidates=limit_candidates,
                       transformations=transformations,
+                      program=program,
                       localization=localization,
-                      tests=tests,
                       coverage=coverage,
                       search=search,
                       optimizations=opts,

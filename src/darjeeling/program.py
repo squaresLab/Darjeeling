@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-__all__ = ('ProgramDescription',)
+__all__ = ('ProgramDescription', 'ProgramDescriptionConfig')
 
-from typing import Iterator
+from typing import Iterator, NoReturn, Mapping, Optional, Any
 import contextlib
 import typing
 import logging
@@ -12,19 +12,100 @@ from bugzoo.core.patch import Patch
 
 from . import exceptions as exc
 from .build_instructions import BuildInstructions
-from .core import Test, TestOutcome
+from .core import Language, Test, TestOutcome
 from .container import ProgramContainer
+from .test import TestSuiteConfig, TestSuite
 from .exceptions import (BadConfigurationException,
                          BuildFailure,
                          FailedToApplyPatch)
 
 if typing.TYPE_CHECKING:
-    from .config import Config
     from .environment import Environment
-    from .test import TestSuite
+#    from .test import TestSuite
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+
+@attr.s(frozen=True, slots=True, auto_attribs=True)
+class ProgramDescriptionConfig:
+    image: str
+    language: Language
+    build_instructions: BuildInstructions
+    build_instructions_for_coverage: BuildInstructions
+    tests: TestSuiteConfig
+    source_directory: str
+    snapshot: Optional[Snapshot]
+
+    @staticmethod
+    def from_dict(dict_: Mapping[str, Any],
+                  dir_: Optional[str] = None
+                  ) -> 'ProgramDescriptionConfig':
+        def err(message: str) -> NoReturn:
+            raise exc.BadConfigurationException(message)
+
+        # image
+        if 'image' not in dict_:
+            err("'image' property is missing from 'program' section")
+        if not isinstance(dict_['image'], str):
+            err("'image' property should be a string")
+        image: str = dict_['image']
+
+        # source directory
+        if 'source-directory' not in dict_:
+            err("'source-directory' property is missing from 'program' section")
+        if not isinstance(dict_['source-directory'], str):
+            err("'source-directory' property should be a string")
+        source_directory: str = dict_['source-directory']
+
+        # language
+        if 'language' not in dict_:
+            err("'language' property is missing from 'program' section")
+        if not isinstance(dict_['language'], str):
+            err("'language' property should be a string")
+        try:
+            language: Language = Language.find(dict_['language'])
+        except exc.LanguageNotSupported:
+            supported = ', '.join([l.value for l in Language])
+            supported = f'(supported languages: {supported})'
+            err(f"unsupported language [{dict_['language']}]. {supported}")
+
+        # test suite
+        if 'tests' not in dict_:
+            err("'tests' section is missing from 'program' section")
+        if not isinstance(dict_['tests'], dict):
+            err("'tests' section should be an object")
+        tests = TestSuiteConfig.from_dict(dict_.get('tests', {}), dir_)
+
+        # build instructions
+        if 'build-instructions' not in dict_:
+            err("'build-instructions' section is missing from 'program' section")
+        if not isinstance(dict_['build-instructions'], dict):
+            err("'build-instructions' section should be an object")
+        build_instructions, build_instructions_for_coverage = \
+            BuildInstructions.from_dict(dict_['build-instructions'],
+                                        source_directory=source_directory)
+
+        return ProgramDescriptionConfig(image=image,
+                                        language=language,
+                                        build_instructions=build_instructions,
+                                        build_instructions_for_coverage=build_instructions_for_coverage,
+                                        tests=tests,
+                                        snapshot=None,
+                                        source_directory=source_directory)
+
+
+    def build(self, environment: 'Environment') -> 'ProgramDescription':
+        # FIXME don't pass snapshot!
+        tests = self.tests.build(environment, self.snapshot)
+        return ProgramDescription(environment=environment,
+                                  image=self.image,
+                                  language=self.language,
+                                  snapshot=self.snapshot,
+                                  build_instructions=self.build_instructions,
+                                  build_instructions_for_coverage=self.build_instructions_for_coverage,
+                                  tests=tests,
+                                  source_directory=self.source_directory)
 
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
@@ -35,6 +116,8 @@ class ProgramDescription:
     ----------
     image: str
         The name of the Docker image for this progrma.
+    language: Language
+        The language in which the program is written.
     build_instructions: BuildInstructions
         Executable instructions for building the program.
     build_instructions_for_coverage: BuildInstructions
@@ -50,45 +133,12 @@ class ProgramDescription:
     """
     _environment: 'Environment'
     image: str
-    snapshot: Snapshot
+    language: Language
+    snapshot: Optional[Snapshot]
     build_instructions: BuildInstructions
     build_instructions_for_coverage: BuildInstructions
     tests: 'TestSuite'
     source_directory: str
-
-    @staticmethod
-    def from_config(environment: 'Environment',
-                    cfg: 'Config'
-                    ) -> 'ProgramDescription':
-        """Loads a program from a given configuration.
-
-        Raises
-        ------
-        BadConfigurationException
-            If no BugZoo snapshot can be found with the given name.
-        BadConfigurationException
-            If the given BugZoo snapshot is not installed.
-        """
-        bz = environment.bugzoo
-        if not cfg.snapshot in bz.bugs:
-            m = f"snapshot not found: {cfg.snapshot}"
-            raise BadConfigurationException(m)
-
-        snapshot = bz.bugs[cfg.snapshot]
-        image = snapshot.image
-        tests = cfg.tests.build(environment, snapshot)
-        source_directory = snapshot.source_dir
-        build_instructions, build_instructions_for_coverage = \
-            BuildInstructions.from_bugzoo(snapshot)
-
-        return ProgramDescription(
-                    environment=environment,
-                    image=image,
-                    build_instructions=build_instructions,
-                    build_instructions_for_coverage=build_instructions_for_coverage,
-                    snapshot=snapshot,
-                    source_directory=source_directory,
-                    tests=tests)
 
     def execute(self,
                 container: ProgramContainer,
@@ -118,8 +168,7 @@ class ProgramDescription:
 
     def provision(self) -> ProgramContainer:
         """Provisions a container for this program."""
-        return ProgramContainer.for_bugzoo_snapshot(self._environment,
-                                                    self.snapshot)
+        return ProgramContainer.for_program(self._environment, self)
 
     @contextlib.contextmanager
     def build(self, patch: Patch) -> Iterator[ProgramContainer]:

@@ -1,22 +1,36 @@
 # -*- coding: utf-8 -*-
 __all__ = ('ProgramContainer',)
 
+import typing
+
 import attr
-import bugzoo as _bugzoo
 import dockerblade as _dockerblade
 from bugzoo.core.patch import Patch as BugZooPatch
 
+from . import exceptions as exc
 from .environment import Environment
-from .exceptions import FailedToApplyPatch
+
+if typing.TYPE_CHECKING:
+    from .program import ProgramDescription
 
 
 @attr.s(frozen=True, slots=True, auto_attribs=True, repr=False)
 class ProgramContainer:
     """Provides access to a container for a program variant."""
     id: str
+    program: 'ProgramDescription'
     _environment: Environment
-    _bugzoo: _bugzoo.Container
     _dockerblade: _dockerblade.Container
+
+    @staticmethod
+    def for_program(environment: Environment,
+                    program: 'ProgramDescription'
+                    ) -> 'ProgramContainer':
+        dockerblade = environment.dockerblade.provision(program.image)
+        return ProgramContainer(id=dockerblade.id,
+                                program=program,
+                                environment=environment,
+                                dockerblade=dockerblade)
 
     def __repr__(self) -> str:
         return f'ProgramContainer(id={self.id})'
@@ -28,33 +42,7 @@ class ProgramContainer:
         self.close()
 
     def close(self) -> None:
-        mgr_ctr = self._environment.bugzoo.containers
-        del mgr_ctr[self.id]
-
-    @classmethod
-    def for_bugzoo_snapshot(cls,
-                            environment: Environment,
-                            snapshot: _bugzoo.Bug
-                            ) -> 'ProgramContainer':
-        mgr_ctr = environment.bugzoo.containers
-        container = mgr_ctr.provision(snapshot)
-        try:
-            return cls.from_bugzoo_container(environment, container)
-        except:
-            del mgr_ctr[container.uid]
-            raise
-
-    @classmethod
-    def from_bugzoo_container(cls,
-                              environment: Environment,
-                              container: _bugzoo.Container
-                              ) -> 'ProgramContainer':
-        id = container.uid
-        dockerblade_container = environment.dockerblade.attach(id)
-        return ProgramContainer(id=id,
-                                environment=environment,
-                                bugzoo=container,
-                                dockerblade=dockerblade_container)
+        self._dockerblade.remove()
 
     def patch(self, patch: BugZooPatch) -> None:
         """Applies a given patch to this container.
@@ -64,13 +52,16 @@ class ProgramContainer:
         FailedToApplyPatch
             if the patch was not successfully applied.
         """
-        mgr_ctr = self._environment.bugzoo.containers
-        if not mgr_ctr.patch(self._bugzoo, patch):
-            raise FailedToApplyPatch
+        context = self.program.source_directory
+        unified_diff = str(patch)
+        try:
+            self.filesystem.patch(context=context, diff=unified_diff)
+        except _dockerblade.CalledProcessError:
+            raise exc.FailedToApplyPatch
 
     @property
     def shell(self) -> _dockerblade.Shell:
-        return self._dockerblade.shell()
+        return self._dockerblade.shell('/bin/bash')
 
     @property
     def filesystem(self) -> _dockerblade.FileSystem:

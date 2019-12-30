@@ -1,6 +1,22 @@
 version: '1.0'
-snapshot: 'tse2012:zune'
-language: c
+
+program:
+  image: squareslab/tse2012:zune
+  language: c
+  source-directory: /experiment/source
+  build-instructions:
+    time-limit: 15
+    steps:
+      - gcc zune.c -o zune
+    steps-for-coverage:
+      - gcc zune.c -o zune --coverage
+  tests:
+    type: genprog
+    workdir: /experiment
+    number-of-failing-tests: 4
+    number-of-passing-tests: 18
+    time-limit: 5
+
 seed: 0
 threads: 16
 localization:
@@ -20,12 +36,6 @@ transformations:
     - type: delete-statement
     - type: replace-statement
     - type: prepend-statement
-tests:
-  type: genprog
-  workdir: /experiment
-  number-of-failing-tests: 4
-  number-of-passing-tests: 18
-  time-limit: 5
 optimizations:
   ignore-equivalent-prepends: yes
   ignore-dead-code: yes
