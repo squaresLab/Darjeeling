@@ -20,6 +20,12 @@ transformations:
     - type: delete-statement
     - type: replace-statement
     - type: prepend-statement
+tests:
+  type: genprog
+  workdir: /experiment
+  number-of-failing-tests: 4
+  number-of-passing-tests: 18
+  time-limit: 5
 optimizations:
   ignore-equivalent-prepends: yes
   ignore-dead-code: yes
