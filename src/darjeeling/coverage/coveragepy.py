@@ -59,7 +59,8 @@ class CoveragePyCollector(CoverageCollector):
         files = container.filesystem
         shell = container.shell
         temporary_filename = files.mktemp()
-        command = f'coverage json -o {temporary_filename} --omit="tests/*"'
+        command = (f'coverage json -o {temporary_filename} '
+                    '--omit="tests/* && coverage erase"')
         response = shell.check_output(command,
                                       cwd=self.program.source_directory)
         report_text = files.read(temporary_filename)
