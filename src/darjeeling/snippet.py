@@ -158,7 +158,12 @@ class StatementSnippetDatabase(SnippetDatabase[StatementSnippet]):
         db = StatementSnippetDatabase()
         for stmt in analysis.statements:
             content = stmt.canonical if use_canonical_form else stmt.content
-            if stmt.requires_syntax:
+
+            reads = frozenset(stmt.reads if hasattr(stmt, 'reads') else [])
+            writes = frozenset(stmt.writes if hasattr(stmt, 'writes') else [])
+            declares = \
+                frozenset(stmt.reads if hasattr(stmt, 'declares') else [])
+            if hasattr(stmt, 'requires_syntax') and stmt.requires_syntax:
                 requires_syntax = frozenset(stmt.requires_syntax)
             else:
                 requires_syntax = frozenset()
@@ -166,9 +171,9 @@ class StatementSnippetDatabase(SnippetDatabase[StatementSnippet]):
             snippet = StatementSnippet(
                 content=content,
                 kind=stmt.kind,
-                reads=frozenset(stmt.reads if stmt.reads else []),
-                writes=frozenset(stmt.writes if stmt.writes else []),
-                declares=frozenset(stmt.declares if stmt.declares else []),
+                reads=reads,
+                writes=writes,
+                declares=declares,
                 requires_syntax=requires_syntax)
             db.add(snippet, stmt.location)
 

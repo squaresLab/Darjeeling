@@ -112,6 +112,7 @@ class Language(Enum):
 
     C = 'c'
     CPP = 'cpp'
+    PYTHON = 'python'
     TEXT = 'text'
 
 

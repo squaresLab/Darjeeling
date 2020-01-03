@@ -122,7 +122,15 @@ class Session(DarjeelingEventProducer):
                                               image=program.image,
                                               directory=program.source_directory,
                                               files=files)
-            analysis = kaskara.Analysis.build(kaskara_project)
+            analyser = kaskara.clang.ClangAnalyser()
+            analysis = analyser.analyse(kaskara_project)
+        elif program.language == Language.PYTHON:
+            kaskara_project = kaskara.Project(dockerblade=environment.dockerblade,
+                                              image=program.image,
+                                              directory=program.source_directory,
+                                              files=files)
+            analyser = kaskara.python.PythonAnalyser()
+            analysis = analyser.analyse(kaskara_project)
         else:
             analysis = None
 
