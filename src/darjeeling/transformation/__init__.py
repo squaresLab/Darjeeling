@@ -13,7 +13,8 @@ import typing
 import attr
 from kaskara import InsertionPoint
 
-from .base import Transformation, TransformationSchema, register
+from .base import Transformation, TransformationSchema
+from .config import TransformationSchemaConfig
 from .classic import *
 from .line import *
 from ..exceptions import NoImplicatedLines
@@ -42,6 +43,7 @@ def find_all(problem: 'Problem',
         line_to_trans = schema.all_at_lines(lines)
         for line in lines:
             yield from line_to_trans[line]
+
 
 def sample_by_localization_and_type(problem: 'Problem',
                                     snippets: SnippetDatabase,
@@ -120,7 +122,7 @@ def sample_by_localization_and_type(problem: 'Problem',
                      "\n".join(['  * {}: {}'.format(fn, num)
                                 for (fn, num) in num_transformations_by_file.items()]))  # noqa: pycodestyle
         logger.debug("# transformations by schema:\n%s",
-                     "\n".join(['  * {}: {}'.format(sc.NAME, num)
+                     "\n".join(['  * {}: {}'.format(sc, num)
                                 for (sc, num) in num_transformations_by_schema.items()]))  # noqa: pycodestyle
         logger.debug("# transformations by line:\n%s",
                      "\n".join(['  * {}: {}'.format(str(line), num)
@@ -155,7 +157,7 @@ def sample_by_localization_and_type(problem: 'Problem',
             schema = random.choice(list(transformations_by_schema.keys()))
             transformations = transformations_by_schema[schema]
             logger.debug("generating transformation using %s at %s",
-                         schema.NAME, line)
+                         schema, line)
 
             # attempt to fetch the next transformation for the line and schema
             # if none are left, we remove the schema choice
@@ -172,8 +174,7 @@ def sample_by_localization_and_type(problem: 'Problem',
                 except Exception:
                     logger.exception(
                         "failed to remove entry for %s at %s.\nchoices: %s",
-                        schema.NAME, line,
-                        [s.NAME for s in transformations_by_schema.keys()])
+                        schema, line, list(transformations_by_schema.keys()))
                     raise
 
     yield from sample(localization)

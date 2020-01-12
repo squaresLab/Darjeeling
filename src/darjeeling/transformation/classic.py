@@ -9,7 +9,8 @@ __all__ = (
     'ReplaceStatement'
 )
 
-from typing import List, Iterator, Iterable, Dict, Any, FrozenSet, Mapping
+from typing import (List, Iterator, Iterable, Dict, Any, FrozenSet, Mapping,
+                    Optional, ClassVar)
 import abc
 import logging
 import typing
@@ -17,7 +18,8 @@ import typing
 import attr
 import kaskara
 
-from .base import Transformation, TransformationSchema, register
+from .base import Transformation, TransformationSchema
+from .config import TransformationSchemaConfig
 from ..snippet import StatementSnippet, SnippetDatabase, StatementSnippetDatabase
 from ..core import (Replacement, FileLine, FileLocationRange, FileLocation,
                     FileLineSet, Location, LocationRange)
@@ -142,10 +144,7 @@ class DeleteStatement(StatementTransformation):
         return FileLine(self.location.filename,
                         self.location.start.line)
 
-    @register("delete-statement")
     class Schema(StatementTransformationSchema):
-        NAME = 'delete-statement'
-
         def all_at_statement(self,
                              statement: kaskara.Statement
                              ) -> Iterator[Transformation]:
@@ -153,6 +152,23 @@ class DeleteStatement(StatementTransformation):
             if problem.settings.ignore_decls and statement.kind == 'DeclStmt':
                 return
             yield DeleteStatement(statement.location)
+
+    class SchemaConfig(TransformationSchemaConfig):
+        NAME: ClassVar[str] = 'delete-statement'
+
+        @classmethod
+        def from_dict(cls,
+                      d: Mapping[str, Any],
+                      dir_: Optional[str] = None
+                      ) -> 'TransformationSchemaConfig':
+            return DeleteStatement.SchemaConfig()
+
+        def build(self,
+                  problem: 'Problem',
+                  snippets: SnippetDatabase
+                  ) -> 'TransformationSchema':
+            assert isinstance(snippets, StatementSnippetDatabase)
+            return DeleteStatement.Schema(problem=problem, snippets=snippets)
 
 
 @attr.s(frozen=True, repr=False, auto_attribs=True)
@@ -173,10 +189,7 @@ class ReplaceStatement(StatementTransformation):
         return FileLine(self.location.filename,
                         self.location.start.line)
 
-    @register("replace-statement")
     class Schema(StatementTransformationSchema):
-        NAME = 'replace-statement'
-
         def all_at_statement(self,
                              statement: kaskara.Statement
                              ) -> Iterator[Transformation]:
@@ -201,6 +214,23 @@ class ReplaceStatement(StatementTransformation):
                     logger.debug("replace with snippet: %s", snippet.content)
                     yield ReplaceStatement(statement.location, snippet)
 
+    class SchemaConfig(TransformationSchemaConfig):
+        NAME: ClassVar[str] = 'replace-statement'
+
+        @classmethod
+        def from_dict(cls,
+                      d: Mapping[str, Any],
+                      dir_: Optional[str] = None
+                      ) -> 'TransformationSchemaConfig':
+            return ReplaceStatement.SchemaConfig()
+
+        def build(self,
+                  problem: 'Problem',
+                  snippets: SnippetDatabase
+                  ) -> 'TransformationSchema':
+            assert isinstance(snippets, StatementSnippetDatabase)
+            return ReplaceStatement.Schema(problem=problem, snippets=snippets)
+
 
 @attr.s(frozen=True, repr=False, auto_attribs=True)
 class PrependStatement(StatementTransformation):
@@ -222,10 +252,7 @@ class PrependStatement(StatementTransformation):
                               LocationRange(self.location.location, self.location.location))
         return Replacement(r, self.statement.content)
 
-    @register("prepend-statement")
     class Schema(StatementTransformationSchema):
-        NAME = 'prepend-statement'
-
         def should_insert_at_location(self, location: FileLocation) -> bool:
             """Determines whether an insertion should be made at a location."""
             problem = self._problem
@@ -244,3 +271,20 @@ class PrependStatement(StatementTransformation):
                 yield from []
             for snippet in self.viable_snippets(statement):
                 yield PrependStatement(location, snippet)
+
+    class SchemaConfig(TransformationSchemaConfig):
+        NAME: ClassVar[str] = 'prepend-statement'
+
+        @classmethod
+        def from_dict(cls,
+                      d: Mapping[str, Any],
+                      dir_: Optional[str] = None
+                      ) -> 'TransformationSchemaConfig':
+            return PrependStatement.SchemaConfig()
+
+        def build(self,
+                  problem: 'Problem',
+                  snippets: SnippetDatabase
+                  ) -> 'TransformationSchema':
+            assert isinstance(snippets, StatementSnippetDatabase)
+            return PrependStatement.Schema(problem=problem, snippets=snippets)

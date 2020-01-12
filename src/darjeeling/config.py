@@ -4,7 +4,7 @@ __all__ = ('Config', 'OptimizationsConfig', 'SchemaConfig',
            'TransformationsConfig', 'LocalizationConfig')
 
 from typing import (Optional, Collection, Tuple, Dict, Any, List, Set,
-                    FrozenSet, Iterator, Type, NoReturn)
+                    FrozenSet, Iterator, Type, NoReturn, Mapping)
 import abc
 import datetime
 import sys
@@ -23,12 +23,12 @@ from .exceptions import BadConfigurationException, LanguageNotSupported
 from .test.config import TestSuiteConfig
 from .searcher.config import SearcherConfig
 from .coverage.config import CoverageConfig
+from .transformation.config import TransformationSchemaConfig
 from .program import ProgramDescriptionConfig
 
 if typing.TYPE_CHECKING:
     from .environment import Environment
     from .problem import Problem
-    from .searcher import Searcher
     from .test import TestSuite
     from .transformation import Transformation
 
@@ -121,39 +121,25 @@ class OptimizationsConfig:
 
 
 @attr.s(frozen=True)
-class SchemaConfig:
-    name: str = attr.ib()
-
-    @staticmethod
-    def from_yml(yml) -> 'SchemaConfig':
-        if not isinstance(yml, dict):
-            m = "expected an object but was a {}".format(type(yml).__name__)
-            m = "illegal schema description: {}".format(m)
-            raise BadConfigurationException(m)
-        if not 'type' in yml:
-            m = "missing 'type' property in schema description"
-            raise BadConfigurationException(m)
-
-        name: str = yml['type']
-        return SchemaConfig(name=name)
-
-
-@attr.s(frozen=True)
 class TransformationsConfig:
     """Specifies which transformations should be applied by the search."""
-    schemas: Collection[SchemaConfig] = attr.ib(default=tuple())
+    schemas: Collection[TransformationSchemaConfig] = attr.ib(default=tuple())
 
-    @staticmethod
-    def from_yml(yml) -> 'TransformationsConfig':
-        if not 'schemas' in yml:
+    @classmethod
+    def from_dict(cls,
+                  dict_: Mapping[str, Any],
+                  dir_: Optional[str] = None
+                  ) -> 'TransformationsConfig':
+        if not 'schemas' in dict_:
             m = "'schemas' property missing in 'transformations' section"
             raise BadConfigurationException(m)
-        if not isinstance(yml['schemas'], list):
+        if not isinstance(dict_['schemas'], list):
             m = "'schemas' property should be a list"
             raise BadConfigurationException(m)
 
-        schemas: Collection[SchemaConfig] = \
-            tuple(SchemaConfig.from_yml(y) for y in yml['schemas'])
+        schemas: Collection[TransformationSchemaConfig] = \
+            tuple(TransformationSchemaConfig.from_dict(dict_inner, dir_)
+                  for dict_inner in dict_['schemas'])
         return TransformationsConfig(schemas)
 
 
@@ -310,7 +296,7 @@ class Config:
         if not isinstance(yml['transformations'], dict):
             err("'transformations' section should be an object")
         transformations = \
-            TransformationsConfig.from_yml(yml['transformations'])
+            TransformationsConfig.from_dict(yml['transformations'], dir_)
 
         if 'localization' not in yml:
             err("'localization' section is missing")

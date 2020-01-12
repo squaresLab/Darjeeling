@@ -155,9 +155,7 @@ class Session(DarjeelingEventProducer):
         # FIXME does not allow lazy construction!
         schemas: List[TransformationSchema] = []
         for schema_config in cfg.transformations.schemas:
-            schema_class = TransformationSchema.find(schema_config.name)
-            schema = schema_class.build(problem, snippets, cfg.threads)
-            schemas.append(schema)
+            schemas.append(schema_config.build(problem, snippets))
         logger.info("constructing transformation database...")
         tx = list(build_transformations(problem, snippets, localization, schemas, eager=True))
         logger.info("constructed transformation database: %d transformations",  # noqa: pycodestyle

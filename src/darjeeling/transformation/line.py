@@ -9,14 +9,16 @@ __all__ = (
     'ReplaceLine'
 )
 
-from typing import List, Iterator, Iterable, Dict, Any, FrozenSet, Mapping
+from typing import (List, Iterator, Iterable, Dict, Any, FrozenSet, Mapping,
+                    Optional)
 import abc
 import logging
 import typing
 
 import attr
 
-from .base import Transformation, TransformationSchema, register
+from .base import Transformation, TransformationSchema
+from .config import TransformationSchemaConfig
 from ..snippet import Snippet, SnippetDatabase, LineSnippetDatabase
 from ..core import (Replacement, FileLine, FileLocationRange, FileLocation,
                     FileLineSet, Location, LocationRange)
@@ -77,12 +79,26 @@ class DeleteLine(LineTransformation):
         loc = problem.sources.line_to_location_range(self.line)
         return Replacement(loc, '')
 
-    @register('delete-line')
     class Schema(LineTransformationSchema):
-        NAME = 'delete-line'
-
         def all_at_line(self, line: FileLine) -> Iterator[Transformation]:
             yield DeleteLine(line)
+
+    class SchemaConfig(TransformationSchemaConfig):
+        NAME = 'delete-line'
+
+        @classmethod
+        def from_dict(cls,
+                      d: Mapping[str, Any],
+                      dir_: Optional[str] = None
+                      ) -> 'TransformationSchemaConfig':
+            return DeleteLine.SchemaConfig()
+
+        def build(self,
+                  problem: 'Problem',
+                  snippets: SnippetDatabase
+                  ) -> 'TransformationSchema':
+            assert isinstance(snippets, LineSnippetDatabase)
+            return DeleteLine.Schema(problem=problem, snippets=snippets)
 
 
 @attr.s(frozen=True, auto_attribs=True)
@@ -96,15 +112,29 @@ class ReplaceLine(LineTransformation):
         rep = sources.read_line(self.replacement, keep_newline=True)
         return Replacement(loc, rep)
 
-    @register('replace-line')
     @attr.s(frozen=True, auto_attribs=True)
     class Schema(LineTransformationSchema):
-        NAME = 'replace-line'
-
         def all_at_line(self, line: FileLine) -> Iterator[Transformation]:
             for replacement in self.viable_insertions(line):
                 if replacement != line:
                     yield ReplaceLine(line, replacement)
+
+    class SchemaConfig(TransformationSchemaConfig):
+        NAME = 'replace-line'
+
+        @classmethod
+        def from_dict(cls,
+                      d: Mapping[str, Any],
+                      dir_: Optional[str] = None
+                      ) -> 'TransformationSchemaConfig':
+            return ReplaceLine.SchemaConfig()
+
+        def build(self,
+                  problem: 'Problem',
+                  snippets: SnippetDatabase
+                  ) -> 'TransformationSchema':
+            assert isinstance(snippets, LineSnippetDatabase)
+            return ReplaceLine.Schema(problem=problem, snippets=snippets)
 
 
 @attr.s(frozen=True, auto_attribs=True)
@@ -119,11 +149,25 @@ class InsertLine(LineTransformation):
         ins = sources.read_line(self.insertion, keep_newline=True)
         return Replacement(r, ins)
 
-    @register("insert-line")
     class Schema(LineTransformationSchema):
-        NAME = 'insert-line'
-
         def all_at_line(self, line: FileLine) -> Iterator[Transformation]:
             # TODO append after the last line!
             for ins in self.viable_insertions(line):
                 yield InsertLine(line, ins)
+
+    class SchemaConfig(TransformationSchemaConfig):
+        NAME = 'insert-line'
+
+        @classmethod
+        def from_dict(cls,
+                      d: Mapping[str, Any],
+                      dir_: Optional[str] = None
+                      ) -> 'TransformationSchemaConfig':
+            return InsertLine.SchemaConfig()
+
+        def build(self,
+                  problem: 'Problem',
+                  snippets: SnippetDatabase
+                  ) -> 'TransformationSchema':
+            assert isinstance(snippets, LineSnippetDatabase)
+            return InsertLine.Schema(problem=problem, snippets=snippets)
