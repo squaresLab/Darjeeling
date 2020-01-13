@@ -15,7 +15,7 @@ framework for composing and executing repair algorithms: Darjeeling.
 
 * *Language Agnostic:* delegates syntax transformation and static analysis to
   other services.
-* *Containerization:* uses [BugZoo](https://github.com/squaresLab/BugZoo)
+* *Containerization:* uses [Docker](https://www.docker.com/)
   to quickly and safely evaluate patches without executing arbitrary code on
   your machine.
 * *Custom Repair Templates:* uses
