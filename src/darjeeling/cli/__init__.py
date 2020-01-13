@@ -157,6 +157,9 @@ class BaseController(cement.Controller):
             (['--log-to-file'],
              {'help': 'path to store the log file.',
               'type': str}),
+            (['--no-log-to-file'],
+             {'help': 'disables logging to file.',
+              'action': 'store_true'}),
             (['--patch-dir'],
              {'help': 'path to store the patches.',
               'dest': 'dir_patches',
@@ -205,6 +208,7 @@ class BaseController(cement.Controller):
             self.app.pargs.limit_time_minutes
         dir_patches: Optional[str] = self.app.pargs.dir_patches
         log_to_filename: Optional[str] = self.app.pargs.log_to_file
+        should_log_to_file: bool = not self.app.pargs.no_log_to_file
 
         # remove all existing loggers
         logger.remove()
@@ -216,10 +220,11 @@ class BaseController(cement.Controller):
                        level=('CRITICAL' if interactive else 'INFO'))
 
         # setup logging to file
-        if not log_to_filename:
-            log_to_filename = self._default_log_filename
-        logger.info(f'logging to file: {log_to_filename}')
-        logger.add(log_to_filename, level='DEBUG')
+        if should_log_to_file:
+            if not log_to_filename:
+                log_to_filename = self._default_log_filename
+            logger.info(f'logging to file: {log_to_filename}')
+            logger.add(log_to_filename, level='DEBUG')
 
         # load the configuration file
         filename = os.path.abspath(filename)
