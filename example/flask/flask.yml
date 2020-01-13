@@ -9,6 +9,8 @@ algorithm:
 coverage:
   method:
     type: coverage.py
+  restrict-to-files:
+    - src/flask/config.py
 program:
   image: darjeeling/example:flask
   language: python
