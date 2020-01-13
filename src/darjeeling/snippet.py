@@ -7,21 +7,18 @@ from typing import (List, Iterator, Set, Optional, Dict, Generic,
                     Any, FrozenSet, MutableSet, TypeVar, Collection)
 from collections import OrderedDict
 import abc
-import logging
 import typing
 
 import attr
 from kaskara import Statement as KaskaraStatement
 from kaskara.analysis import Analysis as KaskaraAnalysis
+from loguru import logger
 
 from .core import FileLocationRange, FileLine, FileLineSet
 
 if typing.TYPE_CHECKING:
     from .config import Config
     from .problem import Problem
-
-logger: logging.Logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 T = TypeVar('T', bound='Snippet')
 
@@ -178,7 +175,7 @@ class StatementSnippetDatabase(SnippetDatabase[StatementSnippet]):
             db.add(snippet, stmt.location)
 
         logger.debug("constructed snippet database from snippets")
-        logger.debug("snippets:\n%s",
+        logger.debug("snippets:\n{}",
                      '\n'.join([f' * {s.content}' for s in db]))
         return db
 
@@ -188,5 +185,5 @@ class LineSnippetDatabase(SnippetDatabase[LineSnippet]):
     def for_problem(problem: 'Problem') -> 'LineSnippetDatabase':
         logger.debug('constructing line snippet database')
         db = LineSnippetDatabase()
-        logger.debug('constructed database of %d line snippets', len(db))
+        logger.debug(f'constructed database of {len(db)} line snippets')
         return db

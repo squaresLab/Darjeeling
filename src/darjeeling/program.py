@@ -9,6 +9,7 @@ import logging
 import attr
 from bugzoo import Bug as Snapshot
 from bugzoo.core.patch import Patch
+from loguru import logger
 
 from . import exceptions as exc
 from .build_instructions import BuildInstructions
@@ -21,10 +22,6 @@ from .exceptions import (BadConfigurationException,
 
 if typing.TYPE_CHECKING:
     from .environment import Environment
-#    from .test import TestSuite
-
-logger: logging.Logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
@@ -189,7 +186,7 @@ class ProgramDescription:
             try:
                 container.patch(patch)
             except FailedToApplyPatch:
-                logger.debug("failed to apply patch: %s", patch)
+                logger.debug(f"failed to apply patch: {patch}")
                 raise BuildFailure
 
             try:

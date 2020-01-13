@@ -6,11 +6,12 @@ from timeit import default_timer as timer
 from concurrent.futures import Future
 import concurrent.futures
 import math
-import logging
 import queue
 import threading
 import typing
 import random
+
+from loguru import logger
 
 from .candidate import Candidate
 from .container import ProgramContainer
@@ -34,9 +35,6 @@ if typing.TYPE_CHECKING:
     from .problem import Problem
 
 Evaluation = Tuple[Candidate, CandidateOutcome]
-
-logger: logging.Logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class Evaluator(DarjeelingEventProducer):
@@ -157,20 +155,20 @@ class Evaluator(DarjeelingEventProducer):
                   test: Test
                   ) -> TestOutcome:
         """Runs a test for a given patch using a provided container."""
-        logger.debug("executing test: %s [%s]", test.name, candidate)
+        logger.debug(f"executing test: {test.name} [{candidate}]")
         self.dispatch(TestExecutionStarted(candidate, test))
         self.__counter_tests += 1
         outcome = self.__program.execute(container, test)
         if not outcome.successful:
-            logger.debug("* test failed: %s (%s)", test.name, candidate)
+            logger.debug(f"* test failed: {test.name} ({candidate})")
         else:
-            logger.debug("* test passed: %s (%s)", test.name, candidate)
+            logger.debug(f"* test passed: {test.name} ({candidate})")
         self.dispatch(TestExecutionFinished(candidate, test, outcome))
         return outcome
 
     def _evaluate(self, candidate: Candidate) -> CandidateOutcome:
         patch = candidate.to_diff(self.__problem)
-        logger.info("evaluating candidate: %s\n%s\n", candidate, patch)
+        logger.info(f"evaluating candidate: {candidate}\n{patch}\n")
 
         # select a subset of tests to use for this evaluation
         tests, remainder = self._select_tests()
@@ -187,7 +185,7 @@ class Evaluator(DarjeelingEventProducer):
         known_bad_patch = False
 
         if candidate in self.outcomes:
-            logger.info("found candidate in cache: %s", candidate)
+            logger.info(f"found candidate in cache: {candidate}")
             cached_outcome = self.outcomes[candidate]
             known_bad_patch |= not cached_outcome.is_repair
 
@@ -204,7 +202,7 @@ class Evaluator(DarjeelingEventProducer):
                 else:
                     filtered_tests.append(test)
             tests = filtered_tests
-            logger.debug("filtered tests: %s", tests)
+            logger.debug(f"filtered tests: {tests}")
 
             # if no tests remain, construct a partial view of the candidate
             # outcome
@@ -214,7 +212,7 @@ class Evaluator(DarjeelingEventProducer):
                                         not known_bad_patch)
 
         self.__counter_candidates += 1
-        logger.debug("building candidate: %s", candidate)
+        logger.debug(f"building candidate: {candidate}")
         self.dispatch(BuildStarted(candidate))
         timer_build = Stopwatch()
         timer_build.start()
@@ -222,8 +220,8 @@ class Evaluator(DarjeelingEventProducer):
             with self.__program.build(patch) as container:
                 outcome_build = BuildOutcome(True, timer_build.duration)
                 self.dispatch(BuildFinished(candidate, outcome_build))
-                logger.debug("built candidate: %s", candidate)
-                logger.debug("executing tests for candidate: %s", candidate)
+                logger.debug(f"built candidate: {candidate}")
+                logger.debug(f"executing tests for candidate: {candidate}")
                 for test in tests:
                     if self.__terminate_early and known_bad_patch:
                         break
@@ -250,18 +248,18 @@ class Evaluator(DarjeelingEventProducer):
                                         test_outcomes,
                                         not known_bad_patch)
         except BuildFailure:
-            logger.debug("failed to build candidate: %s", candidate)
+            logger.debug(f"failed to build candidate: {candidate}")
             outcome_build = BuildOutcome(False, timer_build.duration)
             self.dispatch(BuildFinished(candidate, outcome_build))
             return CandidateOutcome(outcome_build,
                                     TestOutcomeSet(),
                                     False)
         except Exception:
-            logger.exception("unexpected exception when evaluating candidate: %s",  # noqa: pycodestyle
+            logger.exception("unexpected exception when evaluating candidate: {}",  # noqa: pycodestyle
                              candidate)
             raise
         finally:
-            logger.info("evaluated candidate: %s", candidate)
+            logger.info(f"evaluated candidate: {candidate}")
 
     def evaluate(self, candidate: Candidate) -> Evaluation:
         """Evaluates a given candidate patch."""
@@ -272,8 +270,7 @@ class Evaluator(DarjeelingEventProducer):
         # FIXME there is no outcome here! THIS IS A HUGE BUG.
         except Exception as err:
             m = "unexpected error occurred when evaluating candidate [{}]"
-            m = m.format(candidate.id)
-            logger.exception(m)
+            logger.exception(m.format(candidate.id))
             self.dispatch(CandidateEvaluationError(candidate, err))
         else:
             self.dispatch(CandidateEvaluationFinished(candidate, outcome))

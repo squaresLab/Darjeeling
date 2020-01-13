@@ -5,13 +5,13 @@ code files.
 """
 from typing import (List, Iterator, Dict, FrozenSet, Tuple, Iterable, Type,
                     Optional, Any, Mapping)
-import logging
 import os
 import random
 import typing
 
-import attr
 from kaskara import InsertionPoint
+from loguru import logger
+import attr
 
 from .base import Transformation, TransformationSchema
 from .config import TransformationSchemaConfig
@@ -25,9 +25,6 @@ from ..core import Replacement, FileLine, FileLocationRange, FileLocation, \
 
 if typing.TYPE_CHECKING:
     from ..problem import Problem
-
-logger: logging.Logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 def find_all(problem: 'Problem',
@@ -116,36 +113,35 @@ def sample_by_localization_and_type(problem: 'Problem',
         num_transformations_total = sum(num_transformations_by_line.values())
 
         # report stats
-        logger.info("# transformations: %d",
-                    num_transformations_total)
-        logger.debug("# transformations by file:\n%s",
-                     "\n".join(['  * {}: {}'.format(fn, num)
+        logger.info(f"# transformations: {num_transformations_total}")
+        logger.debug("# transformations by file:\n{}",
+                     "\n".join([f'  * {fn}: {num}'
                                 for (fn, num) in num_transformations_by_file.items()]))  # noqa: pycodestyle
-        logger.debug("# transformations by schema:\n%s",
-                     "\n".join(['  * {}: {}'.format(sc, num)
-                                for (sc, num) in num_transformations_by_schema.items()]))  # noqa: pycodestyle
-        logger.debug("# transformations by line:\n%s",
-                     "\n".join(['  * {}: {}'.format(str(line), num)
-                                for (line, num) in num_transformations_by_line.items()]))  # noqa: pycodestyle
+        logger.debug("# transformations by schema:\n{}",
+                     "\n".join([f'  * {sc}: {num}'
+                                for (sc, num) in num_transformations_by_schema.items()]))  # noqa
+        logger.debug("# transformations by line:\n{}",
+                     "\n".join(['  * {str(line)}: {num}'
+                                for (line, num) in num_transformations_by_line.items()]))  # noqa
 
         # TODO apply optional randomization
 
-        logger.info('constructing transformation stream from precomputed transformations')  # noqa: pycodestyle
+        logger.info('constructing transformation stream from precomputed transformations')  # noqa
         line_to_transformations_by_schema = {
             line: {schema: iter(collect_transformations[line][schema])
                    for schema in schemas}
             for line in lines
         }
-        logger.info('constructed transformation stream from precomputed transformations')  # noqa: pycodestyle
+        logger.info('constructed transformation stream from precomputed transformations')  # noqa
 
     def sample(localization: Localization) -> Iterator[Transformation]:
         while True:
             line = localization.sample()
-            logger.debug("finding transformation at line: %s", line)
+            logger.debug(f"finding transformation at line: {line}")
             transformations_by_schema = line_to_transformations_by_schema[line]
 
             if not transformations_by_schema:
-                logger.debug("no transformations left at %s", line)
+                logger.debug(f"no transformations left at {line}")
                 del line_to_transformations_by_schema[line]
                 try:
                     localization = localization.without(line)
@@ -156,24 +152,22 @@ def sample_by_localization_and_type(problem: 'Problem',
 
             schema = random.choice(list(transformations_by_schema.keys()))
             transformations = transformations_by_schema[schema]
-            logger.debug("generating transformation using %s at %s",
-                         schema, line)
+            logger.debug(f"generating transformation using {schema} at {line}")
 
             # attempt to fetch the next transformation for the line and schema
             # if none are left, we remove the schema choice
             try:
                 t = next(transformations)
-                logger.debug("sampled transformation: %s", t)
+                logger.debug(f"sampled transformation: {t}")
                 yield t
             except StopIteration:
-                logger.debug("no %s left at %s", str(schema), line)
+                logger.debug(f"no {schema} left at {line}")
                 try:
                     del transformations_by_schema[schema]
-                    logger.debug("removed entry for schema %s at line %s",
-                             str(schema), line)
+                    logger.debug(f"removed entry for schema {schema} at line {line}")  # noqa
                 except Exception:
                     logger.exception(
-                        "failed to remove entry for %s at %s.\nchoices: %s",
+                        "failed to remove entry for {} at {}.\nchoices: {}",
                         schema, line, list(transformations_by_schema.keys()))
                     raise
 

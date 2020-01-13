@@ -6,7 +6,6 @@ from typing import (Iterable, Iterator, Optional, List, Tuple, Any, Dict,
 from typing_extensions import final
 from mypy_extensions import NoReturn
 import abc
-import logging
 import datetime
 import threading
 import typing
@@ -14,6 +13,7 @@ import inspect
 import time
 import signal
 
+from loguru import logger
 import bugzoo
 
 from .config import SearcherConfig
@@ -35,9 +35,6 @@ from ..util import Stopwatch, dynamically_registered
 if typing.TYPE_CHECKING:
     from ..problem import Problem
 
-logger = logging.getLogger(__name__)  # type: logging.Logger
-logger.setLevel(logging.DEBUG)
-
 T = TypeVar('T', bound=SearcherConfig)
 
 
@@ -53,8 +50,7 @@ class Searcher(Generic[T], DarjeelingEventProducer, abc.ABC):
                  terminate_early: bool = True,
                  test_sample_size: Optional[Union[int, float]] = None
                  ) -> None:
-        """
-        Constructs a new searcher.
+        """Constructs a new searcher.
 
         Parameters
         ----------
@@ -142,9 +138,7 @@ class Searcher(Generic[T], DarjeelingEventProducer, abc.ABC):
 
     @property
     def stopped(self) -> bool:
-        """
-        Indicates whether or not the search has been terminated.
-        """
+        """Indicates whether or not the search has been terminated."""
         return self.__stopped
 
     @property

@@ -3,9 +3,9 @@ __all__ = ('ReplaceStatement',)
 
 from typing import (List, Iterator, Iterable, Dict, Any, FrozenSet, Mapping,
                     Optional, ClassVar)
-import logging
 import typing
 
+from loguru import logger
 import attr
 import kaskara
 
@@ -19,9 +19,6 @@ from ...core import (Replacement, FileLine, FileLocationRange, FileLocation,
 
 if typing.TYPE_CHECKING:
     from ..problem import Problem
-
-logger: logging.Logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 @attr.s(frozen=True, repr=False, auto_attribs=True)
@@ -55,16 +52,16 @@ class ReplaceStatement(StatementTransformation):
 
             check_equiv = problem.settings.ignore_string_equivalent_snippets
             for snippet in self.viable_snippets(statement):
-                logger.debug("using snippet: %s", snippet.content)
+                logger.debug(f"using snippet: {snippet.content}")
                 eq_content = \
                     not check_equiv and snippet.content == statement.content
                 eq_canonical = \
                     check_equiv and snippet.content == statement.canonical
                 if eq_content or eq_canonical:
-                    logger.debug("prevented self-replacement of statement [%s]",
-                                 statement.location)
+                    logger.debug("prevented self-replacement of statement "
+                                 f"[{statement.location}]")
                 else:
-                    logger.debug("replace with snippet: %s", snippet.content)
+                    logger.debug(f"replace with snippet: {snippet.content}")
                     yield ReplaceStatement(statement.location, snippet)
 
     class SchemaConfig(TransformationSchemaConfig):

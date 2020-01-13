@@ -5,13 +5,13 @@ from typing import (List, Union, Dict, Optional, Iterator, Iterable, Mapping,
                     Collection, Tuple, Sequence)
 from difflib import unified_diff
 import os
-import logging
 
 import attr
 import dockerblade
 from bugzoo.client import Client as BugZooClient
 from bugzoo.core.patch import Patch
 from bugzoo.core.bug import Bug as Snapshot
+from loguru import logger
 
 from . import exceptions 
 from .core import (Replacement, FileLine, FileLocationRange, Location,
@@ -19,9 +19,6 @@ from .core import (Replacement, FileLine, FileLocationRange, Location,
 from .environment import Environment
 from .program import ProgramDescription
 from .container import ProgramContainer
-
-logger: logging.Logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 @attr.s(slots=True, frozen=True)

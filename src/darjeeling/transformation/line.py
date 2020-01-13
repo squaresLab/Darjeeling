@@ -3,16 +3,11 @@
 This module implements GenProg-style operators for individual source code
 lines.
 """
-__all__ = (
-    'InsertLine',
-    'DeleteLine',
-    'ReplaceLine'
-)
+__all__ = ('InsertLine', 'DeleteLine', 'ReplaceLine')
 
 from typing import (List, Iterator, Iterable, Dict, Any, FrozenSet, Mapping,
                     Optional)
 import abc
-import logging
 import typing
 
 import attr
@@ -26,9 +21,6 @@ from ..exceptions import BadConfigurationException
 
 if typing.TYPE_CHECKING:
     from ..problem import Problem
-
-logger: logging.Logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class LineTransformation(Transformation):

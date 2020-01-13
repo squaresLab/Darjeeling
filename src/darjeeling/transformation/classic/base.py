@@ -3,9 +3,9 @@ __all__ = ('StatementTransformation', 'StatementTransformationSchema')
 
 from typing import List, Iterator, FrozenSet, Mapping
 import abc
-import logging
 import typing
 
+from loguru import logger
 import attr
 import kaskara
 
@@ -19,9 +19,6 @@ from ...exceptions import BadConfigurationException
 
 if typing.TYPE_CHECKING:
     from ..problem import Problem
-
-logger: logging.Logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class StatementTransformation(Transformation):
@@ -57,9 +54,10 @@ class StatementTransformationSchema(TransformationSchema[StatementTransformation
         problem = self._problem
         analysis = problem.analysis
         if analysis is None:
-            logger.warning("cannot determine statement transformations: no Kaskara analysis found")  # noqa: pycodestyle
+            logger.warning("cannot determine statement transformations: "
+                           "no Kaskara analysis found")
             return
-        statements = analysis.statements.at_line(line)  # type: Iterator[kaskara.Statement]  # noqa: pycodestyle
+        statements: Iterator[kaskara.Statement] = analysis.statements.at_line(line)  # noqa
         for statement in statements:
             yield from self.all_at_statement(statement)
 
@@ -103,16 +101,16 @@ class StatementTransformationSchema(TransformationSchema[StatementTransformation
             in_switch = False  # FIXME
             viable = filter(lambda s: in_loop or not s.requires_continue,
                             viable)
-            viable = filter(lambda s: in_switch or in_loop or not s.requires_break,  # noqa: pycodestyle
+            viable = filter(lambda s: in_switch or in_loop or not s.requires_break,  # noqa
                             viable)
 
         if problem.settings.use_scope_checking:
-            in_scope = statement.visible  # type: FrozenSet[str]
+            in_scope: FrozenSet[str] = statement.visible
             viable = filter(lambda s: all(v in in_scope for v in s.uses), viable)
 
         # do not insert code that (only) writes to a dead variable
         if problem.settings.ignore_dead_code:
-            live_vars = statement.live_before  # type: FrozenSet[str]
+            live_vars: FrozenSet[str] = statement.live_before
             viable = filter(
                 lambda s: not any(w not in live_vars for w in s.writes),
                 viable)

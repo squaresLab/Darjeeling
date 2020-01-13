@@ -2,11 +2,11 @@
 __all__ = ('GCovCollector',)
 
 from typing import FrozenSet, Mapping, Any, Set, Dict, Optional, ClassVar
-import logging
 import os
 import typing
 import xml.etree.ElementTree as ET
 
+from loguru import logger
 import attr
 
 from .collector import CoverageCollector, CoverageCollectorConfig
@@ -55,9 +55,6 @@ _INSTRUMENTATION = (
 _NUM_INSTRUMENTATION_LINES = _INSTRUMENTATION.count('\n')
 _LINES_TO_REMOVE = set(range(1, _NUM_INSTRUMENTATION_LINES))
 
-logger: logging.Logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
 class GCovCollectorConfig(CoverageCollectorConfig):
@@ -101,7 +98,7 @@ class GCovCollectorConfig(CoverageCollectorConfig):
                                   source_directory=source_directory,
                                   source_filenames=source_filenames,
                                   files_to_instrument=files_to_instrument)
-        logger.debug("built coverage collector: %s", collector)
+        logger.debug(f"built coverage collector: {collector}")
         return collector
 
 
@@ -153,10 +150,10 @@ class GCovCollector(CoverageCollector):
             try:
                 filename_original = filename
                 filename = self._resolve_filepath(filename)
-                logger.debug("resolving path '%s' -> '%s'",
-                             filename_original, filename)
+                logger.debug(f"resolving path '{filename_original}' "
+                             f"-> '{filename}'")
             except ValueError:
-                logger.warning('failed to resolve file: %s', filename)
+                logger.warning(f'failed to resolve file: {filename}')
                 continue
 
             lines = self._read_line_coverage_for_class(node)
@@ -167,7 +164,7 @@ class GCovCollector(CoverageCollector):
         return FileLineSet(filename_to_lines)
 
     def _parse_xml_file_contents(self, contents: str) -> FileLineSet:
-        logger.debug("Parsing gcovr report:\n%s", contents)
+        logger.debug(f"Parsing gcovr report:\n{contents}")
         root = ET.fromstring(contents)
         return self._parse_xml_report(root)
 
@@ -190,11 +187,11 @@ class GCovCollector(CoverageCollector):
         """
         files = container.filesystem
         for filename in self._files_to_instrument:
-            logger.debug('adding gcov instrumentation to %s', filename)
+            logger.debug(f'adding gcov instrumentation to {filename}')
             contents_original = files.read(filename)
-            logger.debug('original file [%s]:\n%s', filename, contents_original)
+            logger.debug(f'original file [{filename}]:\n{contents_original}')
             contents_instrumented = _INSTRUMENTATION + contents_original
-            logger.debug('instrumented file [%s]:\n%s', filename, contents_instrumented)
+            logger.debug(f'instrumented file [{filename}]:\n{contents_instrumented}')
             files.write(filename, contents_instrumented)
 
         build_instructions = self.program.build_instructions_for_coverage

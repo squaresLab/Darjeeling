@@ -2,10 +2,10 @@
 __all__ = ('CoverageConfig',)
 
 from typing import Set, FrozenSet, Optional, Any, Dict, List
-import logging
 import os
 import typing
 
+from loguru import logger
 import attr
 
 from .. import exceptions as exc
@@ -18,9 +18,6 @@ from ..test import TestSuite
 if typing.TYPE_CHECKING:
     from ..environment import Environment
     from ..program import ProgramDescription
-
-logger: logging.Logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 @attr.s(frozen=True)
@@ -103,7 +100,7 @@ class CoverageConfig:
 
         if self.load_from_file:
             fn_coverage = self.load_from_file
-            logger.info('loading coverage from file: %s', fn_coverage)
+            logger.info(f'loading coverage from file: {fn_coverage}')
             coverage = TestCoverageMap.from_file(fn_coverage)
         else:
             collector = self.collector_config.build(environment, program)

@@ -14,10 +14,11 @@ from typing import (Dict, Callable, List, Iterator, FrozenSet, Sequence, Any,
 import bisect
 import functools
 import json
-import logging
 import math
 import random
 import typing
+
+from loguru import logger
 
 from .core import FileLine, FileLineMap, FileLineSet, TestCoverageMap
 from .spectra import Spectra
@@ -25,9 +26,6 @@ from .exceptions import NoImplicatedLines, BadConfigurationException
 
 if typing.TYPE_CHECKING:
     from .config import LocalizationConfig
-
-logger: logging.Logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 SuspiciousnessMetric = Callable[[Spectra], MutableMapping[FileLine, float]]
 
@@ -137,14 +135,13 @@ class Localization:
                 'jaccard': jaccard,
                 'ample': ample
             }
-            logger.info("supported suspiciousness metrics: %s",
+            logger.info("supported suspiciousness metrics: {}",
                         ', '.join(supported_metrics.keys()))
             metric: SuspiciousnessMetric = supported_metrics[cfg.metric]
         except KeyError:
-            m = "suspiciousness metric not supported: {}"
-            m = m.format(cfg.metric)
+            m = f"suspiciousness metric not supported: {cfg.metric}"
             raise BadConfigurationException(m)
-        logger.info("using suspiciousness metric: %s", cfg.metric)
+        logger.info(f"using suspiciousness metric: {cfg.metric}")
 
         loc = Localization.from_coverage(coverage, metric)
         loc = loc.exclude_files(cfg.exclude_files)
@@ -162,11 +159,11 @@ class Localization:
 
     @staticmethod
     def from_file(fn: str) -> 'Localization':
-        logger.debug("loading localization from file: %s", fn)
+        logger.debug(f"loading localization from file: {fn}")
         with open(fn, 'r') as f:
             jsn = json.load(f)
         localization = Localization.from_dict(jsn)
-        logger.debug("loaded localization from file: %s", fn)
+        logger.debug(f"loaded localization from file: {fn}")
         return localization
 
     def __init__(self, scores: Mapping[FileLine, float]) -> None:
@@ -221,11 +218,11 @@ class Localization:
 
     def to_file(self, fn: str) -> None:
         """Dumps this fault localization to a given file."""
-        logger.debug("writing localization to file: %s", fn)
+        logger.debug("writing localization to file: {fn}")
         jsn = self.to_dict()
         with open(fn, 'w') as f:
             json.dump(jsn, f)
-        logger.debug("wrote localization to file: %s", fn)
+        logger.debug(f"wrote localization to file: {fn}")
 
     def __iter__(self) -> Iterator[FileLine]:
         """

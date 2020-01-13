@@ -5,8 +5,7 @@ import logging
 from typing import List, Union, Tuple, Any, Dict, Type, Set, Iterator, Optional
 from timeit import default_timer as timer
 
-logger = logging.getLogger(__name__)  # type: logging.Logger
-logger.setLevel(logging.DEBUG)
+from loguru import logger
 
 
 def duration_tuple(secs: Union[int, float]) -> Tuple[int, int, int, int]:
@@ -55,8 +54,8 @@ def _dynamically_registered(cls,
                             lookup: Optional[str] = 'lookup',
                             register_on: str = 'NAME'
                             ):
-    logger.debug("Adding dynamic registration to class: %s", cls)
-    logger.debug("Registered via attribute: %s", register_on)
+    logger.debug(f"Adding dynamic registration to class: {cls}")
+    logger.debug(f"Registered via attribute: {register_on}")
 
     registry: Dict[str, Any] = {}
     registered_class_names: Set[str] = set()
@@ -89,11 +88,11 @@ def _dynamically_registered(cls,
         registry[name] = subcls
 
         if subcls_is_registered:
-            logger.debug("updated [%s] registration for decorated class: %s",
-                         cls.__name__, subcls)
+            logger.debug(f"updated [{cls.__name__}] registration for "
+                         f"decorated class: {subcls}")
         else:
-            logger.debug("added [%s] registration for class: %s",
-                         cls.__name__, subcls)
+            logger.debug(f"added [{cls.__name__}] registration for "
+                         f"class: {subcls}")
             registered_class_names.add(subcls.__qualname__)
 
     def method_length() -> int:
@@ -106,19 +105,18 @@ def _dynamically_registered(cls,
         return registry[name]
 
     if length:
-        logger.debug("Adding length method [%s] to class [%s]", length, cls)
+        logger.debug(f"Adding length method [{length}] to class [{cls}]")
         setattr(cls, length, staticmethod(method_length))
     if iterator:
-        logger.debug("Adding iterator method [%s] to class [%s]",
-                     iterator, cls)
+        logger.debug(f"Adding iterator method [{iterator}] to class [{cls}]")
         setattr(cls, iterator, staticmethod(method_iterator))
     if lookup:
-        logger.debug("Adding lookup method [%s] to class [%s]", lookup, cls)
+        logger.debug(f"Adding lookup method [{lookup}] to class [{cls}]")
         setattr(cls, lookup, staticmethod(method_lookup))
 
     setattr(cls, '__init_subclass__', classmethod(method_hook_subclass))
 
-    logger.debug("Added dynamic registration to class: %s", cls)
+    logger.debug(f"Added dynamic registration to class: {cls}")
     return cls
 
 
@@ -138,27 +136,21 @@ def dynamically_registered(register_on: str = 'NAME',
     return decorator
 
 
-class Stopwatch(object):
+class Stopwatch:
     def __init__(self) -> None:
-        """
-        Constructs a new, paused timer.
-        """
-        self.__offset = 0.0  # type: float
-        self.__paused = True  # type: bool
-        self.__time_start = 0.0  # type: float
+        """Constructs a new, paused timer."""
+        self.__offset: float = 0.0
+        self.__paused: bool = True
+        self.__time_start: float = 0.0
 
     def stop(self) -> None:
-        """
-        Freezes the timer.
-        """
+        """Freezes the timer."""
         if not self.__paused:
             self.__offset += timer() - self.__time_start
             self.__paused = True
 
     def start(self) -> None:
-        """
-        Resumes the timer.
-        """
+        """Resumes the timer."""
         if self.__paused:
             self.__time_start = timer()
             self.__paused = False
@@ -166,24 +158,18 @@ class Stopwatch(object):
             warnings.warn("timer is already running")
 
     def reset(self) -> None:
-        """
-        Resets and freezes the timer.
-        """
+        """Resets and freezes the timer."""
         self.__offset = 0.0
         self.__paused = True
 
     @property
     def paused(self) -> bool:
-        """
-        Returns True if this stopwatch is paused, or False if not.
-        """
+        """Returns True if this stopwatch is paused, or False if not."""
         return self.__paused
 
     @property
     def duration(self) -> float:
-        """
-        The number of seconds that the stopwatch has been running.
-        """
+        """The number of seconds that the stopwatch has been running."""
         d = self.__offset
         if not self.__paused:
             d += timer() - self.__time_start

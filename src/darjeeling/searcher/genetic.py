@@ -4,10 +4,10 @@ __all__ = ('GeneticSearcher',)
 from typing import Iterator, List, Optional, Dict, Any, Union
 import concurrent.futures
 import datetime
-import logging
 import random
 import typing
 
+from loguru import logger
 import attr
 
 from .base import Searcher
@@ -19,9 +19,6 @@ from ..outcome import CandidateOutcome
 
 if typing.TYPE_CHECKING:
     from ..problem import Problem
-
-logger: logging.Logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 Population = List[Candidate]
 
@@ -101,18 +98,12 @@ class GeneticSearcher(Searcher):
         self.__tournament_size = tournament_size
         self.__transformations = transformations
 
-        m = ("using GA settings:\n"
-             "  * num. generations: %d\n"
-             "  * population size: %d\n"
-             "  * tournament size: %d\n"
-             "  * mutation rate: %.2f\n"
-             "  * crossover rate: %.2f")
-        logger.info(m,
-                    self.__num_generations,
-                    self.__population_size,
-                    self.__tournament_size,
-                    self.__rate_mutation,
-                    self.__rate_crossover)
+        logger.info("using GA settings:\n"
+                    f"  * num. generations: {self.__num_generations}\n"
+                    f"  * population size: {self.__population_size}\n"
+                    f"  * tournament size: {self.__tournament_size}\n"
+                    f"  * mutation rate: {self.__rate_mutation:.2f}\n"
+                    f"  * crossover rate: {self.__rate_crossover:.2f}")
 
         super().__init__(problem,
                          threads=threads,
@@ -166,7 +157,7 @@ class GeneticSearcher(Searcher):
             else:
                 # FIXME maybe we don't need to execute the test?
                 f[ind] = sum(1.0 for n in outcome.tests if outcome.tests[n].successful)
-        logger.info("computed fitness:\n%s",
+        logger.info("computed fitness:\n{}",
                      '\n'.join(['  {}: {}'.format(ind, f[ind]) for ind in f]))
         return f
 
@@ -213,7 +204,7 @@ class GeneticSearcher(Searcher):
             children = [Candidate(a + d), Candidate(c + b)]  # type: ignore
             return children
 
-        offspring = []  # type: List[Candidate]
+        offspring: List[Candidate] = []
         random.shuffle(pop)
         k = 2
         for i in range(0, len(pop), k):
@@ -224,7 +215,7 @@ class GeneticSearcher(Searcher):
         return offspring
 
     def run(self) -> Iterator[Candidate]:
-        outcomes = {}  # type: Dict[Candidate, CandidateOutcome]
+        outcomes: Dict[Candidate, CandidateOutcome] = {}
         logger.info("generating initial population...")
         pop = self.initial()
         logger.info("generated initial population")
@@ -238,7 +229,7 @@ class GeneticSearcher(Searcher):
         logger.info("selected survivors")
 
         for g in range(0, self.num_generations + 1):
-            logger.info("starting generation %d...", g)
+            logger.info(f"starting generation {g}...")
             pop = self.crossover(pop)
             pop = self.mutate(pop)
             logger.info("evaluating candidate patches...")

@@ -2,15 +2,12 @@
 __all__ = ('DarjeelingEventProducer',)
 
 from typing import Iterator, List, Any
-import logging
-
 import abc
+
+from loguru import logger
 
 from .event import DarjeelingEvent
 from .handler import DarjeelingEventHandler
-
-logger: logging.Logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class DarjeelingEventProducer:
@@ -31,24 +28,23 @@ class DarjeelingEventProducer:
 
     def attach_handler(self, handler: DarjeelingEventHandler) -> None:
         """Attaches an event handler to this object."""
-        logger.debug("attaching event handler [%s] to producer [%s]",
-                     handler, self)
+        logger.debug(f"attaching event handler [{handler}] "
+                     f"to producer [{self}]")
         if not handler in self.__handlers:
             self.__handlers.append(handler)
-            logger.debug("attached event handler [%s] to producer [%s]",
-                         handler, self)
+            logger.debug(f"attached event handler [{handler}] "
+                         f"to producer [{self}]")
         else:
-            logger.debug("event handler [%s] already attached to"
-                         " producer [%s]",
-                         handler, self)
+            logger.debug(f"event handler [{handler}] already attached "
+                         f"to producer [{self}]")
 
     def remove_handler(self, handler: DarjeelingEventHandler) -> None:
         """Removes an event handler from this object."""
-        logger.debug("removing event handler [%s] from producer [%s]",
-                     handler, self)
+        logger.debug(f"removing event handler [{handler}] "
+                     f"from producer [{self}]")
         if not handler in self.__handlers:
-            m = f"handler [{handler}] not attached to producer [{self}]"
-            logger.warning(m)
+            logger.warning(f"handler [{handler}] not attached "
+                           f"to producer [{self}]")
         self.__handlers.remove(handler)
-        logger.debug("removed event handler [%s] from producer [%s]",
-                     handler, self)
+        logger.debug(f"removed event handler [{handler}] "
+                     f"from producer [{self}]")

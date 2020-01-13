@@ -3,7 +3,6 @@ __all__ = ('CoveragePyCollector', 'CoveragePyCollectorConfig')
 
 from typing import FrozenSet, Mapping, Any, Set, Dict, Optional, ClassVar
 import json
-import logging
 import os
 import typing
 
@@ -16,9 +15,6 @@ if typing.TYPE_CHECKING:
     from ..container import ProgramContainer
     from ..environment import Environment
     from ..program import ProgramDescription
-
-logger: logging.Logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 @attr.s(frozen=True)

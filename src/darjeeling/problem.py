@@ -6,7 +6,6 @@ from typing import (List, Optional, Dict, Iterator, Callable, Set, Iterable,
 from timeit import default_timer as timer
 import tempfile
 import typing
-import logging
 import functools
 import os
 
@@ -14,6 +13,7 @@ import attr
 from bugzoo.core.fileline import FileLine, FileLineSet
 from bugzoo.core.bug import Bug
 from kaskara.analysis import Analysis
+from loguru import logger
 
 from .core import Language, Test, TestCoverage, TestCoverageMap
 from .environment import Environment
@@ -25,9 +25,6 @@ from .test import TestSuite
 
 if typing.TYPE_CHECKING:
     from .config import Config
-
-logger: logging.Logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -93,9 +90,9 @@ class Problem:
                   if coverage[name].outcome.successful)
 
         logger.info('determined passing and failing tests')
-        logger.info('* passing tests: %s',
+        logger.info('* passing tests: {}',
                     ', '.join([t.name for t in passing_tests]))
-        logger.info('* failing tests: %s',
+        logger.info('* failing tests: {}',
                     ', '.join([t.name for t in failing_tests]))
         if not failing_tests:
             raise NoFailingTests
@@ -126,7 +123,7 @@ class Problem:
         logger.info("ordering test cases")
         test_ordering: Sequence[Test] = \
             tuple(sorted(program.tests, key=functools.cmp_to_key(ordering)))
-        logger.info('test order: %s', ', '.join(t.name for t in test_ordering))
+        logger.info('test order: {}', ', '.join(t.name for t in test_ordering))
 
         logger.debug("storing contents of source code files")
         source_files = set(l.filename for l in coverage.failing.locations)
@@ -155,8 +152,8 @@ class Problem:
         """
         lines = list(self.lines)
         files = set(self.implicated_files)
-        logger.info("implicated lines [%d]:\n%s", len(lines), lines)
-        logger.info("implicated files [%d]:\n* %s", len(files),
+        logger.info("implicated lines [{}]:\n{}", len(lines), lines)
+        logger.info("implicated files [{}]:\n* {}", len(files),
                     '\n* '.join(files))
         if len(lines) == 0:
             raise NoImplicatedLines

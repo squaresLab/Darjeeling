@@ -3,9 +3,9 @@ __all__ = ('TestSuiteConfig',)
 
 from typing import Dict, Optional, Any, Type
 import abc
-import logging
 import typing
 
+from loguru import logger
 import bugzoo
 
 from ..util import dynamically_registered
@@ -13,9 +13,6 @@ from ..util import dynamically_registered
 if typing.TYPE_CHECKING:
     from .base import TestSuite
     from ..environment import Environment
-
-logger: logging.Logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 @dynamically_registered(lookup='lookup', length=None, iterator=None)

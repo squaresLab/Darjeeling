@@ -13,6 +13,7 @@ import warnings
 import shutil
 import os
 
+from loguru import logger
 import bugzoo
 import bugzoo.server
 import cement
@@ -29,9 +30,6 @@ from ..events import CsvEventLogger
 from ..session import Session
 from ..exceptions import BadConfigurationException
 from ..util import duration_str
-
-logger: logging.Logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 BANNER = 'DARJEELING'
 
@@ -196,39 +194,32 @@ class BaseController(cement.Controller):
         bool
             :code:`True` if at least one patch was found, else :code:`False`.
         """
-        # setup logging to stdout unless instructed not to do so
+        filename: str = self.app.pargs.filename
+        interactive: bool = self.app.pargs.interactive
+        seed: Optional[int] = self.app.pargs.seed
+        terminate_early: bool = self.app.pargs.terminate_early
+        threads: Optional[int] = self.app.pargs.threads
+        limit_candidates: Optional[int] = \
+            self.app.pargs.limit_candidates
+        limit_time_minutes: Optional[int] = \
+            self.app.pargs.limit_time_minutes
+        dir_patches: Optional[str] = self.app.pargs.dir_patches
+        log_to_filename: Optional[str] = self.app.pargs.log_to_file
+
+        # remove all existing loggers
+        logger.remove()
+        logger.enable('darjeeling')
+
+        # log to stdout, unless instructed not to do so
         if not self.app.pargs.silent:
-            log_to_stdout = logging.StreamHandler()
-            log_to_stdout.setLevel(logging.INFO)
-            logging.getLogger('darjeeling').addHandler(log_to_stdout)
+            logger.add(sys.stdout,
+                       level=('CRITICAL' if interactive else 'INFO'))
 
         # setup logging to file
-        log_to_filename = self.app.pargs.log_to_file  # type: Optional[str]
         if not log_to_filename:
             log_to_filename = self._default_log_filename
-        logger.info("logging to file: %s", log_to_filename)
-
-        log_formatter = logging.Formatter(
-            '%(asctime)s:%(name)s:%(levelname)s: %(message)s',
-            '%Y-%m-%d %H:%M:%S')
-        log_to_file = \
-            logging.handlers.WatchedFileHandler(log_to_filename, mode='w')
-        log_to_file.setLevel(logging.DEBUG)
-        log_to_file.setFormatter(log_formatter)
-        logging.getLogger('darjeeling').addHandler(log_to_file)
-        logging.getLogger('bugzoo').addHandler(log_to_file)
-        logging.getLogger('kaskara').addHandler(log_to_file)
-
-        filename = self.app.pargs.filename  # type: str
-        interactive = self.app.pargs.interactive  # type: bool
-        seed = self.app.pargs.seed  # type: Optional[int]
-        terminate_early = self.app.pargs.terminate_early  # type: bool
-        threads = self.app.pargs.threads  # type: Optional[int]
-        limit_candidates = \
-            self.app.pargs.limit_candidates  # type: Optional[int]
-        limit_time_minutes = \
-            self.app.pargs.limit_time_minutes  # type: Optional[int]
-        dir_patches: Optional[str] = self.app.pargs.dir_patches
+        logger.info(f'logging to file: {log_to_filename}')
+        logger.add(log_to_filename, level='DEBUG')
 
         # load the configuration file
         filename = os.path.abspath(filename)
@@ -243,7 +234,7 @@ class BaseController(cement.Controller):
                               limit_candidates=limit_candidates,
                               limit_time_minutes=limit_time_minutes,
                               dir_patches=dir_patches)
-        logger.info("using configuration: %s", cfg)
+        logger.info(f"using configuration: {cfg}")
 
         # connect to BugZoo
         logger.info("connecting to BugZoo server")
@@ -266,7 +257,6 @@ class BaseController(cement.Controller):
                 session.attach_handler(csv_logger)
 
             if interactive:
-                log_to_stdout.setLevel(logging.CRITICAL)
                 with UI(session):
                     session.run()
                     session.close()

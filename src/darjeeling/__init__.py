@@ -3,16 +3,15 @@ import logging as _logging
 import importlib as _importlib
 import pkgutil as _pkgutil
 
+from loguru import logger as _logger
+_logger.disable('darjeeling')
+
 from . import exceptions
 from .version import __version__
 from .environment import Environment
 from .problem import Problem
 from .events import (DarjeelingEvent, DarjeelingEventHandler,
                      DarjeelingEventProducer)
-
-_logger = _logging.getLogger(__name__)
-_logger.setLevel(_logging.INFO)
-_logger.addHandler(_logging.NullHandler())
 
 
 def _load_plugins() -> None:

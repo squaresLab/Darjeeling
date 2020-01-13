@@ -7,7 +7,6 @@ import os
 import sys
 import asyncio
 import shutil
-import logging
 import random
 import asyncio
 from datetime import timedelta, datetime
@@ -17,6 +16,7 @@ import bugzoo
 import kaskara
 from bugzoo.core import FileLine, Patch
 from bugzoo import Bug as Snapshot
+from loguru import logger
 
 from .core import Language, TestCoverageMap
 from .environment import Environment
@@ -36,9 +36,6 @@ from .transformation import Transformation, TransformationSchema
 from .transformation import sample_by_localization_and_type as build_transformations  # noqa: pycodestyle
 from .transformation.classic import (DeleteStatement, ReplaceStatement,
                                      PrependStatement)
-
-logger: logging.Logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 @attr.s
@@ -70,11 +67,11 @@ class Session(DarjeelingEventProducer):
         # FIXME use separate RNG for each session
         random.seed(cfg.seed)
 
-        logger.info("using %d threads", cfg.threads)
-        logger.info("using language: %s", cfg.program.language.value)
-        logger.info("using optimizations: %s", cfg.optimizations)
-        logger.info("using coverage config: %s", cfg.coverage)
-        logger.info("using random number generator seed: %d", cfg.seed)
+        logger.info(f"using {cfg.threads} threads")
+        logger.info(f"using language: {cfg.program.language.value}")
+        logger.info(f"using optimizations: {cfg.optimizations}")
+        logger.info(f"using coverage config: {cfg.coverage}")
+        logger.info(f"using random number generator seed: {cfg.seed}")
 
         if not cfg.terminate_early:
             logger.info("search will continue after an acceptable patch has been discovered")
@@ -84,34 +81,34 @@ class Session(DarjeelingEventProducer):
         if cfg.limit_time_minutes is None:
             logger.info("no time limit is being enforced")
         if cfg.limit_time_minutes is not None:
-            logger.info("using time limit: %d minutes", cfg.limit_time_minutes)
+            logger.info("using time limit: {cfg.limit_time_minutes} minutes")
 
         if cfg.limit_candidates is not None:
-            logger.info("using candidate limit: %d candidates", cfg.limit_candidates)  # noqa: pycodestyle
+            logger.info(f"using candidate limit: {cfg.limit_candidates} candidates")  # noqa
         else:
             logger.info("no limit on number of candidate evaluations")
 
         # check if search is unbounded
         if not cfg.limit_time and not cfg.limit_candidates:
-            m = "no resource limits were specified; resource use will be unbounded"  # noqa: pycodestyle
+            m = "no resource limits were specified; resource use will be unbounded"  # noqa
             logger.warn(m)
 
         # build program
         logger.debug("building program...")
         program = cfg.program.build(environment)
-        logger.debug("built program: %s", program)
+        logger.debug(f"built program: {program}")
 
         # compute coverage
         logger.info("computing coverage information...")
         coverage = cfg.coverage.build(environment, program)
         logger.info("computed coverage information")
-        logger.debug("coverage: %s", coverage)
+        logger.debug(f"coverage: {coverage}")
 
         # compute localization
         logger.info("computing fault localization...")
         localization = \
             Localization.from_config(coverage, cfg.localization)
-        logger.info("computed fault localization:\n%s", localization)
+        logger.info(f"computed fault localization:\n{localization}")
 
         # determine implicated files and lines
         files = localization.files
@@ -148,8 +145,7 @@ class Session(DarjeelingEventProducer):
             snippets = StatementSnippetDatabase.from_kaskara(analysis, cfg)
         else:
             snippets = LineSnippetDatabase.for_problem(problem)
-        logger.info("constructed database of donor snippets: %d snippets",
-                    len(snippets))
+        logger.info(f"constructed database of donor snippets: {len(snippets)} snippets")  # noqa
 
         # FIXME build and index transformations
         # FIXME does not allow lazy construction!
@@ -158,8 +154,7 @@ class Session(DarjeelingEventProducer):
             schemas.append(schema_config.build(problem, snippets))
         logger.info("constructing transformation database...")
         tx = list(build_transformations(problem, snippets, localization, schemas, eager=True))
-        logger.info("constructed transformation database: %d transformations",  # noqa: pycodestyle
-                    len(tx))
+        logger.info(f"constructed transformation database: {len(tx)} transformations")  # noqa
 
         searcher = cfg.search.build(problem,
                                     transformations=tx,
@@ -238,11 +233,10 @@ class Session(DarjeelingEventProducer):
         num_candidate_evals = self.searcher.num_candidate_evals
         time_running_mins = self.searcher.time_running.seconds / 60
 
-        logger.info("found %d plausible patches", len(self._patches))
-        logger.info("time taken: %.2f minutes", time_running_mins)
-        logger.info("# test evaluations: %d", self.searcher.num_test_evals)
-        logger.info("# candidate evaluations: %d",
-                    self.searcher.num_candidate_evals)
+        logger.info(f"found {len(self._patches)} plausible patches")
+        logger.info(f"time taken: {time_running_mins:.2f} minutes")
+        logger.info(f"# test evaluations: {self.searcher.num_test_evals}")
+        logger.info(f"# candidate evaluations: {self.searcher.num_candidate_evals}")  # noqa
 
         self._save_patches_to_disk()
 
@@ -255,15 +249,15 @@ class Session(DarjeelingEventProducer):
         os.makedirs(self.dir_patches, exist_ok=True)
         for i, patch in enumerate(self._patches):
             diff = str(patch.to_diff(self.problem))
-            fn_patch = os.path.join(self.dir_patches, '{}.diff'.format(i))
-            logger.debug("writing patch to %s", fn_patch)
+            fn_patch = os.path.join(self.dir_patches, f'{i}.diff')
+            logger.debug(f"writing patch to {fn_patch}")
             try:
                 with open(fn_patch, 'w') as f:
                     f.write(diff)
             except OSError:
-                logger.exception("failed to write patch: %s", fn_patch)
+                logger.exception(f"failed to write patch: {fn_patch}")
                 raise
-            logger.debug("wrote patch to %s", fn_patch)
+            logger.debug(f"wrote patch to {fn_patch}")
         logger.debug("saved patches to disk")
 
     def __enter__(self) -> 'Session':
