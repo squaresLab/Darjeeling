@@ -11,6 +11,7 @@ import kaskara
 from .base import StatementTransformation, StatementTransformationSchema
 from ..base import Transformation, TransformationSchema
 from ..config import TransformationSchemaConfig
+from ... import exceptions as exc
 from ...snippet import (StatementSnippet, SnippetDatabase,
                         StatementSnippetDatabase)
 from ...core import (Replacement, FileLine, FileLocationRange, FileLocation,
@@ -22,7 +23,7 @@ if typing.TYPE_CHECKING:
 
 @attr.s(frozen=True, repr=False, auto_attribs=True)
 class PrependStatement(StatementTransformation):
-    schema: TransformationSchema
+    schema: 'PrependStatementSchema'
     at: kaskara.Statement
     insertion: StatementSnippet
 
@@ -40,9 +41,17 @@ class PrependStatement(StatementTransformation):
 
     def to_replacement(self) -> Replacement:
         at_location = self.location
+
+        # TODO toggle via preserve_indentation
+        # determine and apply appropriate indentation
+        indentation = self.schema._indentation(self.at)
+        source = self.insertion.content
+        source = self.schema._source_with_indentation(source, indentation)
+        source += f'\n{indentation}'
+
         r = FileLocationRange(at_location.filename,
                               LocationRange(at_location.start, at_location.start))
-        return Replacement(r, self.insertion.content)
+        return Replacement(r, source)
 
 
 class PrependStatementSchema(StatementTransformationSchema):
@@ -66,15 +75,27 @@ class PrependStatementSchema(StatementTransformationSchema):
             yield PrependStatement(self, statement, snippet)
 
 
+@attr.s(frozen=True)
 class PrependStatementSchemaConfig(TransformationSchemaConfig):
     NAME: ClassVar[str] = 'prepend-statement'
+
+    preserve_indentation: bool = attr.ib()
 
     @classmethod
     def from_dict(cls,
                   d: Mapping[str, Any],
                   dir_: Optional[str] = None
                   ) -> 'TransformationSchemaConfig':
-        return PrependStatementSchemaConfig()
+        if not 'preserve_indentation' in d:
+            preserve_indentation = True
+        else:
+            preserve_indentation = d['preserve-indentation']
+            if not isinstance(preserve_indentation, bool):
+                m = "illegal value for 'preserve-indentation': expected bool"
+                raise exc.BadConfigurationException(m)
+
+        return PrependStatementSchemaConfig(
+                    preserve_indentation=preserve_indentation)
 
     def build(self,
               problem: 'Problem',

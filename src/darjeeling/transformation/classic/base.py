@@ -41,6 +41,34 @@ class StatementTransformationSchema(TransformationSchema):
             raise BadConfigurationException(m)
         return cls(problem=problem, snippets=snippets)
 
+    @staticmethod
+    def _source_with_indentation(source: str,
+                                 indentation: str,
+                                 *,
+                                 indent_first_line: bool = False
+                                 ) -> str:
+        """Applies indentation to a given source."""
+        lines = source.split('\n')
+        for i in range(0 if indent_first_line else 1, len(lines)):
+            if lines[i]:  # don't indent blank lines
+                lines[i] = indentation + lines[i]
+        return '\n'.join(lines)
+
+    def _indentation(self, statement: kaskara.Statement) -> str:
+        """Retrieves the indentation string for a given statement."""
+        location = statement.location
+
+        if location.start.column == 0:
+            return ''
+
+        line = location.start.line
+        start = Location(line, 0)
+        stop = Location(line, location.start.column)
+        indentation_range = \
+            FileLocationRange(location.filename, LocationRange(start, stop))
+        indentation = self._problem.sources.read_chars(indentation_range)
+        return indentation
+
     def all_at_lines(self,
                      lines: List[FileLine],
                      ) -> Mapping[FileLine, Iterator[Transformation]]:

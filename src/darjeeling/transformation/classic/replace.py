@@ -12,6 +12,7 @@ import kaskara
 from .base import StatementTransformation, StatementTransformationSchema
 from ..base import Transformation, TransformationSchema
 from ..config import TransformationSchemaConfig
+from ... import exceptions as exc
 from ...snippet import (StatementSnippet, SnippetDatabase,
                         StatementSnippetDatabase)
 from ...core import (Replacement, FileLine, FileLocationRange, FileLocation,
@@ -23,17 +24,22 @@ if typing.TYPE_CHECKING:
 
 @attr.s(frozen=True, repr=False, auto_attribs=True)
 class ReplaceStatement(StatementTransformation):
-    schema: StatementTransformationSchema
+    schema: 'ReplaceStatementSchema'
     at: FileLocationRange
     replacement: StatementSnippet
 
     def __repr__(self) -> str:
         s = "ReplaceStatement[{}]<{}>"
-        s = s.format(repr(self.replacement.content), str(self.location))
-        return s
+        return s.format(repr(self.replacement.content), str(self.location))
 
     def to_replacement(self) -> Replacement:
-        return Replacement(self.location, str(self.replacement.content))
+        # TODO toggle via preserve_indentation
+        # determine and apply appropriate indentation
+        indentation = self.schema._indentation(self.at)
+        source = self.replacement.content
+        source = self.schema._source_with_indentation(source, indentation)
+
+        return Replacement(self.location, source)
 
     @property
     def location(self) -> FileLocationRange:
@@ -71,15 +77,27 @@ class ReplaceStatementSchema(StatementTransformationSchema):
                 yield ReplaceStatement(self, statement, snippet)
 
 
+@attr.s(frozen=True)
 class ReplaceStatementSchemaConfig(TransformationSchemaConfig):
     NAME: ClassVar[str] = 'replace-statement'
+
+    preserve_indentation: bool = attr.ib()
 
     @classmethod
     def from_dict(cls,
                   d: Mapping[str, Any],
                   dir_: Optional[str] = None
                   ) -> 'TransformationSchemaConfig':
-        return ReplaceStatementSchemaConfig()
+        if not 'preserve_indentation' in d:
+            preserve_indentation = True
+        else:
+            preserve_indentation = d['preserve-indentation']
+            if not isinstance(preserve_indentation, bool):
+                m = "illegal value for 'preserve-indentation': expected bool"
+                raise exc.BadConfigurationException(m)
+
+        return ReplaceStatementSchemaConfig(
+                    preserve_indentation=preserve_indentation)
 
     def build(self,
               problem: 'Problem',
