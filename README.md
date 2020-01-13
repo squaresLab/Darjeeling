@@ -160,6 +160,7 @@ information for each of these languages.
 
 * *C:* `c`
 * *C++:* `cpp`
+* *Python:* `python` **(added in Jan. 2020)**
 
 The `text` option (i.e., `language: text`) may be used to ignore the language
 of the program under repair and to treat each file as a text file. When this
