@@ -72,7 +72,7 @@ class PyTestSuite(TestSuite[PyTestCase]):
         if coverage:
             command = f'coverage run -m pytest {test.name}'
         else:
-            command = 'pytest {test.name}'
+            command = f'pytest {test.name}'
 
         outcome = container.shell.run(command,
                                       cwd=self._workdir,
