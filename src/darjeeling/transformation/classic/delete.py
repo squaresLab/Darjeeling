@@ -22,42 +22,46 @@ if typing.TYPE_CHECKING:
 
 @attr.s(frozen=True, repr=False, auto_attribs=True)
 class DeleteStatement(StatementTransformation):
-    location: FileLocationRange
+    statement: kaskara.Statement
 
     def __repr__(self) -> str:
-        s = "DeleteStatement<{}>".format(str(self.location))
-        return s
+        return f"DeleteStatement<{str(self.location)}>"
 
     def to_replacement(self, problem: 'Problem') -> Replacement:
         return Replacement(self.location, '')
 
     @property
+    def location(self) -> FileLocationRange:
+        return self.statement.location
+
+    @property
     def line(self) -> FileLine:
-        return FileLine(self.location.filename,
-                        self.location.start.line)
+        return FileLine(self.location.filename, self.location.start.line)
 
-    class Schema(StatementTransformationSchema):
-        def all_at_statement(self,
-                             statement: kaskara.Statement
-                             ) -> Iterator[Transformation]:
-            problem = self._problem
-            if problem.settings.ignore_decls and statement.kind == 'DeclStmt':
-                return
-            yield DeleteStatement(statement.location)
 
-    class SchemaConfig(TransformationSchemaConfig):
-        NAME: ClassVar[str] = 'delete-statement'
+class DeleteStatementSchema(StatementTransformationSchema):
+    def all_at_statement(self,
+                         statement: kaskara.Statement
+                         ) -> Iterator[Transformation]:
+        problem = self._problem
+        if problem.settings.ignore_decls and statement.kind == 'DeclStmt':
+            return
+        yield DeleteStatement(statement)
 
-        @classmethod
-        def from_dict(cls,
-                      d: Mapping[str, Any],
-                      dir_: Optional[str] = None
-                      ) -> 'TransformationSchemaConfig':
-            return DeleteStatement.SchemaConfig()
 
-        def build(self,
-                  problem: 'Problem',
-                  snippets: SnippetDatabase
-                  ) -> 'TransformationSchema':
-            assert isinstance(snippets, StatementSnippetDatabase)
-            return DeleteStatement.Schema(problem=problem, snippets=snippets)
+class DeleteStatementSchemaConfig(TransformationSchemaConfig):
+    NAME: ClassVar[str] = 'delete-statement'
+
+    @classmethod
+    def from_dict(cls,
+                  d: Mapping[str, Any],
+                  dir_: Optional[str] = None
+                  ) -> 'TransformationSchemaConfig':
+        return DeleteStatementSchemaConfig()
+
+    def build(self,
+              problem: 'Problem',
+              snippets: SnippetDatabase
+              ) -> 'TransformationSchema':
+        assert isinstance(snippets, StatementSnippetDatabase)
+        return DeleteStatementSchema(problem=problem, snippets=snippets)

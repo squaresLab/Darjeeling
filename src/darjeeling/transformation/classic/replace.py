@@ -23,7 +23,7 @@ if typing.TYPE_CHECKING:
 
 @attr.s(frozen=True, repr=False, auto_attribs=True)
 class ReplaceStatement(StatementTransformation):
-    location: FileLocationRange
+    at: FileLocationRange
     replacement: StatementSnippet
 
     def __repr__(self) -> str:
@@ -35,48 +35,54 @@ class ReplaceStatement(StatementTransformation):
         return Replacement(self.location, str(self.replacement.content))
 
     @property
+    def location(self) -> FileLocationRange:
+        return self.at.location
+
+    @property
     def line(self) -> FileLine:
         return FileLine(self.location.filename,
                         self.location.start.line)
 
-    class Schema(StatementTransformationSchema):
-        def all_at_statement(self,
-                             statement: kaskara.Statement
-                             ) -> Iterator[Transformation]:
-            problem = self._problem
-            snippets = self._snippets
 
-            # do not replace declaration statements
-            if problem.settings.ignore_decls and statement.kind == 'DeclStmt':
-                return
+class ReplaceStatementSchema(StatementTransformationSchema):
+    def all_at_statement(self,
+                         statement: kaskara.Statement
+                         ) -> Iterator[Transformation]:
+        problem = self._problem
+        snippets = self._snippets
 
-            check_equiv = problem.settings.ignore_string_equivalent_snippets
-            for snippet in self.viable_snippets(statement):
-                logger.debug(f"using snippet: {snippet.content}")
-                eq_content = \
-                    not check_equiv and snippet.content == statement.content
-                eq_canonical = \
-                    check_equiv and snippet.content == statement.canonical
-                if eq_content or eq_canonical:
-                    logger.debug("prevented self-replacement of statement "
-                                 f"[{statement.location}]")
-                else:
-                    logger.debug(f"replace with snippet: {snippet.content}")
-                    yield ReplaceStatement(statement.location, snippet)
+        # do not replace declaration statements
+        if problem.settings.ignore_decls and statement.kind == 'DeclStmt':
+            return
 
-    class SchemaConfig(TransformationSchemaConfig):
-        NAME: ClassVar[str] = 'replace-statement'
+        check_equiv = problem.settings.ignore_string_equivalent_snippets
+        for snippet in self.viable_snippets(statement):
+            logger.debug(f"using snippet: {snippet.content}")
+            eq_content = \
+                not check_equiv and snippet.content == statement.content
+            eq_canonical = \
+                check_equiv and snippet.content == statement.canonical
+            if eq_content or eq_canonical:
+                logger.debug("prevented self-replacement of statement "
+                             f"[{statement.location}]")
+            else:
+                logger.debug(f"replace with snippet: {snippet.content}")
+                yield ReplaceStatement(statement, snippet)
 
-        @classmethod
-        def from_dict(cls,
-                      d: Mapping[str, Any],
-                      dir_: Optional[str] = None
-                      ) -> 'TransformationSchemaConfig':
-            return ReplaceStatement.SchemaConfig()
 
-        def build(self,
-                  problem: 'Problem',
-                  snippets: SnippetDatabase
-                  ) -> 'TransformationSchema':
-            assert isinstance(snippets, StatementSnippetDatabase)
-            return ReplaceStatement.Schema(problem=problem, snippets=snippets)
+class ReplaceStatementSchemaConfig(TransformationSchemaConfig):
+    NAME: ClassVar[str] = 'replace-statement'
+
+    @classmethod
+    def from_dict(cls,
+                  d: Mapping[str, Any],
+                  dir_: Optional[str] = None
+                  ) -> 'TransformationSchemaConfig':
+        return ReplaceStatementSchemaConfig()
+
+    def build(self,
+              problem: 'Problem',
+              snippets: SnippetDatabase
+              ) -> 'TransformationSchema':
+        assert isinstance(snippets, StatementSnippetDatabase)
+        return ReplaceStatementSchema(problem=problem, snippets=snippets)
