@@ -2,10 +2,18 @@
 import warnings
 import inspect
 import logging
-from typing import List, Union, Tuple, Any, Dict, Type, Set, Iterator, Optional
+from typing import (List, Union, Tuple, Any, Dict, Type, Set, Iterator,
+                    Optional, Iterable, TypeVar)
 from timeit import default_timer as timer
 
 from loguru import logger
+
+
+def tuple_from_iterable(val: Iterable[Any]) -> Tuple[Any, ...]:
+    """Builds a tuple from an iterable.
+    Workaround for https://github.com/python-attrs/attrs/issues/519
+    """
+    return tuple(val)
 
 
 def duration_tuple(secs: Union[int, float]) -> Tuple[int, int, int, int]:

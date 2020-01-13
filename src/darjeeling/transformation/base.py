@@ -6,6 +6,7 @@ transformation schemas inherit.
 __all__ = ('Transformation', 'TransformationSchema')
 
 from typing import Any, List, Type, Iterator, TypeVar, Generic, Mapping
+from typing_extensions import final
 import abc
 import typing
 
@@ -22,7 +23,8 @@ T = TypeVar('T', bound='Transformation')
 
 class Transformation(abc.ABC):
     """Represents a source code transformation."""
-    def to_replacement(self, problem: 'Problem') -> Replacement:
+    @abc.abstractmethod
+    def to_replacement(self) -> Replacement:
         """Converts a transformation into a source code replacement."""
         ...
 

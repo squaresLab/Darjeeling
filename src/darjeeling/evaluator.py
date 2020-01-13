@@ -133,7 +133,7 @@ class Evaluator(DarjeelingEventProducer):
                                 tests: List[Test]
                                 ) -> Tuple[List[Test], Set[Test]]:
         line_coverage_by_test = self.__problem.coverage
-        lines_changed = candidate.lines_changed(self.__problem)
+        lines_changed = candidate.lines_changed()
 
         # if no lines are changed, retain all tests (fixes issue #128)
         if not lines_changed:
@@ -167,7 +167,7 @@ class Evaluator(DarjeelingEventProducer):
         return outcome
 
     def _evaluate(self, candidate: Candidate) -> CandidateOutcome:
-        patch = candidate.to_diff(self.__problem)
+        patch = candidate.to_diff()
         logger.info(f"evaluating candidate: {candidate}\n{patch}\n")
 
         # select a subset of tests to use for this evaluation

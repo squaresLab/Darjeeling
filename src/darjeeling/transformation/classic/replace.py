@@ -23,6 +23,7 @@ if typing.TYPE_CHECKING:
 
 @attr.s(frozen=True, repr=False, auto_attribs=True)
 class ReplaceStatement(StatementTransformation):
+    schema: StatementTransformationSchema
     at: FileLocationRange
     replacement: StatementSnippet
 
@@ -31,7 +32,7 @@ class ReplaceStatement(StatementTransformation):
         s = s.format(repr(self.replacement.content), str(self.location))
         return s
 
-    def to_replacement(self, problem: 'Problem') -> Replacement:
+    def to_replacement(self) -> Replacement:
         return Replacement(self.location, str(self.replacement.content))
 
     @property
@@ -67,7 +68,7 @@ class ReplaceStatementSchema(StatementTransformationSchema):
                              f"[{statement.location}]")
             else:
                 logger.debug(f"replace with snippet: {snippet.content}")
-                yield ReplaceStatement(statement, snippet)
+                yield ReplaceStatement(self, statement, snippet)
 
 
 class ReplaceStatementSchemaConfig(TransformationSchemaConfig):

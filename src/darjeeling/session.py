@@ -221,7 +221,7 @@ class Session(DarjeelingEventProducer):
     def patches(self) -> Iterator[Patch]:
         """Returns an iterator over the patches found during this session."""
         for candidate in self._patches:
-            yield candidate.to_diff(self._problem)
+            yield candidate.to_diff()
 
     def close(self) -> None:
         """Closes the session."""
@@ -248,7 +248,7 @@ class Session(DarjeelingEventProducer):
         logger.debug("saving patches to disk...")
         os.makedirs(self.dir_patches, exist_ok=True)
         for i, patch in enumerate(self._patches):
-            diff = str(patch.to_diff(self.problem))
+            diff = str(patch.to_diff())
             fn_patch = os.path.join(self.dir_patches, f'{i}.diff')
             logger.debug(f"writing patch to {fn_patch}")
             try:

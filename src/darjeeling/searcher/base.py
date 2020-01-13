@@ -88,7 +88,7 @@ class Searcher(Generic[T], DarjeelingEventProducer, abc.ABC):
         self.__counter_candidates = 0
         self.__counter_tests = 0
         # FIXME this isn't being maintained
-        self.__history = []  # type: List[Candidate]
+        self.__history: List[Candidate] = []
         logger.debug("constructed searcher")
 
     def attach_handler(self, handler: DarjeelingEventHandler) -> None:

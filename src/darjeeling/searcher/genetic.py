@@ -136,7 +136,7 @@ class GeneticSearcher(Searcher):
         """Generates an initial population according to this strategy."""
         pop = []
         for _ in range(self.population_size):
-            pop.append(Candidate([]))
+            pop.append(Candidate(self.problem, []))
         return self.mutate(pop)
 
     def choose_transformation(self) -> Transformation:
@@ -178,13 +178,14 @@ class GeneticSearcher(Searcher):
         return survivors
 
     def mutate(self, pop: Population) -> Population:
+        problem = self.problem
         offspring = []
         for ind in pop:
             child = ind
             if random.random() <= self.rate_mutation:
                 mutation = self.choose_transformation()
                 transformations = child.transformations + (mutation,)
-                child = Candidate(transformations)  # type: ignore
+                child = Candidate(problem, transformations)  # type: ignore
             offspring.append(child)
         return offspring
 
@@ -192,6 +193,7 @@ class GeneticSearcher(Searcher):
         def one_point_crossover(px: Candidate,
                                 py: Candidate
                                 ) -> List[Candidate]:
+            problem = self.problem
             tx = list(px.transformations)
             ty = list(py.transformations)
 
@@ -201,7 +203,7 @@ class GeneticSearcher(Searcher):
             a, b = tx[:lx], tx[lx:]
             c, d = ty[:ly], ty[ly:]
 
-            children = [Candidate(a + d), Candidate(c + b)]  # type: ignore
+            children = [Candidate(problem, a + d), Candidate(problem, c + b)]  # type: ignore  # noqa
             return children
 
         offspring: List[Candidate] = []

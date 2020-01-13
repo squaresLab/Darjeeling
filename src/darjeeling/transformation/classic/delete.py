@@ -22,12 +22,13 @@ if typing.TYPE_CHECKING:
 
 @attr.s(frozen=True, repr=False, auto_attribs=True)
 class DeleteStatement(StatementTransformation):
+    schema: StatementTransformationSchema
     statement: kaskara.Statement
 
     def __repr__(self) -> str:
         return f"DeleteStatement<{str(self.location)}>"
 
-    def to_replacement(self, problem: 'Problem') -> Replacement:
+    def to_replacement(self) -> Replacement:
         return Replacement(self.location, '')
 
     @property
@@ -46,7 +47,7 @@ class DeleteStatementSchema(StatementTransformationSchema):
         problem = self._problem
         if problem.settings.ignore_decls and statement.kind == 'DeclStmt':
             return
-        yield DeleteStatement(statement)
+        yield DeleteStatement(self, statement)
 
 
 class DeleteStatementSchemaConfig(TransformationSchemaConfig):

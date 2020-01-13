@@ -216,8 +216,9 @@ class BaseController(cement.Controller):
 
         # log to stdout, unless instructed not to do so
         if not self.app.pargs.silent:
-            logger.add(sys.stdout,
-                       level=('CRITICAL' if interactive else 'INFO'))
+            stdout_logging_level = 'CRITICAL' if interactive else 'INFO'
+            stdout_logging_level = 'DEBUG'  # FIXME
+            logger.add(sys.stdout, level=stdout_logging_level)
 
         # setup logging to file
         if should_log_to_file:

@@ -65,15 +65,17 @@ class LineTransformationSchema(TransformationSchema[LineTransformation]):
 
 @attr.s(frozen=True, auto_attribs=True)
 class DeleteLine(LineTransformation):
+    schema: LineTransformationSchema
     line: FileLine
 
-    def to_replacement(self, problem: 'Problem') -> Replacement:
-        loc = problem.sources.line_to_location_range(self.line)
+    def to_replacement(self) -> Replacement:
+        sources = self.schema._problem.sources
+        loc = sources.line_to_location_range(self.line)
         return Replacement(loc, '')
 
     class Schema(LineTransformationSchema):
         def all_at_line(self, line: FileLine) -> Iterator[Transformation]:
-            yield DeleteLine(line)
+            yield DeleteLine(self, line)
 
     class SchemaConfig(TransformationSchemaConfig):
         NAME = 'delete-line'
@@ -95,11 +97,12 @@ class DeleteLine(LineTransformation):
 
 @attr.s(frozen=True, auto_attribs=True)
 class ReplaceLine(LineTransformation):
+    schema: LineTransformationSchema
     line: FileLine
     replacement: FileLine
 
-    def to_replacement(self, problem: 'Problem') -> Replacement:
-        sources = problem.sources
+    def to_replacement(self) -> Replacement:
+        sources = self.schema._problem.sources
         loc = sources.line_to_location_range(self.line)
         rep = sources.read_line(self.replacement, keep_newline=True)
         return Replacement(loc, rep)
@@ -109,7 +112,7 @@ class ReplaceLine(LineTransformation):
         def all_at_line(self, line: FileLine) -> Iterator[Transformation]:
             for replacement in self.viable_insertions(line):
                 if replacement != line:
-                    yield ReplaceLine(line, replacement)
+                    yield ReplaceLine(self, line, replacement)
 
     class SchemaConfig(TransformationSchemaConfig):
         NAME = 'replace-line'
@@ -131,11 +134,12 @@ class ReplaceLine(LineTransformation):
 
 @attr.s(frozen=True, auto_attribs=True)
 class InsertLine(LineTransformation):
+    schema: LineTransformationSchema
     line: FileLine
     insertion: FileLine
 
-    def to_replacement(self, problem: 'Problem') -> Replacement:
-        sources = problem.sources
+    def to_replacement(self) -> Replacement:
+        sources = self.schema._problem.sources
         r = sources.line_to_location_range(self.line)
         r = FileLocationRange(r.filename, LocationRange(r.start, r.start))
         ins = sources.read_line(self.insertion, keep_newline=True)
@@ -145,7 +149,7 @@ class InsertLine(LineTransformation):
         def all_at_line(self, line: FileLine) -> Iterator[Transformation]:
             # TODO append after the last line!
             for ins in self.viable_insertions(line):
-                yield InsertLine(line, ins)
+                yield InsertLine(self, line, ins)
 
     class SchemaConfig(TransformationSchemaConfig):
         NAME = 'insert-line'

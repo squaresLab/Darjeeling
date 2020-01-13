@@ -5,6 +5,8 @@ from typing import Iterable, Optional, Iterator, Dict, Any, List
 import datetime
 import typing
 
+from loguru import logger
+
 from .base import Searcher
 from .config import SearcherConfig
 from ..candidate import Candidate, all_single_edit_patches
@@ -60,7 +62,7 @@ class ExhaustiveSearcher(Searcher):
                  candidate_limit: Optional[int] = None
                  ) -> None:
         # FIXME for now!
-        self.__candidates = all_single_edit_patches(transformations)
+        self.__candidates = all_single_edit_patches(problem, transformations)
         super().__init__(problem=problem,
                          threads=threads,
                          time_limit=time_limit,
@@ -68,8 +70,12 @@ class ExhaustiveSearcher(Searcher):
 
     def _generate(self) -> Candidate:
         try:
-            return next(self.__candidates)  # type: ignore
+            logger.debug('generating candidate patch...')
+            candidate = next(self.__candidates)
+            logger.debug(f'generated candidate patch: {candidate}')
+            return candidate
         except StopIteration:
+            logger.debug('exhausted all candidate patches')
             raise SearchExhausted
 
     def run(self) -> Iterator[Candidate]:

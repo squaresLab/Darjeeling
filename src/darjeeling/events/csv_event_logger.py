@@ -59,14 +59,14 @@ class CsvEventLogger(DarjeelingEventHandler):
                       ) -> Optional[Sequence[str]]:
         """Transforms an event to a CSV row."""
         if isinstance(event, CandidateEvaluationStarted):
-            diff = str(event.candidate.to_diff(self.problem))
+            diff = str(event.candidate.to_diff())
             return ['CANDIDATE', event.candidate.id, diff]
         if isinstance(event, CandidateEvaluationError):
-            diff = str(event.candidate.to_diff(self.problem))
+            diff = str(event.candidate.to_diff())
             return ['CANDIDATE-ERROR', event.candidate.id, diff,
                     str(event.error)]
         if isinstance(event, CandidateEvaluationFinished):
-            diff = str(event.candidate.to_diff(self.problem))
+            diff = str(event.candidate.to_diff())
             is_repair = event.outcome.is_repair
             return ['PATCH-ACCEPTED' if is_repair else 'PATCH-REJECTED',
                     event.candidate.id, diff]

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __all__ = ('StatementTransformation', 'StatementTransformationSchema')
 
-from typing import List, Iterator, FrozenSet, Mapping
+from typing import Generic, List, Iterator, FrozenSet, Mapping, TypeVar
 import abc
 import typing
 
@@ -26,7 +26,7 @@ class StatementTransformation(Transformation):
 
 
 @attr.s(frozen=True, auto_attribs=True)
-class StatementTransformationSchema(TransformationSchema[StatementTransformation]):  # noqa: pycodestyle
+class StatementTransformationSchema(TransformationSchema):
     _problem: 'Problem' = attr.ib(hash=False)
     _snippets: StatementSnippetDatabase = attr.ib(hash=False)
 

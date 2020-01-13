@@ -22,6 +22,7 @@ if typing.TYPE_CHECKING:
 
 @attr.s(frozen=True, repr=False, auto_attribs=True)
 class PrependStatement(StatementTransformation):
+    schema: TransformationSchema
     at: kaskara.Statement
     insertion: StatementSnippet
 
@@ -37,7 +38,7 @@ class PrependStatement(StatementTransformation):
     def line(self) -> FileLine:
         return FileLine(self.location.filename, self.location.line)
 
-    def to_replacement(self, problem: 'Problem') -> Replacement:
+    def to_replacement(self) -> Replacement:
         at_location = self.location
         r = FileLocationRange(at_location.filename,
                               LocationRange(at_location.start, at_location.start))
@@ -62,7 +63,7 @@ class PrependStatementSchema(StatementTransformationSchema):
         if not self.should_insert_at_location(location):
             yield from []
         for snippet in self.viable_snippets(statement):
-            yield PrependStatement(statement, snippet)
+            yield PrependStatement(self, statement, snippet)
 
 
 class PrependStatementSchemaConfig(TransformationSchemaConfig):
