@@ -252,7 +252,7 @@ transformation schemas based on those introduced by
 `swap-statement` has not been implemented at the time of writing.
 To learn more about why Darjeeling uses `prepend-statement` rather than the
 traditional `append-statement` schema, see the
-[Darjeeling design document](https://github.com/squaresLab/Darjeeling/blob/transformations/docs/design.md).
+[Darjeeling design document](docs/design.md).
 Below is an example of `schemas` property that uses all of the classical
 statement-based schemas.
 
