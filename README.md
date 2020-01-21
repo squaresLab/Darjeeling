@@ -387,3 +387,20 @@ Below is a list of the parameters that are exposed by `genetic`:
   value will be used as the absolute number of (passing) tests that should be
   included in the sample. If `test-sample-size` is omitted or set to `null`,
   test sampling will be disabled.
+
+
+## Extending Darjeeling via Plugins
+
+Users may extend Darjeeling's capabilities with their own plugins.
+Upon launch, Darjeeling will find and automatically import all installed
+Python packages whose name starts with `darjeeling_` (e.g.,
+`darjeeling_ardupilot`).
+
+Darjeeling treats the following features as framework extension points,
+allowing variants to be added by plugins:
+
+* Search algorithms
+* Transformation schemas
+* Test harnesses
+* Coverage tools (e.g., `jacoco`, `pycoverage`, `sancov`)
+* Spectrum-based fault localisation suspiciousness metrics
