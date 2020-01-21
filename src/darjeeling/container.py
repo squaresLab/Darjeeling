@@ -66,3 +66,8 @@ class ProgramContainer:
     @property
     def filesystem(self) -> _dockerblade.FileSystem:
         return self._dockerblade.filesystem()
+
+    @property
+    def ip_address(self) -> str:
+        """The local IP address assigned to this container."""
+        return self._dockerblade.ip_address
