@@ -22,7 +22,7 @@ if typing.TYPE_CHECKING:
 
 @attr.s(frozen=True, repr=False, auto_attribs=True)
 class DeleteStatement(StatementTransformation):
-    schema: StatementTransformationSchema
+    _schema: StatementTransformationSchema
     statement: kaskara.Statement
 
     def __repr__(self) -> str:
@@ -38,6 +38,10 @@ class DeleteStatement(StatementTransformation):
     @property
     def line(self) -> FileLine:
         return FileLine(self.location.filename, self.location.start.line)
+
+    @property
+    def schema(self) -> TransformationSchema:
+        return self._schema
 
 
 class DeleteStatementSchema(StatementTransformationSchema):

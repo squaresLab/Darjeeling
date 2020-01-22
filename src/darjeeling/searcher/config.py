@@ -13,6 +13,7 @@ from ..util import dynamically_registered
 if typing.TYPE_CHECKING:
     from .base import Searcher
     from ..environment import Environment
+    from ..localization import Localization
     from ..problem import Problem
     from ..transformation import Transformation, ProgramTransformations
 
@@ -46,6 +47,7 @@ class SearcherConfig(abc.ABC):
     def build(self,
               problem: 'Problem',
               transformations: 'ProgramTransformations',
+              localization: 'Localization',
               *,
               threads: int = 1,
               candidate_limit: Optional[int] = None,

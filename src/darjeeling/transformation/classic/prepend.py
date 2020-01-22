@@ -23,7 +23,7 @@ if typing.TYPE_CHECKING:
 
 @attr.s(frozen=True, repr=False, auto_attribs=True)
 class PrependStatement(StatementTransformation):
-    schema: 'PrependStatementSchema'
+    _schema: 'PrependStatementSchema'
     at: kaskara.Statement
     insertion: StatementSnippet
 
@@ -36,6 +36,10 @@ class PrependStatement(StatementTransformation):
         return self.at.location
 
     @property
+    def schema(self) -> TransformationSchema:
+        return self._schema
+
+    @property
     def line(self) -> FileLine:
         return FileLine(self.location.filename, self.location.start.line)
 
@@ -44,9 +48,9 @@ class PrependStatement(StatementTransformation):
 
         # TODO toggle via preserve_indentation
         # determine and apply appropriate indentation
-        indentation = self.schema._indentation(self.at)
+        indentation = self._schema._indentation(self.at)
         source = self.insertion.content
-        source = self.schema._source_with_indentation(source, indentation)
+        source = self._schema._source_with_indentation(source, indentation)
         source += f'\n{indentation}'
 
         r = FileLocationRange(at_location.filename,

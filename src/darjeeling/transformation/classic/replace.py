@@ -24,9 +24,13 @@ if typing.TYPE_CHECKING:
 
 @attr.s(frozen=True, repr=False, auto_attribs=True)
 class ReplaceStatement(StatementTransformation):
-    schema: 'ReplaceStatementSchema'
+    _schema: 'ReplaceStatementSchema'
     at: FileLocationRange
     replacement: StatementSnippet
+
+    @property
+    def schema(self) -> TransformationSchema:
+        return self._schema
 
     def __repr__(self) -> str:
         s = "ReplaceStatement[{}]<{}>"
@@ -35,10 +39,9 @@ class ReplaceStatement(StatementTransformation):
     def to_replacement(self) -> Replacement:
         # TODO toggle via preserve_indentation
         # determine and apply appropriate indentation
-        indentation = self.schema._indentation(self.at)
+        indentation = self._schema._indentation(self.at)
         source = self.replacement.content
-        source = self.schema._source_with_indentation(source, indentation)
-
+        source = self._schema._source_with_indentation(source, indentation)
         return Replacement(self.location, source)
 
     @property

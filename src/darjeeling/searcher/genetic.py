@@ -18,6 +18,7 @@ from ..transformation import Transformation, ProgramTransformations
 from ..outcome import CandidateOutcome
 
 if typing.TYPE_CHECKING:
+    from ..localization import Localization
     from ..problem import Problem
 
 Population = List[Candidate]
@@ -56,6 +57,7 @@ class GeneticSearcherConfig(SearcherConfig):
     def build(self,
               problem: 'Problem',
               transformations: ProgramTransformations,
+              localization: 'Localization',
               *,
               threads: int = 1,
               candidate_limit: Optional[int] = None,
@@ -75,8 +77,6 @@ class GeneticSearcherConfig(SearcherConfig):
 
 
 class GeneticSearcher(Searcher):
-    CONFIG = GeneticSearcherConfig
-
     def __init__(self,
                  problem: 'Problem',
                  transformations: ProgramTransformations,

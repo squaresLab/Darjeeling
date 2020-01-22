@@ -35,12 +35,8 @@ from ..util import Stopwatch, dynamically_registered
 if typing.TYPE_CHECKING:
     from ..problem import Problem
 
-T = TypeVar('T', bound=SearcherConfig)
 
-
-class Searcher(Generic[T], DarjeelingEventProducer, abc.ABC):
-    CONFIG: ClassVar[Type[T]]
-
+class Searcher(DarjeelingEventProducer, abc.ABC):
     def __init__(self,
                  problem: 'Problem',
                  *,
@@ -87,8 +83,6 @@ class Searcher(Generic[T], DarjeelingEventProducer, abc.ABC):
         self.__exhausted = False
         self.__counter_candidates = 0
         self.__counter_tests = 0
-        # FIXME this isn't being maintained
-        self.__history: List[Candidate] = []
         logger.debug("constructed searcher")
 
     def attach_handler(self, handler: DarjeelingEventHandler) -> None:
@@ -111,14 +105,6 @@ class Searcher(Generic[T], DarjeelingEventProducer, abc.ABC):
     @property
     def environment(self) -> Environment:
         return self.problem.environment
-
-    @property
-    def history(self) -> List[Candidate]:
-        """
-        Returns an ordered list of all of the candidate patches that have been
-        explored by this search process.
-        """
-        return self.__history.copy()
 
     @property
     def outcomes(self) -> OutcomeManager:

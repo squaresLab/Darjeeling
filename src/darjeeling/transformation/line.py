@@ -65,13 +65,17 @@ class LineTransformationSchema(TransformationSchema[LineTransformation]):
 
 @attr.s(frozen=True, auto_attribs=True)
 class DeleteLine(LineTransformation):
-    schema: LineTransformationSchema
+    _schema: LineTransformationSchema
     line: FileLine
 
     def to_replacement(self) -> Replacement:
-        sources = self.schema._problem.sources
+        sources = self._schema._problem.sources
         loc = sources.line_to_location_range(self.line)
         return Replacement(loc, '')
+
+    @property
+    def schema(self) -> TransformationSchema:
+        return self._schema
 
     class Schema(LineTransformationSchema):
         def all_at_line(self, line: FileLine) -> Iterator[Transformation]:
@@ -97,12 +101,16 @@ class DeleteLine(LineTransformation):
 
 @attr.s(frozen=True, auto_attribs=True)
 class ReplaceLine(LineTransformation):
-    schema: LineTransformationSchema
+    _schema: LineTransformationSchema
     line: FileLine
     replacement: FileLine
 
+    @property
+    def schema(self) -> TransformationSchema:
+        return self._schema
+
     def to_replacement(self) -> Replacement:
-        sources = self.schema._problem.sources
+        sources = self._schema._problem.sources
         loc = sources.line_to_location_range(self.line)
         rep = sources.read_line(self.replacement, keep_newline=True)
         return Replacement(loc, rep)
@@ -134,12 +142,16 @@ class ReplaceLine(LineTransformation):
 
 @attr.s(frozen=True, auto_attribs=True)
 class InsertLine(LineTransformation):
-    schema: LineTransformationSchema
+    _schema: LineTransformationSchema
     line: FileLine
     insertion: FileLine
 
+    @property
+    def schema(self) -> TransformationSchema:
+        return self._schema
+
     def to_replacement(self) -> Replacement:
-        sources = self.schema._problem.sources
+        sources = self._schema._problem.sources
         r = sources.line_to_location_range(self.line)
         r = FileLocationRange(r.filename, LocationRange(r.start, r.start))
         ins = sources.read_line(self.insertion, keep_newline=True)

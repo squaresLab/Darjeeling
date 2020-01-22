@@ -146,6 +146,7 @@ class Session(DarjeelingEventProducer):
         transformations = cfg.transformations.build(problem, snippets, localization)  # noqa
         searcher = cfg.search.build(problem,
                                     transformations=transformations,
+                                    localization=localization,
                                     threads=cfg.threads,
                                     candidate_limit=cfg.limit_candidates,
                                     time_limit=cfg.limit_time)

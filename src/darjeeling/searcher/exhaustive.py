@@ -15,6 +15,7 @@ from ..transformation import Transformation
 from ..exceptions import SearchExhausted
 
 if typing.TYPE_CHECKING:
+    from ..localization import Localization
     from ..problem import Problem
     from ..transformations import ProgramTransformations
 
@@ -39,6 +40,7 @@ class ExhaustiveSearcherConfig(SearcherConfig):
     def build(self,
               problem: 'Problem',
               transformations: 'ProgramTransformations',
+              localization: 'Localization',
               *,
               threads: int = 1,
               candidate_limit: Optional[int] = None,
