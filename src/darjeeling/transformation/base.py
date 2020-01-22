@@ -28,6 +28,11 @@ class Transformation(abc.ABC):
         """Converts a transformation into a source code replacement."""
         ...
 
+    @property
+    @abc.abstractmethod
+    def line(self) -> FileLine:
+        """The line at which this transformation is applied."""
+
 
 class TransformationSchema(Generic[T], abc.ABC):
     @abc.abstractmethod
