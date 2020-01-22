@@ -32,6 +32,13 @@ class Transformation(abc.ABC):
     @abc.abstractmethod
     def line(self) -> FileLine:
         """The line at which this transformation is applied."""
+        ...
+
+    @property
+    @abc.abstractmethod
+    def schema(self) -> 'TransformationSchema':
+        """The schema that was used to produce this transformation."""
+        ...
 
 
 class TransformationSchema(Generic[T], abc.ABC):
