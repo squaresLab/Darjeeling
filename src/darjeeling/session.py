@@ -21,6 +21,7 @@ from loguru import logger
 from .core import Language, TestCoverageMap
 from .environment import Environment
 from .candidate import Candidate
+from .resources import ResourceUsageTracker
 from .searcher import Searcher
 from .program import ProgramDescription
 from .problem import Problem
@@ -39,6 +40,7 @@ class Session(DarjeelingEventProducer):
     """Used to manage and inspect an interactive repair session."""
     dir_patches: str = attr.ib()
     searcher: Searcher = attr.ib()
+    resources: ResourceUsageTracker = attr.ib()
     _problem: Problem = attr.ib()
     terminate_early: bool = attr.ib(default=True)
     _patches: List[Candidate] = attr.ib(factory=list)
@@ -74,20 +76,9 @@ class Session(DarjeelingEventProducer):
         else:
             logger.info("search will terminate when an acceptable patch has been discovered")
 
-        if cfg.limit_time_minutes is None:
-            logger.info("no time limit is being enforced")
-        if cfg.limit_time_minutes is not None:
-            logger.info("using time limit: {cfg.limit_time_minutes} minutes")
-
-        if cfg.limit_candidates is not None:
-            logger.info(f"using candidate limit: {cfg.limit_candidates} candidates")  # noqa
-        else:
-            logger.info("no limit on number of candidate evaluations")
-
-        # check if search is unbounded
-        if not cfg.limit_time and not cfg.limit_candidates:
-            m = "no resource limits were specified; resource use will be unbounded"  # noqa
-            logger.warn(m)
+        # create the resource tracker
+        resources = ResourceUsageTracker.with_limits(cfg.resource_limits)
+        logger.info(str(cfg.resource_limits))
 
         # build program
         logger.debug("building program...")
@@ -145,14 +136,14 @@ class Session(DarjeelingEventProducer):
 
         transformations = cfg.transformations.build(problem, snippets, localization)  # noqa
         searcher = cfg.search.build(problem,
+                                    resources=resources,
                                     transformations=transformations,
                                     localization=localization,
-                                    threads=cfg.threads,
-                                    candidate_limit=cfg.limit_candidates,
-                                    time_limit=cfg.limit_time)
+                                    threads=cfg.threads)
 
         # build session
         return Session(dir_patches=dir_patches,
+                       resources=resources,
                        problem=problem,
                        searcher=searcher,
                        terminate_early=cfg.terminate_early)
@@ -198,15 +189,6 @@ class Session(DarjeelingEventProducer):
         return len(self._patches) > 0
 
     @property
-    def num_candidate_evaluations(self) -> int:
-        return self.searcher.num_candidate_evals
-
-    @property
-    def running_time_secs(self) -> float:
-        """Number of seconds that the search has been running."""
-        return self.searcher.time_running.seconds
-
-    @property
     def patches(self) -> Iterator[Patch]:
         """Returns an iterator over the patches found during this session."""
         for candidate in self._patches:
@@ -217,15 +199,11 @@ class Session(DarjeelingEventProducer):
         # wait for threads to finish gracefully before exiting
         self.searcher.close()
 
-        # report stats
-        num_test_evals = self.searcher.num_test_evals
-        num_candidate_evals = self.searcher.num_candidate_evals
-        time_running_mins = self.searcher.time_running.seconds / 60
-
+        time_running_mins = self.resources.wall_clock.duration / 60
         logger.info(f"found {len(self._patches)} plausible patches")
         logger.info(f"time taken: {time_running_mins:.2f} minutes")
-        logger.info(f"# test evaluations: {self.searcher.num_test_evals}")
-        logger.info(f"# candidate evaluations: {self.searcher.num_candidate_evals}")  # noqa
+        logger.info(f"# test evaluations: {self.resources.tests}")
+        logger.info(f"# candidate evaluations: {self.resources.candidates}")
 
         self._save_patches_to_disk()
 

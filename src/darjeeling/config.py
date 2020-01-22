@@ -18,6 +18,7 @@ import bugzoo
 from .core import Language, FileLine, FileLineSet
 from .util import dynamically_registered
 from .exceptions import BadConfigurationException, LanguageNotSupported
+from .resources import ResourceLimits
 from .test.config import TestSuiteConfig
 from .searcher.config import SearcherConfig
 from .coverage.config import CoverageConfig
@@ -130,9 +131,8 @@ class Config:
         discovering an acceptable patch.
     threads: int
         The number of threads over which the search should be distributed.
-    limit_candidates: int, optional
-        An optional limit on the number of candidate patches that may be
-        considered by the search.
+    resource_limits: ResourceLimits
+        Limits on the resources that may be consumed during the search.
     limit_time_minutes: int, optional
         An optional limit on the number of minutes that may be spent
         searching for an acceptable patch.
@@ -149,12 +149,11 @@ class Config:
     localization: LocalizationConfig
     search: SearcherConfig
     coverage: CoverageConfig
+    resource_limits: ResourceLimits
     seed: int = attr.ib(default=0)
     optimizations: OptimizationsConfig = attr.ib(factory=OptimizationsConfig)
     terminate_early: bool = attr.ib(default=True)
     threads: int = attr.ib(default=1)
-    limit_candidates: Optional[int] = attr.ib(default=None)
-    limit_time_minutes: Optional[float] = attr.ib(default=None)
 
     @seed.validator
     def validate_seed(self, attribute, value):
@@ -173,18 +172,6 @@ class Config:
         if value < 1:
             m = "number of threads must be greater than or equal to 1."
             raise BadConfigurationException(m)
-
-    @limit_time_minutes.validator
-    def validate_limit_time_minutes(self, attribute, value):
-        if value is not None and value < 1:
-            m = "time limit must be greater than or equal to one minute"
-            raise BadConfigurationException(m)
-
-    @property
-    def limit_time(self) -> Optional[datetime.timedelta]:
-        if self.limit_time_minutes:
-            return datetime.timedelta(minutes=self.limit_time_minutes)
-        return None
 
     @staticmethod
     def from_yml(yml: Dict[str, Any],
@@ -239,21 +226,14 @@ class Config:
             random.seed(datetime.datetime.now())
             seed = random.randint(0, sys.maxsize)
 
-        has_candidate_override = limit_candidates is not None
-        has_candidate_limit = \
-            has_limits and 'candidates' in yml['resource-limits']
-        if not has_candidate_override and has_candidate_limit:
-            if not isinstance(yml['resource-limits']['candidates'], int):
-                err("'candidates' property in 'resource-limits' section should be an int")
-            limit_candidates = yml['resource-limits']['candidates']
-
-        has_time_override = limit_time_minutes is not None
-        has_time_limit = \
-            has_limits and 'time-minutes' in yml['resource-limits']
-        if not has_time_override and has_time_limit:
-            if not isinstance(yml['resource-limits']['time-minutes'], int):
-                err("'time-minutes' property in 'resource-limits' section should be an int")  # noqa: pycodestyle
-            limit_time_minutes = yml['resource-limits']['time-minutes']
+        # resource limits
+        yml.setdefault('resource-limits', {})
+        if limit_candidates is not None:
+            yml['resource-limits']['candidates'] = limit_candidates
+        if limit_time_minutes is not None:
+            yml['resource-limits']['time-minutes'] = limit_time_minutes
+        resource_limits = \
+            ResourceLimits.from_dict(yml['resource-limits'], dir_)
 
         opts = OptimizationsConfig.from_yml(yml.get('optimizations', {}))
 
@@ -287,8 +267,7 @@ class Config:
         return Config(seed=seed,
                       threads=threads,
                       terminate_early=terminate_early,
-                      limit_time_minutes=limit_time_minutes,
-                      limit_candidates=limit_candidates,
+                      resource_limits=resource_limits,
                       transformations=transformations,
                       program=program,
                       localization=localization,

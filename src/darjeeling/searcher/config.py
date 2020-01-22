@@ -8,6 +8,7 @@ import abc
 import logging
 import typing
 
+from ..resources import ResourceUsageTracker
 from ..util import dynamically_registered
 
 if typing.TYPE_CHECKING:
@@ -46,11 +47,10 @@ class SearcherConfig(abc.ABC):
     @abc.abstractmethod
     def build(self,
               problem: 'Problem',
+              resources: ResourceUsageTracker,
               transformations: 'ProgramTransformations',
               localization: 'Localization',
               *,
               threads: int = 1,
-              candidate_limit: Optional[int] = None,
-              time_limit: Optional[datetime.timedelta] = None
               ) -> 'Searcher':
         ...

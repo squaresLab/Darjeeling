@@ -17,20 +17,17 @@ from loguru import logger
 import bugzoo
 
 from .config import SearcherConfig
-from ..events import DarjeelingEventProducer, DarjeelingEventHandler
-from ..core import FileLine
-from ..environment import Environment
 from ..candidate import Candidate
+from ..core import FileLine
+from ..events import DarjeelingEventProducer, DarjeelingEventHandler
+from ..environment import Environment
 from ..outcome import OutcomeManager, CandidateOutcome
+from ..resources import ResourceUsageTracker
 from ..transformation import Transformation
 from ..evaluator import Evaluator, Evaluation
-from ..exceptions import BuildFailure, \
-    SearchAlreadyStarted, \
-    SearchExhausted, \
-    TimeLimitReached, \
-    CandidateLimitReached, \
-    BadConfigurationException
-from ..util import Stopwatch, dynamically_registered
+from ..exceptions import (BuildFailure, SearchAlreadyStarted, SearchExhausted,
+                          TimeLimitReached, CandidateLimitReached,
+                          BadConfigurationException)
 
 if typing.TYPE_CHECKING:
     from ..problem import Problem
@@ -39,10 +36,9 @@ if typing.TYPE_CHECKING:
 class Searcher(DarjeelingEventProducer, abc.ABC):
     def __init__(self,
                  problem: 'Problem',
+                 resources: ResourceUsageTracker,
                  *,
                  threads: int = 1,
-                 time_limit: Optional[datetime.timedelta] = None,
-                 candidate_limit: Optional[int] = None,
                  terminate_early: bool = True,
                  test_sample_size: Optional[Union[int, float]] = None
                  ) -> None:
@@ -52,37 +48,28 @@ class Searcher(DarjeelingEventProducer, abc.ABC):
         ----------
         problem: Problem
             a description of the problem.
+        resources: ResourceUsageTracker
+            tracks and monitors the resources used by the search.
         threads: int
             the number of threads that should be made available to
             the search process.
-        time_limit: datetime.timedelta, optional
-            an optional limit on the amount of time given to the
-            searcher.
-        candidate_limit: int, optional
-            an optional limit on the number of candidate patches that may
-            be generated.
         """
         logger.debug("constructing searcher")
         super().__init__()
-        assert time_limit is None or time_limit > datetime.timedelta(), \
-            "if specified, time limit should be greater than zero."
 
+        self.__resources = resources
         self.__problem = problem
-        self.__time_limit = time_limit
-        self.__candidate_limit = candidate_limit
         self.__outcomes = OutcomeManager()
-        self.__evaluator = Evaluator(problem,
+        self.__evaluator = Evaluator(problem=problem,
+                                     resources=resources,
                                      num_workers=threads,
                                      terminate_early=terminate_early,
                                      outcomes=self.__outcomes,
                                      sample_size=test_sample_size)
 
-        self.__stopwatch = Stopwatch()
         self.__started = False
         self.__stopped = False
         self.__exhausted = False
-        self.__counter_candidates = 0
-        self.__counter_tests = 0
         logger.debug("constructed searcher")
 
     def attach_handler(self, handler: DarjeelingEventHandler) -> None:
@@ -96,6 +83,10 @@ class Searcher(DarjeelingEventProducer, abc.ABC):
     @property
     def num_workers(self) -> int:
         return self.__evaluator.num_workers
+
+    @property
+    def resources(self) -> ResourceUsageTracker:
+        return self.__resources
 
     @property
     def problem(self) -> 'Problem':
@@ -127,51 +118,12 @@ class Searcher(DarjeelingEventProducer, abc.ABC):
         """Indicates whether or not the search has been terminated."""
         return self.__stopped
 
-    @property
-    def num_test_evals(self) -> int:
-        """
-        The number of test case evaluations that have been performed during
-        this search process.
-        """
-        return self.__evaluator.num_test_evals
-
-    @property
-    def num_candidate_evals(self) -> int:
-        """
-        The number of candidate patches that have been evaluated over the
-        course of this search process.
-        """
-        return self.__evaluator.num_candidate_evals
-
-    @property
-    def time_limit(self) -> Optional[datetime.timedelta]:
-        """
-        An optional limit on the length of time that may be spent searching
-        for patches.
-        """
-        return self.__time_limit
-
-    @property
-    def candidate_limit(self) -> Optional[int]:
-        return self.__candidate_limit
-
-    @property
-    def time_running(self) -> datetime.timedelta:
-        """
-        The amount of time that has been spent searching for patches.
-        """
-        return datetime.timedelta(seconds=self.__stopwatch.duration)
-
     @abc.abstractmethod
     def run(self) -> Iterator[Candidate]:
         ...
 
     def evaluate(self, candidate: Candidate) -> None:
-        if self.time_limit and self.time_running > self.time_limit:
-            raise TimeLimitReached
-        if self.candidate_limit and self.num_candidate_evals > self.candidate_limit:
-            raise CandidateLimitReached
-        # FIXME test limit
+        self.__resources.check_limits()
         self.__evaluator.submit(candidate)
 
     def evaluate_all(self,
@@ -222,19 +174,19 @@ class Searcher(DarjeelingEventProducer, abc.ABC):
             StopIteration: if the search space or available resources have
                 been exhausted.
         """
+        stopwatch = self.resources.wall_clock
         if self.__started:
             raise SearchAlreadyStarted
         self.__started = True
 
-        self.__stopwatch.reset()
-        self.__stopwatch.start()
+        stopwatch.reset()
+        stopwatch.start()
 
         try:
             for repair in self.run():
-                self.__stopwatch.stop()
-                # TODO REPORT THE REPAIR?
+                stopwatch.stop()
                 yield repair
-                self.__stopwatch.start()
+                stopwatch.start()
         except SearchExhausted:
             logger.info("all candidate patches have been exhausted")
         # FIXME this one is trickier -- needs to be enforced before the job is started
@@ -246,11 +198,11 @@ class Searcher(DarjeelingEventProducer, abc.ABC):
         # wait for remaining evaluations
         for candidate, outcome in self.as_evaluated():
             if outcome.is_repair:
-                self.__stopwatch.stop()
+                stopwatch.stop()
                 yield candidate
-                self.__stopwatch.start()
+                stopwatch.start()
 
-        self.__stopwatch.stop()
+        stopwatch.stop()
 
     def close(self) -> None:
         logger.info("waiting for pending evaluations to complete.")

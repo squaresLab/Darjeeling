@@ -27,6 +27,7 @@ from ..version import __version__ as VERSION
 from ..core import TestCoverageMap
 from ..config import Config
 from ..events import CsvEventLogger
+from ..resources import ResourceUsageTracker
 from ..session import Session
 from ..exceptions import BadConfigurationException
 from ..util import duration_str
@@ -34,9 +35,13 @@ from ..util import duration_str
 BANNER = 'DARJEELING'
 
 
-@attr.s
+@attr.s(auto_attribs=True)
 class ResourcesBlock(pyroglyph.Block):
-    session: Session = attr.ib()
+    resources: ResourceUsageTracker
+
+    @staticmethod
+    def for_session(session: Session) -> 'ResourcesBlock':
+        return ResourcesBlock(session.resources)
 
     @property
     def title(self) -> str:
@@ -44,11 +49,12 @@ class ResourcesBlock(pyroglyph.Block):
 
     @property
     def contents(self) -> Sequence[str]:
-        duration_s: str = duration_str(self.session.running_time_secs)
-        l_time = f'Running Time: {duration_s}'
-        l_candidates = f'Num. Candidates: {self.session.num_candidate_evaluations}'
+        duration_seconds = self.resources.wall_clock.duration
+        l_time = f'Running Time: {duration_str(duration_seconds)}'
+        l_candidates = f'Num. Candidates: {self.resources.candidates}'
+        l_tests = f'Num. Tests: {self.resources.tests}'
         l_patches = 'Num. Acceptable Patches: TODO'
-        return [l_time, l_candidates, l_patches]
+        return [l_time, l_candidates, l_tests, l_patches]
 
 
 class ProblemBlock(pyroglyph.BasicBlock):
@@ -69,7 +75,7 @@ class ProblemBlock(pyroglyph.BasicBlock):
 class UI(pyroglyph.Window):
     def __init__(self, session: Session, **kwargs) -> None:
         title = f' Darjeeling [v{VERSION}] '
-        blocks_left = [ResourcesBlock(session)]
+        blocks_left = [ResourcesBlock.for_session(session)]
         blocks_right = [ProblemBlock(session.problem)]
         super().__init__(title, blocks_left, blocks_right, **kwargs)
 

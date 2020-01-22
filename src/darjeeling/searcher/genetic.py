@@ -14,6 +14,7 @@ from .base import Searcher
 from .config import SearcherConfig
 from ..candidate import Candidate
 from ..environment import Environment
+from ..resources import ResourceUsageTracker
 from ..transformation import Transformation, ProgramTransformations
 from ..outcome import CandidateOutcome
 
@@ -56,29 +57,28 @@ class GeneticSearcherConfig(SearcherConfig):
 
     def build(self,
               problem: 'Problem',
+              resources: ResourceUsageTracker,
               transformations: ProgramTransformations,
               localization: 'Localization',
               *,
-              threads: int = 1,
-              candidate_limit: Optional[int] = None,
-              time_limit: Optional[datetime.timedelta] = None
+              threads: int = 1
               ) -> Searcher:
-        return GeneticSearcher(problem,
-                               transformations,
+        return GeneticSearcher(problem=problem,
+                               resources=resources,
+                               transformations=transformations,
                                threads=threads,
                                num_generations=self.num_generations,
                                population_size=self.population_size,
                                rate_crossover=self.rate_crossover,
                                rate_mutation=self.rate_mutation,
                                tournament_size=self.tournament_size,
-                               test_sample_size=self.sample_size,
-                               candidate_limit=candidate_limit,
-                               time_limit=time_limit)
+                               test_sample_size=self.sample_size)
 
 
 class GeneticSearcher(Searcher):
     def __init__(self,
                  problem: 'Problem',
+                 resources: ResourceUsageTracker,
                  transformations: ProgramTransformations,
                  *,
                  population_size: int = 40,
@@ -87,8 +87,6 @@ class GeneticSearcher(Searcher):
                  rate_mutation: float = 1.0,
                  tournament_size: int = 2,
                  threads: int = 1,
-                 time_limit: Optional[datetime.timedelta] = None,
-                 candidate_limit: Optional[int] = None,
                  test_sample_size: Optional[Union[int, float]] = None
                  ) -> None:
         self.__population_size = population_size
@@ -105,11 +103,10 @@ class GeneticSearcher(Searcher):
                     f"  * mutation rate: {self.__rate_mutation:.2f}\n"
                     f"  * crossover rate: {self.__rate_crossover:.2f}")
 
-        super().__init__(problem,
+        super().__init__(problem=problem,
+                         resources=resources,
                          threads=threads,
-                         time_limit=time_limit,
                          test_sample_size=test_sample_size,
-                         candidate_limit=candidate_limit,
                          terminate_early=False)
 
     @property

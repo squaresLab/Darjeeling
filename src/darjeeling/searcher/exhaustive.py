@@ -11,6 +11,7 @@ from .base import Searcher
 from .config import SearcherConfig
 from ..candidate import Candidate
 from ..environment import Environment
+from ..resources import ResourceUsageTracker
 from ..transformation import Transformation
 from ..exceptions import SearchExhausted
 
@@ -39,35 +40,31 @@ class ExhaustiveSearcherConfig(SearcherConfig):
 
     def build(self,
               problem: 'Problem',
+              resources: ResourceUsageTracker,
               transformations: 'ProgramTransformations',
               localization: 'Localization',
               *,
-              threads: int = 1,
-              candidate_limit: Optional[int] = None,
-              time_limit: Optional[datetime.timedelta] = None
+              threads: int = 1
               ) -> Searcher:
-        return ExhaustiveSearcher(problem,
-                                  transformations,
-                                  threads=threads,
-                                  candidate_limit=candidate_limit,
-                                  time_limit=time_limit)
+        return ExhaustiveSearcher(problem=problem,
+                                  resources=resources,
+                                  transformations=transformations,
+                                  threads=threads)
 
 
 class ExhaustiveSearcher(Searcher):
     def __init__(self,
                  problem: 'Problem',
+                 resources: ResourceUsageTracker,
                  transformations: 'ProgramTransformations',
                  *,
-                 threads: int = 1,
-                 time_limit: Optional[datetime.timedelta] = None,
-                 candidate_limit: Optional[int] = None
+                 threads: int = 1
                  ) -> None:
         # FIXME for now!
         self.__candidates = self.all_single_edit_patches(problem, transformations)
         super().__init__(problem=problem,
-                         threads=threads,
-                         time_limit=time_limit,
-                         candidate_limit=candidate_limit)
+                         resources=resources,
+                         threads=threads)
 
     @staticmethod
     def all_single_edit_patches(problem: 'Problem',

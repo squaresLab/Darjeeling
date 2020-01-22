@@ -45,6 +45,10 @@ class TimeLimitReached(DarjeelingError):
     """The search has halted after reaching its time limit."""
 
 
+class TestLimitReached(DarjeelingError):
+    """The search has halted after reaching its test limit."""
+
+
 class CandidateLimitReached(DarjeelingError):
     """The search has halted after reaching its candidate limit."""
 

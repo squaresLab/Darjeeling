@@ -28,6 +28,7 @@ from .events import (BuildStarted, BuildFinished,
                      TestExecutionStarted, TestExecutionFinished)
 from .exceptions import BuildFailure
 from .core import Test
+from .resources import ResourceUsageTracker
 from .test import TestSuite
 from .util import Stopwatch
 
@@ -40,6 +41,7 @@ Evaluation = Tuple[Candidate, CandidateOutcome]
 class Evaluator(DarjeelingEventProducer):
     def __init__(self,
                  problem: 'Problem',
+                 resources: ResourceUsageTracker,
                  *,
                  num_workers: int = 1,
                  terminate_early: bool = True,
@@ -48,6 +50,7 @@ class Evaluator(DarjeelingEventProducer):
                  ) -> None:
         super().__init__()
         self.__problem = problem
+        self.__resources = resources
         self.__program = problem.program
         self.__test_suite = problem.test_suite
         self.__executor = \
@@ -80,8 +83,6 @@ class Evaluator(DarjeelingEventProducer):
         self.__lock = threading.Lock()
         self.__queue_evaluated = queue.Queue()  # type: queue.Queue
         self.__num_running = 0
-        self.__counter_tests = 0
-        self.__counter_candidates = 0
 
     @property
     def outcomes(self) -> OutcomeManager:
@@ -90,16 +91,6 @@ class Evaluator(DarjeelingEventProducer):
     @property
     def num_workers(self) -> int:
         return self.__num_workers
-
-    @property
-    def num_test_evals(self) -> int:
-        """Number of test case evaluations performed by this evaluator."""
-        return self.__counter_tests
-
-    @property
-    def num_candidate_evals(self) -> int:
-        """Number of candidate evaluations performed by this evaluator."""
-        return self.__counter_candidates
 
     def _order_tests(self, tests: Set[Test]) -> List[Test]:
         """Prioritizes a given set of tests into a sequence."""
@@ -157,7 +148,7 @@ class Evaluator(DarjeelingEventProducer):
         """Runs a test for a given patch using a provided container."""
         logger.debug(f"executing test: {test.name} [{candidate}]")
         self.dispatch(TestExecutionStarted(candidate, test))
-        self.__counter_tests += 1
+        self.__resources.tests += 1
         outcome = self.__program.execute(container, test)
         if not outcome.successful:
             logger.debug(f"* test failed: {test.name} ({candidate})")
@@ -211,7 +202,7 @@ class Evaluator(DarjeelingEventProducer):
                                         test_outcomes,
                                         not known_bad_patch)
 
-        self.__counter_candidates += 1
+        self.__resources.candidates += 1
         logger.debug(f"building candidate: {candidate}")
         self.dispatch(BuildStarted(candidate))
         timer_build = Stopwatch()
