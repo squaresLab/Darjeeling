@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-__all__ = ('Candidate', 'all_single_edit_patches')
+__all__ = ('Candidate',)
 
 from typing import List, Iterator, Dict, FrozenSet, Iterable, Tuple
 import typing
@@ -54,16 +54,3 @@ class Candidate:
 
     def __repr__(self) -> str:
         return "Candidate<#{}>".format(self.id)
-
-
-def all_single_edit_patches(problem: 'Problem',
-                            transformations: Iterable[Transformation]
-                            ) -> Iterator[Candidate]:
-    """
-    Returns an iterator over all of the single-edit patches that can be
-    composed using a provided source of transformations.
-    """
-    logger.debug("finding all single-edit patches")
-    for t in transformations:
-        yield Candidate(problem, [t])
-    logger.debug("exhausted all single-edit patches")

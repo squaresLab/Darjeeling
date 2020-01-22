@@ -32,10 +32,6 @@ from .localization import (Localization, ample, genprog, jaccard, ochiai,
                            tarantula)
 from .events import (DarjeelingEventHandler, DarjeelingEventProducer,
                      EventEchoer, CsvEventLogger)
-from .transformation import Transformation, TransformationSchema
-from .transformation import sample_by_localization_and_type as build_transformations  # noqa: pycodestyle
-from .transformation.classic import (DeleteStatement, ReplaceStatement,
-                                     PrependStatement)
 
 
 @attr.s
@@ -147,17 +143,9 @@ class Session(DarjeelingEventProducer):
             snippets = LineSnippetDatabase.for_problem(problem)
         logger.info(f"constructed database of donor snippets: {len(snippets)} snippets")  # noqa
 
-        # FIXME build and index transformations
-        # FIXME does not allow lazy construction!
-        schemas: List[TransformationSchema] = []
-        for schema_config in cfg.transformations.schemas:
-            schemas.append(schema_config.build(problem, snippets))
-        logger.info("constructing transformation database...")
-        tx = list(build_transformations(problem, snippets, localization, schemas, eager=True))
-        logger.info(f"constructed transformation database: {len(tx)} transformations")  # noqa
-
+        transformations = cfg.transformations.build(problem, snippets, localization)  # noqa
         searcher = cfg.search.build(problem,
-                                    transformations=tx,
+                                    transformations=transformations,
                                     threads=cfg.threads,
                                     candidate_limit=cfg.limit_candidates,
                                     time_limit=cfg.limit_time)

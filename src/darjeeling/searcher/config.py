@@ -14,7 +14,7 @@ if typing.TYPE_CHECKING:
     from .base import Searcher
     from ..environment import Environment
     from ..problem import Problem
-    from ..transformation import Transformation
+    from ..transformation import Transformation, ProgramTransformations
 
 
 @dynamically_registered(lookup='lookup')
@@ -45,7 +45,7 @@ class SearcherConfig(abc.ABC):
     @abc.abstractmethod
     def build(self,
               problem: 'Problem',
-              transformations: List['Transformation'],
+              transformations: 'ProgramTransformations',
               *,
               threads: int = 1,
               candidate_limit: Optional[int] = None,

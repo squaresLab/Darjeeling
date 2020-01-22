@@ -9,13 +9,14 @@ from loguru import logger
 
 from .base import Searcher
 from .config import SearcherConfig
-from ..candidate import Candidate, all_single_edit_patches
+from ..candidate import Candidate
 from ..environment import Environment
 from ..transformation import Transformation
 from ..exceptions import SearchExhausted
 
 if typing.TYPE_CHECKING:
     from ..problem import Problem
+    from ..transformations import ProgramTransformations
 
 
 class ExhaustiveSearcherConfig(SearcherConfig):
@@ -37,7 +38,7 @@ class ExhaustiveSearcherConfig(SearcherConfig):
 
     def build(self,
               problem: 'Problem',
-              transformations: List[Transformation],
+              transformations: 'ProgramTransformations',
               *,
               threads: int = 1,
               candidate_limit: Optional[int] = None,
@@ -51,22 +52,33 @@ class ExhaustiveSearcherConfig(SearcherConfig):
 
 
 class ExhaustiveSearcher(Searcher):
-    CONFIG = ExhaustiveSearcherConfig
-
     def __init__(self,
                  problem: 'Problem',
-                 transformations: List[Transformation],
+                 transformations: 'ProgramTransformations',
                  *,
                  threads: int = 1,
                  time_limit: Optional[datetime.timedelta] = None,
                  candidate_limit: Optional[int] = None
                  ) -> None:
         # FIXME for now!
-        self.__candidates = all_single_edit_patches(problem, transformations)
+        self.__candidates = self.all_single_edit_patches(problem, transformations)
         super().__init__(problem=problem,
                          threads=threads,
                          time_limit=time_limit,
                          candidate_limit=candidate_limit)
+
+    @staticmethod
+    def all_single_edit_patches(problem: 'Problem',
+                                transformations: Iterable[Transformation],
+                                ) -> Iterator[Candidate]:
+        """
+        Returns an iterator over all of the single-edit patches that can be
+        composed using a provided source of transformations.
+        """
+        logger.debug("finding all single-edit patches")
+        for t in transformations:
+            yield Candidate(problem, [t])
+        logger.debug("exhausted all single-edit patches")
 
     def _generate(self) -> Candidate:
         try:

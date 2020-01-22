@@ -14,7 +14,7 @@ from .base import Searcher
 from .config import SearcherConfig
 from ..candidate import Candidate
 from ..environment import Environment
-from ..transformation import Transformation
+from ..transformation import Transformation, ProgramTransformations
 from ..outcome import CandidateOutcome
 
 if typing.TYPE_CHECKING:
@@ -55,7 +55,7 @@ class GeneticSearcherConfig(SearcherConfig):
 
     def build(self,
               problem: 'Problem',
-              transformations: List[Transformation],
+              transformations: ProgramTransformations,
               *,
               threads: int = 1,
               candidate_limit: Optional[int] = None,
@@ -79,7 +79,7 @@ class GeneticSearcher(Searcher):
 
     def __init__(self,
                  problem: 'Problem',
-                 transformations: List[Transformation],
+                 transformations: ProgramTransformations,
                  *,
                  population_size: int = 40,
                  num_generations: int = 10,
@@ -141,7 +141,7 @@ class GeneticSearcher(Searcher):
 
     def choose_transformation(self) -> Transformation:
         # FIXME for now, just pick one at random
-        return random.choice(self.__transformations)
+        return self.__transformations.choice()
 
     def fitness(self,
                 population: Population,
