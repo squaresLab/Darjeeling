@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 __all__ = ('ProgramTransformations',)
 
-from typing import Collection, Dict, Iterator, List, Mapping, Sequence
+from typing import (Collection, Dict, Iterator, Iterable, List, Mapping,
+                    Sequence)
 import random
 import typing
 
@@ -9,6 +10,7 @@ from loguru import logger
 import attr
 
 from .base import Transformation, TransformationSchema
+from .index import TransformationIndex
 from ..core import FileLine
 from ..snippet import SnippetDatabase
 from ..localization import Localization
@@ -27,7 +29,7 @@ class ProgramTransformations:
         The schemas that compose the space of transformations.
     """
     schemas: Collection[TransformationSchema] = attr.ib()
-    _transformations: Sequence[Transformation] = \
+    _index: TransformationIndex = \
         attr.ib(repr=False, eq=False, hash=False)
 
     @classmethod
@@ -38,28 +40,19 @@ class ProgramTransformations:
               localization: Localization
               ) -> 'ProgramTransformations':
         logger.debug("generating program transformations")
-        transformations: List[Transformation] = []
-        implicated_lines = list(localization)
-        for schema in schemas:
-            line_to_transformations = schema.all_at_lines(implicated_lines)
-            for line in line_to_transformations:
-                transformations += line_to_transformations[line]
+        lines = list(localization)
+        index = TransformationIndex.build(schemas, problem, snippets, lines)
         logger.debug("generated program transformations")
-        return ProgramTransformations(schemas, transformations)
+        return ProgramTransformations(schemas, index)
 
     def __len__(self) -> int:
         """Returns a count of the number of possible transformations."""
-        return len(self._transformations)
+        return len(self._index)
 
     def __iter__(self) -> Iterator[Transformation]:
         """Returns an iterator over all possible transformations."""
-        yield from self._transformations
+        yield from self._index
 
     def choice(self) -> Transformation:
         """Selects a single transformation at random"""
-        return random.choice(self._transformations)
-
-    def sample(self, number: int) -> List[Transformation]:
-        """Samples a number of transformations at random."""
-        assert number > 0
-        return random.sample(self._transformations, number)
+        return self._index.choice()

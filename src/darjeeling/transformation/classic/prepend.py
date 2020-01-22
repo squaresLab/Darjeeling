@@ -37,7 +37,7 @@ class PrependStatement(StatementTransformation):
 
     @property
     def line(self) -> FileLine:
-        return FileLine(self.location.filename, self.location.line)
+        return FileLine(self.location.filename, self.location.start.line)
 
     def to_replacement(self) -> Replacement:
         at_location = self.location
