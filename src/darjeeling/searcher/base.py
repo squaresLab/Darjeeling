@@ -21,7 +21,7 @@ from ..candidate import Candidate
 from ..core import FileLine
 from ..events import DarjeelingEventProducer, DarjeelingEventHandler
 from ..environment import Environment
-from ..outcome import OutcomeManager, CandidateOutcome
+from ..outcome import CandidateOutcome
 from ..resources import ResourceUsageTracker
 from ..transformation import Transformation
 from ..evaluator import Evaluator, Evaluation
@@ -59,17 +59,14 @@ class Searcher(DarjeelingEventProducer, abc.ABC):
 
         self.__resources = resources
         self.__problem = problem
-        self.__outcomes = OutcomeManager()
         self.__evaluator = Evaluator(problem=problem,
                                      resources=resources,
                                      num_workers=threads,
                                      terminate_early=terminate_early,
-                                     outcomes=self.__outcomes,
                                      sample_size=test_sample_size)
 
         self.__started = False
         self.__stopped = False
-        self.__exhausted = False
         logger.debug("constructed searcher")
 
     def attach_handler(self, handler: DarjeelingEventHandler) -> None:
@@ -85,10 +82,6 @@ class Searcher(DarjeelingEventProducer, abc.ABC):
         return self.__evaluator.num_workers
 
     @property
-    def resources(self) -> ResourceUsageTracker:
-        return self.__resources
-
-    @property
     def problem(self) -> 'Problem':
         """A description of the problem being solved."""
         return self.__problem
@@ -96,22 +89,6 @@ class Searcher(DarjeelingEventProducer, abc.ABC):
     @property
     def environment(self) -> Environment:
         return self.problem.environment
-
-    @property
-    def outcomes(self) -> OutcomeManager:
-        """
-        Provides a log of the outcomes of candidate patch build attempts and
-        test executions.
-        """
-        return self.__outcomes
-
-    @property
-    def exhausted(self) -> bool:
-        """
-        Indicates whether or not the space of all possible repairs has been
-        exhausted.
-        """
-        return self.__exhausted
 
     @property
     def stopped(self) -> bool:
@@ -174,7 +151,7 @@ class Searcher(DarjeelingEventProducer, abc.ABC):
             StopIteration: if the search space or available resources have
                 been exhausted.
         """
-        stopwatch = self.resources.wall_clock
+        stopwatch = self.__resources.wall_clock
         if self.__started:
             raise SearchAlreadyStarted
         self.__started = True

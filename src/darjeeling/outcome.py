@@ -8,14 +8,14 @@ __all__ = (
     'TestOutcomeSet',
     'BuildOutcome',
     'CandidateOutcome',
-    'OutcomeManager'
+    'CandidateOutcomeStore'
 )
 
-from typing import Dict, Optional, Iterator
+from typing import Any, Dict, Iterator, Mapping
 
 import attr
 
-from .core import TestOutcome, TestOutcomeSet, BuildOutcome
+from .core import BuildOutcome, TestOutcome, TestOutcomeSet
 from .candidate import Candidate
 
 
@@ -44,20 +44,28 @@ class CandidateOutcome:
                                 self.is_repair and other_is_repair)
 
 
-class OutcomeManager:
-    # FIXME hash candidate outcomes
+class CandidateOutcomeStore(Mapping[Candidate, CandidateOutcome]):
+    """Maintains a record of candidate patch evaluation outcomes."""
     def __init__(self) -> None:
         self.__outcomes: Dict[Candidate, CandidateOutcome] = {}
+
+    def __repr__(self) -> str:
+        return self.__class__.__name__
+
+    def __contains__(self, candidate: Any) -> bool:
+        if not isinstance(candidate, Candidate):
+            return False
+        return candidate in self.__outcomes
 
     def __getitem__(self, candidate: Candidate) -> CandidateOutcome:
         return self.__outcomes[candidate]
 
     def __iter__(self) -> Iterator[Candidate]:
-        """
-        Returns an iterator over the candidate patches whose outcomes are
-        stored by this manager.
-        """
-        return self.__outcomes.keys().__iter__()
+        yield from self.__outcomes
+
+    def __len__(self) -> int:
+        """Returns a count of the number of represented candidate patches."""
+        return len(self.__outcomes)
 
     def record(self,
                candidate: Candidate,

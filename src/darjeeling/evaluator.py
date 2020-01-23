@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
+"""
+This module provides the Evaluator: a class for intelligently evaluating
+candidate patches, and for performing individual test executions.
+"""
 __all__ = ('Evaluator',)
 
-from typing import Tuple, List, Optional, Iterator, Set, Union, FrozenSet
+from typing import (Tuple, List, Optional, Iterator, Set, Sequence, Union,
+                    FrozenSet)
 from timeit import default_timer as timer
 from concurrent.futures import Future
 import concurrent.futures
@@ -15,11 +20,8 @@ from loguru import logger
 
 from .candidate import Candidate
 from .container import ProgramContainer
-from .outcome import CandidateOutcome, \
-                     OutcomeManager, \
-                     TestOutcomeSet, \
-                     TestOutcome, \
-                     BuildOutcome
+from .outcome import (BuildOutcome, CandidateOutcome, CandidateOutcomeStore,
+                      TestOutcome, TestOutcomeSet)
 from .events import (DarjeelingEventHandler, DarjeelingEventProducer,
                      DarjeelingEvent)
 from .events import (BuildStarted, BuildFinished,
@@ -46,7 +48,7 @@ class Evaluator(DarjeelingEventProducer):
                  num_workers: int = 1,
                  terminate_early: bool = True,
                  sample_size: Optional[Union[float, int]] = None,
-                 outcomes: Optional[OutcomeManager] = None
+                 outcomes: Optional[CandidateOutcomeStore] = None
                  ) -> None:
         super().__init__()
         self.__problem = problem
@@ -57,36 +59,28 @@ class Evaluator(DarjeelingEventProducer):
             concurrent.futures.ThreadPoolExecutor(max_workers=num_workers)
         self.__num_workers = num_workers
         self.__terminate_early = terminate_early
+        self.__outcomes = outcomes or CandidateOutcomeStore()
 
-        self.__tests_failing = \
-            frozenset(self.__problem.failing_tests)  # type: FrozenSet[Test]
-        self.__tests_passing = \
-            frozenset(self.__problem.passing_tests)  # type: FrozenSet[Test]
+        self.__tests_failing: FrozenSet[Test] = \
+            frozenset(self.__problem.failing_tests)
+        self.__tests_passing: FrozenSet[Test] = \
+            frozenset(self.__problem.passing_tests)
 
         # FIXME used the precomputed test ordering for now
-        self.__test_ordering = list(self.__problem.tests)
+        self.__test_ordering: Sequence[Test] = list(self.__problem.tests)
 
         # if the sample size is passed as a fraction, convert that fraction
         # to an integer
         if isinstance(sample_size, float):
             num_passing = len(self.__tests_passing)
             sample_size = math.ceil(num_passing * sample_size)
-            self.__sample_size = sample_size  # type: Optional[int]
+            self.__sample_size: Optional[int] = sample_size
         else:
             self.__sample_size = sample_size
 
-        if outcomes:
-            self.__outcomes = outcomes
-        else:
-            self.__outcomes = OutcomeManager()
-
         self.__lock = threading.Lock()
-        self.__queue_evaluated = queue.Queue()  # type: queue.Queue
+        self.__queue_evaluated: queue.Queue = queue.Queue()
         self.__num_running = 0
-
-    @property
-    def outcomes(self) -> OutcomeManager:
-        return self.__outcomes
 
     @property
     def num_workers(self) -> int:
@@ -158,6 +152,7 @@ class Evaluator(DarjeelingEventProducer):
         return outcome
 
     def _evaluate(self, candidate: Candidate) -> CandidateOutcome:
+        outcomes = self.__outcomes
         patch = candidate.to_diff()
         logger.info(f"evaluating candidate: {candidate}\n{patch}\n")
 
@@ -175,9 +170,9 @@ class Evaluator(DarjeelingEventProducer):
         # that all tests in the sample are successful
         known_bad_patch = False
 
-        if candidate in self.outcomes:
+        if candidate in outcomes:
             logger.info(f"found candidate in cache: {candidate}")
-            cached_outcome = self.outcomes[candidate]
+            cached_outcome = outcomes[candidate]
             known_bad_patch |= not cached_outcome.is_repair
 
             if not cached_outcome.build.successful:
@@ -255,6 +250,7 @@ class Evaluator(DarjeelingEventProducer):
     def evaluate(self, candidate: Candidate) -> Evaluation:
         """Evaluates a given candidate patch."""
         # FIXME return an evaluation error
+        outcomes = self.__outcomes
         self.dispatch(CandidateEvaluationStarted(candidate))
         try:
             outcome = self._evaluate(candidate)
@@ -266,7 +262,7 @@ class Evaluator(DarjeelingEventProducer):
         else:
             self.dispatch(CandidateEvaluationFinished(candidate, outcome))
 
-        self.outcomes.record(candidate, outcome)
+        outcomes.record(candidate, outcome)
         with self.__lock:
             self.__queue_evaluated.put((candidate, outcome))
             self.__num_running -= 1
