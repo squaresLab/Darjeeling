@@ -18,6 +18,7 @@ import random
 
 from loguru import logger
 
+from . import exceptions as exc
 from .candidate import Candidate
 from .container import ProgramContainer
 from .outcome import (BuildOutcome, CandidateOutcome, CandidateOutcomeStore,
@@ -27,7 +28,8 @@ from .events import (DarjeelingEventHandler, DarjeelingEventProducer,
 from .events import (BuildStarted, BuildFinished,
                      CandidateEvaluationStarted, CandidateEvaluationFinished,
                      CandidateEvaluationError,
-                     TestExecutionStarted, TestExecutionFinished)
+                     TestExecutionStarted, TestExecutionFinished,
+                     TestExecutionError)
 from .exceptions import BuildFailure
 from .core import Test
 from .resources import ResourceUsageTracker
@@ -143,7 +145,23 @@ class Evaluator(DarjeelingEventProducer):
         logger.debug(f"executing test: {test.name} [{candidate}]")
         self.dispatch(TestExecutionStarted(candidate, test))
         self.__resources.tests += 1
-        outcome = self.__program.execute(container, test)
+
+        # if an unexpected exception occurs during test execution, log the
+        # event and report the test execution as a failure.
+        timer = Stopwatch()
+        timer.start()
+        try:
+            outcome = self.__program.execute(container, test)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception as err:
+            logger.exception("unexpected error when executing "
+                             f"test [{test.name}] for "
+                             f"candidate [{candidate}]")
+            self.dispatch(TestExecutionError(candidate, test, err))
+            outcome = TestOutcome(successful=False,
+                                  time_taken=timer.duration)
+
         if not outcome.successful:
             logger.debug(f"* test failed: {test.name} ({candidate})")
         else:
@@ -249,16 +267,16 @@ class Evaluator(DarjeelingEventProducer):
 
     def evaluate(self, candidate: Candidate) -> Evaluation:
         """Evaluates a given candidate patch."""
-        # FIXME return an evaluation error
         outcomes = self.__outcomes
         self.dispatch(CandidateEvaluationStarted(candidate))
         try:
             outcome = self._evaluate(candidate)
-        # FIXME there is no outcome here! THIS IS A HUGE BUG.
         except Exception as err:
             m = "unexpected error occurred when evaluating candidate [{}]"
             logger.exception(m.format(candidate.id))
             self.dispatch(CandidateEvaluationError(candidate, err))
+            raise exc.UnexpectedCandidateEvaluationError(candidate=candidate,
+                                                         error=err)
         else:
             self.dispatch(CandidateEvaluationFinished(candidate, outcome))
 

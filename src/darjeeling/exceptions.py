@@ -5,6 +5,7 @@ import attr as _attr
 
 if _typing.TYPE_CHECKING:
     from .build_instructions import BuildStep
+    from .candidate import Candidate
 
 
 class DarjeelingError(Exception):
@@ -51,6 +52,13 @@ class TestLimitReached(DarjeelingError):
 
 class CandidateLimitReached(DarjeelingError):
     """The search has halted after reaching its candidate limit."""
+
+
+@_attr.s(auto_exc=True, auto_attribs=True)
+class UnexpectedCandidateEvaluationError(DarjeelingError):
+    """An unexpected error occurred when evaluating a candidate patch."""
+    candidate: 'Candidate'
+    error: Exception
 
 
 class SearchExhausted(DarjeelingError):

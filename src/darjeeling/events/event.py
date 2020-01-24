@@ -63,6 +63,19 @@ class TestExecutionFinished(DarjeelingEvent):
 
 
 @_attr.s(frozen=True, auto_attribs=True, slots=True, str=False)
+class TestExecutionError(DarjeelingEvent):
+    """An unexpected error when executing a test."""
+    candidate: _Candidate
+    test: _Test
+    error: Exception
+
+    def __str__(self) -> str:
+        return ("an unexpected error occurred when executing "
+                f"test [{self.test.name}] "
+                f"for candidate [{self.candidate}]:\n{str(self.error)}")
+
+
+@_attr.s(frozen=True, auto_attribs=True, slots=True, str=False)
 class CandidateEvaluationStarted(DarjeelingEvent):
     """Evaluation of a given candidate patch has started."""
     candidate: _Candidate
