@@ -56,7 +56,7 @@ class GenProgTestSuiteConfig(TestSuiteConfig):
                                       number_passing_tests=number_passing_tests,
                                       time_limit_seconds=time_limit_seconds)
 
-    def build(self, environment: 'Environment', bug: bugzoo.Bug) -> 'TestSuite':
+    def build(self, environment: 'Environment') -> 'TestSuite':
         failing_test_numbers = range(1, self.number_failing_tests + 1)
         passing_test_numbers = range(1, self.number_passing_tests + 1)
         failing_test_names = [f'n{i}' for i in failing_test_numbers]

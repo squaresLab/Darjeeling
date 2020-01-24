@@ -43,7 +43,7 @@ class PyTestSuiteConfig(TestSuiteConfig):
 
         return PyTestSuiteConfig(workdir, test_names, time_limit_seconds)
 
-    def build(self, environment: 'Environment', bug: bugzoo.Bug) -> 'TestSuite':
+    def build(self, environment: 'Environment') -> 'TestSuite':
         # TODO automatically discover tests via pytest --setup-only
         tests = tuple(PyTestCase(t) for t in self.test_names)
         return PyTestSuite(environment=environment,

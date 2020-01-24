@@ -93,8 +93,7 @@ class ProgramDescriptionConfig:
 
 
     def build(self, environment: 'Environment') -> 'ProgramDescription':
-        # FIXME don't pass snapshot!
-        tests = self.tests.build(environment, self.snapshot)
+        tests = self.tests.build(environment)
         return ProgramDescription(environment=environment,
                                   image=self.image,
                                   language=self.language,
