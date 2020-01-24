@@ -171,6 +171,9 @@ class BaseController(cement.Controller):
              {'help': 'path to store the patches.',
               'dest': 'dir_patches',
               'type': str}),
+            (['-v', '--verbose'],
+             {'help': 'enables verbose DEBUG-level logging to the stdout',
+              'action': 'store_true'}),
             (['--seed'],
              {'help': 'random number generator seed',
               'type': int}),
@@ -216,6 +219,7 @@ class BaseController(cement.Controller):
         dir_patches: Optional[str] = self.app.pargs.dir_patches
         log_to_filename: Optional[str] = self.app.pargs.log_to_file
         should_log_to_file: bool = not self.app.pargs.no_log_to_file
+        verbose_logging: bool = self.app.pargs.verbose
 
         # remove all existing loggers
         logger.remove()
@@ -225,7 +229,12 @@ class BaseController(cement.Controller):
 
         # log to stdout, unless instructed not to do so
         if not self.app.pargs.silent:
-            stdout_logging_level = 'CRITICAL' if interactive else 'INFO'
+            if interactive:
+                stdout_logging_level = 'CRITICAL'
+            elif verbose_logging:
+                stdout_logging_level = 'DEBUG'
+            else:
+                stdout_logging_level = 'INFO'
             logger.add(sys.stdout, level=stdout_logging_level)
 
         # setup logging to file
