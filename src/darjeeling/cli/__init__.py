@@ -27,6 +27,7 @@ from ..version import __version__ as VERSION
 from ..core import TestCoverageMap
 from ..config import Config
 from ..events import CsvEventLogger
+from ..plugins import LOADED_PLUGINS
 from ..resources import ResourceUsageTracker
 from ..session import Session
 from ..exceptions import BadConfigurationException
@@ -219,6 +220,8 @@ class BaseController(cement.Controller):
         # remove all existing loggers
         logger.remove()
         logger.enable('darjeeling')
+        for plugin_name in LOADED_PLUGINS:
+            logger.enable(plugin_name)
 
         # log to stdout, unless instructed not to do so
         if not self.app.pargs.silent:
