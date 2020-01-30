@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-__all__ = ('AnnotatedTestExecution',)
+__all__ = ('AnnotatedTestExecution', 'TestAnnotationExecutor')
 
 import abc
 
@@ -29,3 +29,8 @@ class AnnotatedTestExecution(abc.ABC):
     def time_taken(self) -> float:
         """The number of seconds taken to execute the test."""
         return self.test_outcome.time_taken
+
+
+class TestAnnotationExecutor(abc.ABC):
+    """Performs annotated test execution by collecting additional information
+    about test executions."""
