@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
-__all__ = ('AnnotatedTestExecution', 'TestAnnotationExecutor')
+__all__ = ('AnnotatedTestExecution', 'AnnotatedTestExecutor')
 
 from typing import Generic, TypeVar
 import abc
 import typing
 
-from .core import Test, TestOutcome
+import attr
+
+from .core import FileLineSet, Test, TestOutcome
 from .container import ProgramContainer
+from .program import Program
 
 T = TypeVar('T', bound='AnnotatedTestExecution')
 
@@ -52,6 +55,10 @@ class AnnotatedTestExecutor(Generic[T], abc.ABC):
         """The container to which this executor is attached."""
         ...
 
+    def program(self) -> Program:
+        """A description of the program associated with this executor."""
+        return self.container.program
+
     @abc.abstractmethod
     def execute(self, test: Test) -> T:
         """Executes a given test with annotation.
@@ -62,3 +69,29 @@ class AnnotatedTestExecutor(Generic[T], abc.ABC):
             The result of the annotated test execution.
         """
         ...
+
+
+@attr.s(slots=True)
+class GCovTestExecutor(AnnotatedTestExecutor[TestCoverage]):
+    container: ProgramContainer
+
+    def __attrs_post_init__(self) -> None:
+        # TODO apply instrumentation
+        # TODO build program
+
+    def execute(self, test: Test) -> TestCoverage:
+        """Computes coverage for a given test case."""
+        outcome = self.program.execute(test)
+        lines_covered = self._extract()
+        return TestCoverage(test.name, outcome, lines_covered)
+
+    def _extract(self) -> FileLineSet:
+        """Uses gcov to extract a summary of the executed lines of code."""
+        files = self.container.filesystem
+        shell = self.container.shell
+        temporary_filename = files.mktemp()
+
+        command = f'gcovr -o "{temporary_filename}" -x -d -r .'
+        response = shell.check_output(command, cwd=self._source_directory)  # TODO: store source directory
+        report_file_contents = files.read(temporary_filename)
+        return self._parse_report_from_text(report_file_contents)
