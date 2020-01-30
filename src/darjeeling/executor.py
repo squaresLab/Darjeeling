@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 __all__ = ('AnnotatedTestExecution', 'TestAnnotationExecutor')
 
+from typing import Generic, TypeVar
 import abc
+import typing
 
-from .core import TestOutcome
+from .core import Test, TestOutcome
+
+T = TypeVar('T', bound='AnnotatedTestExecution')
 
 
 class AnnotatedTestExecution(abc.ABC):
@@ -31,6 +35,18 @@ class AnnotatedTestExecution(abc.ABC):
         return self.test_outcome.time_taken
 
 
-class TestAnnotationExecutor(abc.ABC):
+class TestAnnotationExecutor(Generic[T], abc.ABC):
     """Performs annotated test execution by collecting additional information
-    about test executions."""
+    about test executions. This capability can be used, for example, to
+    collect coverage, invariants, and symbolic information.
+    """
+    @abc.abstractmethod
+    def execute(self, test: Test) -> T:
+        """Executes a given test with annotation.
+
+        Returns
+        -------
+        T
+            The result of the annotated test execution.
+        """
+        ...
