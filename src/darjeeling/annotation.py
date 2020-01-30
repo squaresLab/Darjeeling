@@ -6,6 +6,7 @@ import abc
 import typing
 
 from .core import Test, TestOutcome
+from .container import ProgramContainer
 
 T = TypeVar('T', bound='AnnotatedTestExecution')
 
@@ -41,7 +42,12 @@ class TestAnnotationExecutor(Generic[T], abc.ABC):
     collect coverage, invariants, and symbolic information.
     """
     @abc.abstractmethod
-    def execute(self, test: Test) -> T:
+    def prepare(self, container: ProgramContainer) -> None:
+        """Prepares a given container for annotated execution."""
+        ...
+
+    @abc.abstractmethod
+    def execute(self, container: ProgramContainer, test: Test) -> T:
         """Executes a given test with annotation.
 
         Returns
