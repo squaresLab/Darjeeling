@@ -36,18 +36,19 @@ class AnnotatedTestExecution(abc.ABC):
         return self.test_outcome.time_taken
 
 
-class TestAnnotationExecutor(Generic[T], abc.ABC):
-    """Performs annotated test execution by collecting additional information
-    about test executions. This capability can be used, for example, to
-    collect coverage, invariants, and symbolic information.
+class AnnotatedTestExecutor(Generic[T], abc.ABC):
+    """Performs annotated test execution for a given container by collecting
+    additional information during test execution. This capability can be used,
+    for example, to collect coverage, invariants, and symbolic information.
     """
+    @classmethod
     @abc.abstractmethod
-    def prepare(self, container: ProgramContainer) -> None:
-        """Prepares a given container for annotated execution."""
+    def build(self, container: ProgramContainer) -> None:
+        """Builds an annotated test executor for a given container."""
         ...
 
     @abc.abstractmethod
-    def execute(self, container: ProgramContainer, test: Test) -> T:
+    def execute(self, test: Test) -> T:
         """Executes a given test with annotation.
 
         Returns
