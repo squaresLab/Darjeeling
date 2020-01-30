@@ -17,12 +17,12 @@ class AnnotatedTestExecution(abc.ABC):
     
     Attributes
     ----------
-    test_outcome: TestOutcome
+    outcome: TestOutcome
         The unannotated outcome of the test execution.
     """
     @property
     @abc.abstractmethod
-    def test_outcome(self) -> TestOutcome:
+    def outcome(self) -> TestOutcome:
         ...
 
     @property
@@ -45,6 +45,11 @@ class AnnotatedTestExecutor(Generic[T], abc.ABC):
     @abc.abstractmethod
     def build(self, container: ProgramContainer) -> None:
         """Builds an annotated test executor for a given container."""
+        ...
+
+    @abc.abstractmethod
+    def container(self) -> ProgramContainer:
+        """The container to which this executor is attached."""
         ...
 
     @abc.abstractmethod
