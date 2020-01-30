@@ -7,9 +7,9 @@ import typing
 
 import attr
 
-from .core import FileLineSet, Test, TestOutcome
-from .container import ProgramContainer
-from .program import Program
+from ..core import FileLineSet, Test, TestOutcome
+from ..container import ProgramContainer
+from ..program import Program
 
 T = TypeVar('T', bound='AnnotatedTestExecution')
 
