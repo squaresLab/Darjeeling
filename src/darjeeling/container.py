@@ -46,7 +46,7 @@ class ProgramContainer:
 
     def patch(self, patch: BugZooPatch) -> None:
         """Applies a given patch to this container.
-        
+
         Raises
         ------
         FailedToApplyPatch

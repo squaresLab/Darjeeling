@@ -1,19 +1,17 @@
 # -*- coding: utf-8 -*-
 __all__ = ('ProgramSource', 'ProgramSourceFile', 'ProgramSourceLoader')
 
-from typing import (List, Union, Dict, Optional, Iterator, Iterable, Mapping,
-                    Collection, Tuple, Sequence)
+from typing import (Collection, Dict, Iterable, Iterator, List, Mapping,
+                    Sequence, Tuple)
 from difflib import unified_diff
 import os
 
 import attr
 import dockerblade
-from bugzoo.client import Client as BugZooClient
 from bugzoo.core.patch import Patch
-from bugzoo.core.bug import Bug as Snapshot
 from loguru import logger
 
-from . import exceptions 
+from . import exceptions
 from .core import (Replacement, FileLine, FileLocationRange, Location,
                    LocationRange)
 from .environment import Environment
@@ -37,7 +35,7 @@ class ProgramSourceFile:
 
     @staticmethod
     def _compute_line_start_and_end_offsets(contents: str
-                                           ) -> Sequence[Tuple[int, int]]:
+                                            ) -> Sequence[Tuple[int, int]]:
         """Computes the offsets for each line within a given file.
 
         Parameters
@@ -105,7 +103,6 @@ class ProgramSourceFile:
         return contents
 
 
-# FIXME add option to save to disk
 class ProgramSource(Mapping[str, ProgramSourceFile]):
     """Stores the source code for a given program."""
     def __init__(self, files: Collection[ProgramSourceFile]) -> None:
@@ -119,7 +116,7 @@ class ProgramSource(Mapping[str, ProgramSourceFile]):
     def __getitem__(self, filename: str) -> ProgramSourceFile:
         """Retrieves a given source file by its path."""
         return self.__files[filename]
-        
+
     def __iter__(self) -> Iterator[str]:
         """Returns an iterator over the source filenames for this program."""
         yield from self.__files

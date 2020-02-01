@@ -2,8 +2,6 @@
 __all__ = ('GeneticSearcher',)
 
 from typing import Iterator, List, Optional, Dict, Any, Union
-import concurrent.futures
-import datetime
 import random
 import typing
 
@@ -13,7 +11,6 @@ import attr
 from .base import Searcher
 from .config import SearcherConfig
 from ..candidate import Candidate
-from ..environment import Environment
 from ..resources import ResourceUsageTracker
 from ..transformation import Transformation, ProgramTransformations
 from ..outcome import CandidateOutcome
@@ -155,7 +152,7 @@ class GeneticSearcher(Searcher):
                 # FIXME maybe we don't need to execute the test?
                 f[ind] = sum(1.0 for n in outcome.tests if outcome.tests[n].successful)
         logger.info("computed fitness:\n{}",
-                     '\n'.join(['  {}: {}'.format(ind, f[ind]) for ind in f]))
+                    '\n'.join(f'  {ind}: {f[ind]}' for ind in f))
         return f
 
     def select(self,
@@ -207,7 +204,7 @@ class GeneticSearcher(Searcher):
         random.shuffle(pop)
         k = 2
         for i in range(0, len(pop), k):
-            parents = pop[i:i+k]
+            parents = pop[i:i + k]
             offspring += parents
             if len(parents) == k and random.random() <= self.rate_crossover:
                 offspring += one_point_crossover(*parents)

@@ -1,30 +1,21 @@
 # -*- coding: utf-8 -*-
-from typing import (List, Optional, Dict, Any, Type, Sequence, Tuple, Union,
-                    Callable)
-import logging
-import logging.handlers
-from datetime import datetime, timedelta
-from glob import glob
-from threading import Thread, Event
+from typing import Optional, Sequence
+import glob
 import json
-import sys
-import random
-import warnings
-import shutil
 import os
+import sys
 
 from loguru import logger
+import attr
 import bugzoo
 import bugzoo.server
 import cement
 import pyroglyph
-import attr
 import yaml
 
 from ..environment import Environment
 from ..problem import Problem
 from ..version import __version__ as VERSION
-from ..core import TestCoverageMap
 from ..config import Config
 from ..events import CsvEventLogger
 from ..plugins import LOADED_PLUGINS
@@ -97,7 +88,7 @@ class BaseController(cement.Controller):
     def _default_log_filename(self) -> str:
         # find all log file numbers that have been used in this directory
         used_numbers = [int(s.rpartition('.')[-1])
-                        for s in glob('darjeeling.log.*')]
+                        for s in glob.glob('darjeeling.log.*')]
 
         if not used_numbers:
             return os.path.join(os.getcwd(), 'darjeeling.log.0')
@@ -110,7 +101,7 @@ class BaseController(cement.Controller):
         arguments=[
             (['filename'],
              {'help': ('a Darjeeling configuration file describing a faulty '
-                       'program and how it should be repaired.') }),
+                       'program and how it should be repaired.')}),
             (['--format'],
              {'help': 'the format that should be used for the coverage report',
               'default': 'text',
@@ -131,7 +122,7 @@ class BaseController(cement.Controller):
             environment = Environment(bugzoo=client_bugzoo)
             try:
                 session = Session.from_config(environment, cfg)
-            except BadConfigurationException as err:
+            except BadConfigurationException:
                 print("ERROR: bad configuration file")
                 sys.exit(1)
 
@@ -148,7 +139,7 @@ class BaseController(cement.Controller):
         arguments=[
             (['filename'],
              {'help': ('a Darjeeling configuration file describing the faulty '
-                       'program and how it should be repaired.') }),
+                       'program and how it should be repaired.')}),
             (['--interactive'],
              {'help': 'enables an interactive user interface.',
               'action': 'store_true'}),

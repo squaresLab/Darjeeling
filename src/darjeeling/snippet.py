@@ -3,18 +3,17 @@ __all__ = ('Snippet', 'SnippetDatabase',
            'LineSnippet', 'LineSnippetDatabase',
            'StatementSnippet', 'StatementSnippetDatabase')
 
-from typing import (List, Iterator, Set, Optional, Dict, Generic,
-                    Any, FrozenSet, MutableSet, TypeVar, Collection)
+from typing import (Any, Collection, Dict, Generic, Iterator, MutableSet, Optional,
+                    FrozenSet, TypeVar)
 from collections import OrderedDict
 import abc
 import typing
 
 import attr
-from kaskara import Statement as KaskaraStatement
 from kaskara.analysis import Analysis as KaskaraAnalysis
 from loguru import logger
 
-from .core import FileLocationRange, FileLine, FileLineSet
+from .core import FileLocationRange, FileLine
 
 if typing.TYPE_CHECKING:
     from .config import Config
@@ -34,13 +33,13 @@ class Snippet(abc.ABC):
         if not isinstance(other, Snippet):
             return False
         return self.content < other.content
-    
+
     def __str__(self) -> str:
         return self.content
-    
+
     def __eq__(self, other: Any) -> bool:
         return isinstance(other, Snippet) and self.content == other.content
-    
+
     def __hash__(self) -> int:
         return hash(self.content)
 
@@ -125,7 +124,7 @@ class SnippetDatabase(Generic[T], Collection[T], abc.ABC):
             location: Optional[FileLocationRange] = None
             ) -> None:
         """Adds a snippet to this database.
-        
+
         Parameters
         ----------
         snippet: T
@@ -134,7 +133,7 @@ class SnippetDatabase(Generic[T], Collection[T], abc.ABC):
             The location in the code at which the snippet was found.
         """
         content = snippet.content
-        if not content in self.__content_to_snippet:
+        if content not in self.__content_to_snippet:
             self.__content_to_snippet[content] = snippet
         else:
             snippet = self.__content_to_snippet[content]

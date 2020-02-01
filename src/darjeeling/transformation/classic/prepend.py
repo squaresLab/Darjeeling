@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 __all__ = ('PrependStatement',)
 
-from typing import (List, Iterator, Iterable, Dict, Any, FrozenSet, Mapping,
-                    Optional, ClassVar)
+from typing import Any, ClassVar, Iterator, Mapping, Optional
 import typing
 
 import attr
@@ -15,7 +14,7 @@ from ... import exceptions as exc
 from ...snippet import (StatementSnippet, SnippetDatabase,
                         StatementSnippetDatabase)
 from ...core import (Replacement, FileLine, FileLocationRange, FileLocation,
-                     FileLineSet, Location, LocationRange)
+                     LocationRange)
 
 if typing.TYPE_CHECKING:
     from ..problem import Problem
@@ -90,7 +89,7 @@ class PrependStatementSchemaConfig(TransformationSchemaConfig):
                   d: Mapping[str, Any],
                   dir_: Optional[str] = None
                   ) -> 'TransformationSchemaConfig':
-        if not 'preserve_indentation' in d:
+        if 'preserve_indentation' not in d:
             preserve_indentation = True
         else:
             preserve_indentation = d['preserve-indentation']
@@ -99,7 +98,7 @@ class PrependStatementSchemaConfig(TransformationSchemaConfig):
                 raise exc.BadConfigurationException(m)
 
         return PrependStatementSchemaConfig(
-                    preserve_indentation=preserve_indentation)
+            preserve_indentation=preserve_indentation)
 
     def build(self,
               problem: 'Problem',

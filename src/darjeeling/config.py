@@ -1,35 +1,22 @@
 # -*- coding: utf-8 -*-
-__all__ = ('Config', 'OptimizationsConfig', 'SchemaConfig',
-           'CoverageConfig', 'LocalizationConfig')
+__all__ = ('Config', 'OptimizationsConfig', 'CoverageConfig',
+           'LocalizationConfig')
 
-from typing import (Optional, Collection, Tuple, Dict, Any, List, Set,
-                    FrozenSet, Iterator, Type, NoReturn, Mapping)
-import abc
-import datetime
-import sys
-import typing
-import random
+from typing import Any, Collection, Dict, List, NoReturn, Optional, Set
 import datetime
 import os
+import sys
+import random
 
 import attr
-import bugzoo
 
-from .core import Language, FileLine, FileLineSet
-from .util import dynamically_registered
-from .exceptions import BadConfigurationException, LanguageNotSupported
+from .core import FileLine, FileLineSet
+from .exceptions import BadConfigurationException
 from .resources import ResourceLimits
-from .test.config import TestSuiteConfig
 from .searcher.config import SearcherConfig
 from .coverage.config import CoverageConfig
 from .transformation.config import ProgramTransformationsConfig
 from .program import ProgramDescriptionConfig
-
-if typing.TYPE_CHECKING:
-    from .environment import Environment
-    from .problem import Problem
-    from .test import TestSuite
-    from .transformation import Transformation
 
 
 @attr.s(frozen=True)
@@ -57,7 +44,7 @@ class LocalizationConfig:
         if not isinstance(yml, dict):
             m = "'localization' section should be an object"
             raise BadConfigurationException(m)
-        if not 'metric' in yml:
+        if 'metric' not in yml:
             m = "'metric' property is missing from 'localization' section"
             raise BadConfigurationException(m)
         if not isinstance(yml['metric'], str):
@@ -193,8 +180,6 @@ class Config:
         """
         def err(m: str) -> NoReturn:
             raise BadConfigurationException(m)
-
-        has_limits = 'resource-limits' in yml
 
         if dir_patches is None and 'save-patches-to' in yml:
             dir_patches = yml['save-patches-to']

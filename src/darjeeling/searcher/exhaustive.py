@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 __all__ = ('ExhaustiveSearcher',)
 
-from typing import Iterable, Optional, Iterator, Dict, Any, List
-import datetime
+from typing import Any, Dict, Iterable, Iterator, Optional
 import typing
 
 from loguru import logger
@@ -10,7 +9,6 @@ from loguru import logger
 from .base import Searcher
 from .config import SearcherConfig
 from ..candidate import Candidate
-from ..environment import Environment
 from ..resources import ResourceUsageTracker
 from ..transformation import Transformation
 from ..exceptions import SearchExhausted

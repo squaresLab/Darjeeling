@@ -10,7 +10,6 @@ import attr
 
 from .base import Transformation, TransformationSchema
 from ..core import FileLine
-from ..localization import Localization
 from ..snippet import SnippetDatabase
 
 if typing.TYPE_CHECKING:

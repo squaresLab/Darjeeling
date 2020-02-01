@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 __all__ = ('ProgramTransformations',)
 
-from typing import (Collection, Dict, Iterator, Iterable, List, Mapping,
-                    Sequence)
-import random
+from typing import Collection, Iterator
 import typing
 
 from loguru import logger
@@ -11,7 +9,6 @@ import attr
 
 from .base import Transformation, TransformationSchema
 from .index import TransformationIndex
-from ..core import FileLine
 from ..snippet import SnippetDatabase
 from ..localization import Localization
 

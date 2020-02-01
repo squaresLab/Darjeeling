@@ -3,7 +3,6 @@ __all__ = ('CsvEventLogger',)
 
 from typing import Sequence, TextIO, Optional
 from typing_extensions import Protocol
-from threading import Lock
 import csv
 import os
 import typing

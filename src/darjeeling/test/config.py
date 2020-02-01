@@ -5,8 +5,6 @@ from typing import Any, Dict, NoReturn, Optional, Type
 import abc
 import typing
 
-from loguru import logger
-
 from .. import exceptions as exc
 from ..util import dynamically_registered
 

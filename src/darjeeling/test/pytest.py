@@ -5,7 +5,6 @@ from typing import Optional, Sequence, Dict, Any
 import typing
 
 import attr
-import bugzoo
 
 from .base import TestSuite
 from .config import TestSuiteConfig

@@ -1,33 +1,20 @@
 # -*- coding: utf-8 -*-
 __all__ = ('Searcher',)
 
-from typing import (Iterable, Iterator, Optional, List, Tuple, Any, Dict,
-                    Type, TypeVar, Generic, Union, ClassVar, Set)
-from typing_extensions import final
-from mypy_extensions import NoReturn
+from typing import Dict, Iterator, List, Optional, Union
 import abc
-import datetime
-import threading
 import typing
-import inspect
-import time
-import signal
 
 from loguru import logger
-import bugzoo
 
-from .config import SearcherConfig
 from ..candidate import Candidate
-from ..core import FileLine
 from ..events import DarjeelingEventProducer, DarjeelingEventHandler
 from ..environment import Environment
 from ..outcome import CandidateOutcome
 from ..resources import ResourceUsageTracker
-from ..transformation import Transformation
 from ..evaluator import Evaluator, Evaluation
-from ..exceptions import (BuildFailure, SearchAlreadyStarted, SearchExhausted,
-                          TimeLimitReached, CandidateLimitReached,
-                          BadConfigurationException)
+from ..exceptions import (SearchAlreadyStarted, SearchExhausted,
+                          TimeLimitReached, CandidateLimitReached)
 
 if typing.TYPE_CHECKING:
     from ..problem import Problem

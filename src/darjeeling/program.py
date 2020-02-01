@@ -4,7 +4,6 @@ __all__ = ('ProgramDescription', 'ProgramDescriptionConfig')
 from typing import Iterator, NoReturn, Mapping, Optional, Any
 import contextlib
 import typing
-import logging
 
 import attr
 from bugzoo import Bug as Snapshot
@@ -16,9 +15,7 @@ from .build_instructions import BuildInstructions
 from .core import Language, Test, TestOutcome
 from .container import ProgramContainer
 from .test import TestSuiteConfig, TestSuite
-from .exceptions import (BadConfigurationException,
-                         BuildFailure,
-                         FailedToApplyPatch)
+from .exceptions import BuildFailure, FailedToApplyPatch
 
 if typing.TYPE_CHECKING:
     from .environment import Environment
@@ -90,7 +87,6 @@ class ProgramDescriptionConfig:
                                         tests=tests,
                                         snapshot=None,
                                         source_directory=source_directory)
-
 
     def build(self, environment: 'Environment') -> 'ProgramDescription':
         tests = self.tests.build(environment)

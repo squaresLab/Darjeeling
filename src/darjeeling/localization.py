@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 __all__ = (
-    'Metric',
+    'SuspiciousnessMetric',
     'Localization',
     'genprog',
     'ochiai',
@@ -9,8 +9,8 @@ __all__ = (
     'jaccard'
 )
 
-from typing import (Dict, Callable, List, Iterator, FrozenSet, Sequence, Any,
-                    Iterable, Optional, Mapping, Set, MutableMapping)
+from typing import (Any, Callable, Dict, Iterable, Iterator, List, Mapping,
+                    MutableMapping, Set, Sequence)
 import bisect
 import functools
 import json
@@ -20,7 +20,7 @@ import typing
 
 from loguru import logger
 
-from .core import FileLine, FileLineMap, FileLineSet, TestCoverageMap
+from .core import FileLine, FileLineMap, TestCoverageMap
 from .spectra import Spectra
 from .exceptions import NoImplicatedLines, BadConfigurationException
 
@@ -31,7 +31,7 @@ SuspiciousnessMetric = Callable[[Spectra], MutableMapping[FileLine, float]]
 
 
 def absolute_suspiciousness_metric(f: Callable[[int, int, int, int], float]
-                                  ) -> SuspiciousnessMetric:
+                                   ) -> SuspiciousnessMetric:
     @functools.wraps(f)
     def wrapper(spectra: Spectra) -> MutableMapping[FileLine, float]:
         line_to_score: FileLineMap[float] = FileLineMap({})

@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 __all__ = ('SearcherConfig',)
 
-import datetime
-
-from typing import Dict, Optional, Any, Type, Iterator, List
+from typing import Dict, Optional, Any, Type, Iterator
 import abc
-import logging
 import typing
 
 from ..resources import ResourceUsageTracker
@@ -13,10 +10,9 @@ from ..util import dynamically_registered
 
 if typing.TYPE_CHECKING:
     from .base import Searcher
-    from ..environment import Environment
     from ..localization import Localization
     from ..problem import Problem
-    from ..transformation import Transformation, ProgramTransformations
+    from ..transformation import ProgramTransformations
 
 
 @dynamically_registered(lookup='lookup')

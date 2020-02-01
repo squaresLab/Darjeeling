@@ -2,8 +2,8 @@
 __all__ = ('Replacement', 'FileLine', 'FileLocationRange', 'Location',
            'LocationRange', 'FileLocation', 'TestCoverage', 'TestCoverageMap')
 
-from typing import (TypeVar, Sequence, Iterator, Optional, Dict, Generic, Set,
-                    Mapping, Iterable, List, Any)
+from typing import (Any, Dict, Iterable, Iterator, List, Mapping, Optional,
+                    Set, Sequence)
 from collections import OrderedDict
 from enum import Enum
 import abc
@@ -15,11 +15,9 @@ import yaml
 from bugzoo.core import TestSuiteCoverage as BugZooTestSuiteCoverage
 from bugzoo.core import TestCoverage as BugZooTestCoverage
 from bugzoo.core import TestOutcome as BugZooTestOutcome
-from bugzoo import Container
-from bugzoo import Client as BugZooClient
 from sourcelocation import (Location, LocationRange,
                             FileLocation, FileLocationRange,
-                            FileLine, FileLineMap, FileLineSet)
+                            FileLine, FileLineSet)
 
 from .exceptions import LanguageNotSupported
 
@@ -159,7 +157,7 @@ class TestOutcomeSet:
                  ) -> None:
         if outcomes is None:
             outcomes = {}
-        self.__outcomes = outcomes # type: Dict[str, TestOutcome]
+        self.__outcomes: Dict[str, TestOutcome] = outcomes
 
     def __iter__(self) -> Iterator[str]:
         return self.__outcomes.keys().__iter__()

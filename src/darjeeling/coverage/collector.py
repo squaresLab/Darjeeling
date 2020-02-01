@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 __all__ = ('CoverageCollector',)
 
-from typing import Iterable, Dict, Type, Any, Optional, Mapping
+from typing import Any, Dict, Mapping, Optional, Type
 from typing_extensions import final
 import abc
 
 from .. import exceptions as exc
-from ..core import FileLine, FileLineSet, TestCoverage, TestCoverageMap
+from ..core import FileLineSet, TestCoverage, TestCoverageMap
 from ..container import ProgramContainer
 from ..environment import Environment
 from ..program import ProgramDescription
@@ -26,7 +26,7 @@ class CoverageCollectorConfig(abc.ABC):
                   dict_: Mapping[str, Any],
                   dir_: Optional[str] = None
                   ) -> 'CoverageCollectorConfig':
-        if not 'type' in dict_:
+        if 'type' not in dict_:
             m = 'missing expected property: "type"'
             raise exc.BadConfigurationException(m)
         type_name: str = dict_['type']

@@ -75,7 +75,6 @@ class GCovCollectorConfig(CoverageCollectorConfig):
                                ) -> FrozenSet[str]:
         """Determines the set of all source files within a program."""
         with program.provision() as container:
-            files = container.filesystem
             source_directory = program.source_directory
             endings = ('.cpp', '.cc', '.c', '.h', '.hh', '.hpp', '.cxx')
             command = ' -o '.join([f"-name \*{e}" for e in endings])
@@ -115,7 +114,7 @@ class GCovCollector(CoverageCollector):
         assert xml_lines
         lines = xml_lines.findall('line')
         return set(int(l.attrib['number']) for l in lines
-                if int(l.attrib['hits']) > 0)
+                   if int(l.attrib['hits']) > 0)
 
     def _corrected_lines(self, filename: str, lines: Set[int]) -> Set[int]:
         if filename not in self._files_to_instrument:
@@ -174,7 +173,7 @@ class GCovCollector(CoverageCollector):
         temporary_filename = files.mktemp()
 
         command = f'gcovr -o "{temporary_filename}" -x -d -r .'
-        response = shell.check_output(command, cwd=self._source_directory)
+        shell.check_call(command, cwd=self._source_directory)
         xml_file_contents = files.read(temporary_filename)
 
         return self._parse_xml_file_contents(xml_file_contents)

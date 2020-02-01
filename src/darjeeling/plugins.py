@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-__all__ = ('PLUGINS',)
+__all__ = ('LOADED_PLUGINS',)
 
 from typing import List
-import logging as _logging
 import importlib as _importlib
 import pkgutil as _pkgutil
 

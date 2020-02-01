@@ -11,7 +11,6 @@ from dockerblade.stopwatch import Stopwatch
 
 from . import exceptions as exc
 from .container import ProgramContainer
-from .environment import Environment
 
 
 @attr.s(frozen=True, auto_attribs=True, slots=True)
@@ -51,7 +50,7 @@ class BuildStep:
                 time_limit: Optional[int] = None
                 ) -> None:
         """Applies this build step to a given container.
-        
+
         Raises
         ------
         BuildStepFailed
@@ -97,7 +96,6 @@ class BuildInstructions(Sequence[BuildStep]):
         steps = tuple(BuildStep.from_dict(dict_step, source_directory)
                       for dict_step in dict_['steps'])
 
-        has_coverage_steps = 'steps-for-coverage' in dict_
         if 'steps-for-coverage' in dict_:
             if not isinstance(dict_['steps-for-coverage'], list):
                 err("'steps-for-coverage' property should be an array")

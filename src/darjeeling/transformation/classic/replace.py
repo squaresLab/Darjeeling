@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 __all__ = ('ReplaceStatement',)
 
-from typing import (List, Iterator, Iterable, Dict, Any, FrozenSet, Mapping,
-                    Optional, ClassVar)
+from typing import Any, ClassVar, Iterator, Mapping, Optional
 import typing
 
 from loguru import logger
@@ -15,8 +14,7 @@ from ..config import TransformationSchemaConfig
 from ... import exceptions as exc
 from ...snippet import (StatementSnippet, SnippetDatabase,
                         StatementSnippetDatabase)
-from ...core import (Replacement, FileLine, FileLocationRange, FileLocation,
-                     FileLineSet, Location, LocationRange)
+from ...core import Replacement, FileLine, FileLocationRange
 
 if typing.TYPE_CHECKING:
     from ..problem import Problem
@@ -59,7 +57,6 @@ class ReplaceStatementSchema(StatementTransformationSchema):
                          statement: kaskara.Statement
                          ) -> Iterator[Transformation]:
         problem = self._problem
-        snippets = self._snippets
 
         # do not replace declaration statements
         if problem.settings.ignore_decls and statement.kind == 'DeclStmt':
@@ -91,7 +88,7 @@ class ReplaceStatementSchemaConfig(TransformationSchemaConfig):
                   d: Mapping[str, Any],
                   dir_: Optional[str] = None
                   ) -> 'TransformationSchemaConfig':
-        if not 'preserve_indentation' in d:
+        if 'preserve_indentation' not in d:
             preserve_indentation = True
         else:
             preserve_indentation = d['preserve-indentation']
@@ -100,7 +97,7 @@ class ReplaceStatementSchemaConfig(TransformationSchemaConfig):
                 raise exc.BadConfigurationException(m)
 
         return ReplaceStatementSchemaConfig(
-                    preserve_indentation=preserve_indentation)
+            preserve_indentation=preserve_indentation)
 
     def build(self,
               problem: 'Problem',

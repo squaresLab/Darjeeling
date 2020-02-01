@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 __all__ = ('Candidate',)
 
-from typing import List, Iterator, Dict, FrozenSet, Iterable, Tuple
+from typing import Dict, List, Tuple
 import typing
 
-from loguru import logger
 from bugzoo.core.patch import Patch
 import attr
 

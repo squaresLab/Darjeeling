@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 import warnings
 import inspect
-import logging
-from typing import (List, Union, Tuple, Any, Dict, Type, Set, Iterator,
-                    Optional, Iterable, TypeVar)
+from typing import (Any, Dict, Iterable, Iterator, List, Optional, Set, Tuple,
+                    Union)
 from timeit import default_timer as timer
 
 from loguru import logger

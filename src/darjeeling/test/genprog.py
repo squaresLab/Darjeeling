@@ -6,7 +6,6 @@ import os
 import typing
 
 import attr
-import bugzoo
 
 from .. import exceptions as exc
 from .base import TestSuite

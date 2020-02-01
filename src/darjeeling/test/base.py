@@ -1,16 +1,10 @@
 # -*- coding: utf-8 -*-
-from typing import (Sequence, Iterator, TypeVar, Dict, Any, Sequence, Generic,
-                    Type, ClassVar, Optional)
+from typing import Iterator, TypeVar, Sequence, Generic
 import abc
 
-import attr
-import bugzoo
-
-from .config import TestSuiteConfig
 from ..core import TestOutcome, Test
 from ..container import ProgramContainer
 from ..environment import Environment
-from ..util import dynamically_registered
 
 T = TypeVar('T', bound=Test)
 

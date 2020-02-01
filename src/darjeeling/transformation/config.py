@@ -22,7 +22,6 @@ from ..localization import Localization
 
 if typing.TYPE_CHECKING:
     from .base import TransformationSchema
-    from ..environment import Environment
     from ..problem import Problem
 
 

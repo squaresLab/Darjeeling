@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 __all__ = ('CoveragePyCollector', 'CoveragePyCollectorConfig')
 
-from typing import FrozenSet, Mapping, Any, Set, Dict, Optional, ClassVar
+from typing import Any, ClassVar, Dict, Mapping, Optional, Set
 import json
-import os
 import typing
 
 import attr
@@ -56,8 +55,7 @@ class CoveragePyCollector(CoverageCollector):
         shell = container.shell
         temporary_filename = files.mktemp()
         command = (f'coverage json -o {temporary_filename} '
-                    '--omit="tests/* && coverage erase"')
-        response = shell.check_output(command,
-                                      cwd=self.program.source_directory)
+                   '--omit="tests/* && coverage erase"')
+        shell.check_call(command, cwd=self.program.source_directory)
         report_text = files.read(temporary_filename)
         return self._read_report_text(report_text)

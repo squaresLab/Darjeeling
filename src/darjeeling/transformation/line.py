@@ -5,8 +5,7 @@ lines.
 """
 __all__ = ('InsertLine', 'DeleteLine', 'ReplaceLine')
 
-from typing import (List, Iterator, Iterable, Dict, Any, FrozenSet, Mapping,
-                    Optional)
+from typing import Any, Iterator, List, Mapping, Optional
 import abc
 import typing
 
@@ -14,9 +13,8 @@ import attr
 
 from .base import Transformation, TransformationSchema
 from .config import TransformationSchemaConfig
-from ..snippet import Snippet, SnippetDatabase, LineSnippetDatabase
-from ..core import (Replacement, FileLine, FileLocationRange, FileLocation,
-                    FileLineSet, Location, LocationRange)
+from ..snippet import SnippetDatabase, LineSnippetDatabase
+from ..core import Replacement, FileLine, FileLocationRange, LocationRange
 from ..exceptions import BadConfigurationException
 
 if typing.TYPE_CHECKING:

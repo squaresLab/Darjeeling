@@ -1,25 +1,20 @@
 # -*- coding: utf-8 -*-
 __all__ = ('Problem',)
 
-from typing import (List, Optional, Dict, Iterator, Callable, Set, Iterable,
-                    Mapping, Sequence)
-from timeit import default_timer as timer
-import tempfile
+from typing import Iterable, Iterator, Optional, Sequence
 import typing
 import functools
-import os
 
 import attr
-from bugzoo.core.fileline import FileLine, FileLineSet
 from bugzoo.core.bug import Bug
 from kaskara.analysis import Analysis
 from loguru import logger
 
-from .core import Language, Test, TestCoverage, TestCoverageMap
+from .core import Language, Test, TestCoverageMap, FileLine
 from .environment import Environment
 from .program import ProgramDescription
 from .source import ProgramSource, ProgramSourceLoader
-from .exceptions import NoFailingTests, NoImplicatedLines, BuildFailure
+from .exceptions import NoFailingTests, NoImplicatedLines
 from .config import OptimizationsConfig
 from .test import TestSuite
 

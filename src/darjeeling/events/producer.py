@@ -2,7 +2,6 @@
 __all__ = ('DarjeelingEventProducer',)
 
 from typing import Iterator, List, Any
-import abc
 
 from loguru import logger
 
@@ -30,7 +29,7 @@ class DarjeelingEventProducer:
         """Attaches an event handler to this object."""
         logger.debug(f"attaching event handler [{handler}] "
                      f"to producer [{self}]")
-        if not handler in self.__handlers:
+        if handler not in self.__handlers:
             self.__handlers.append(handler)
             logger.debug(f"attached event handler [{handler}] "
                          f"to producer [{self}]")
@@ -42,7 +41,7 @@ class DarjeelingEventProducer:
         """Removes an event handler from this object."""
         logger.debug(f"removing event handler [{handler}] "
                      f"from producer [{self}]")
-        if not handler in self.__handlers:
+        if handler not in self.__handlers:
             logger.warning(f"handler [{handler}] not attached "
                            f"to producer [{self}]")
         self.__handlers.remove(handler)

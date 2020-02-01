@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 __all__ = ('DeleteStatement',)
 
-from typing import (List, Iterator, Iterable, Dict, Any, FrozenSet, Mapping,
-                    Optional, ClassVar)
+from typing import Any, ClassVar, Iterator, Mapping, Optional
 import typing
 
 import attr
@@ -12,9 +11,7 @@ from .base import StatementTransformation, StatementTransformationSchema
 from ..base import Transformation, TransformationSchema
 from ..config import TransformationSchemaConfig
 from ...snippet import SnippetDatabase, StatementSnippetDatabase
-from ...core import (Replacement, FileLine, FileLocationRange, FileLocation,
-                     FileLineSet, Location, LocationRange)
-from ...exceptions import BadConfigurationException
+from ...core import Replacement, FileLine, FileLocationRange
 
 if typing.TYPE_CHECKING:
     from ..problem import Problem

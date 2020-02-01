@@ -5,18 +5,10 @@ transformation schemas inherit.
 """
 __all__ = ('Transformation', 'TransformationSchema')
 
-from typing import Any, List, Type, Iterator, TypeVar, Generic, Mapping
-from typing_extensions import final
+from typing import Generic, Iterator, List, Mapping, TypeVar
 import abc
-import typing
 
 from ..core import Replacement, FileLine
-from ..exceptions import (NameInUseException,
-                          UnknownTransformationSchemaException)
-from ..snippet import SnippetDatabase
-
-if typing.TYPE_CHECKING:
-    from ..problem import Problem
 
 T = TypeVar('T', bound='Transformation')
 

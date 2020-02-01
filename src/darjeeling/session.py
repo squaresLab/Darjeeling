@@ -1,20 +1,14 @@
 # -*- coding: utf-8 -*-
 __all__ = ('Session',)
 
-from typing import List, Dict, Any, Type, Optional, Iterator
+from typing import Iterator, List
 import glob
 import os
-import sys
-import asyncio
-import shutil
 import random
-import asyncio
-from datetime import timedelta, datetime
 
 import attr
-import bugzoo
 import kaskara
-from bugzoo.core import FileLine, Patch
+from bugzoo.core import Patch
 from bugzoo import Bug as Snapshot
 from loguru import logger
 
@@ -23,16 +17,12 @@ from .environment import Environment
 from .candidate import Candidate
 from .resources import ResourceUsageTracker
 from .searcher import Searcher
-from .program import ProgramDescription
 from .problem import Problem
-from .config import Config, OptimizationsConfig
+from .config import Config
 from .snippet import (SnippetDatabase, StatementSnippetDatabase,
                       LineSnippetDatabase)
-from .exceptions import BadConfigurationException, LanguageNotSupported
-from .localization import (Localization, ample, genprog, jaccard, ochiai,
-                           tarantula)
-from .events import (DarjeelingEventHandler, DarjeelingEventProducer,
-                     EventEchoer, CsvEventLogger)
+from .localization import Localization
+from .events import DarjeelingEventHandler, DarjeelingEventProducer
 
 
 @attr.s
@@ -51,15 +41,14 @@ class Session(DarjeelingEventProducer):
     @staticmethod
     def from_config(environment: Environment, cfg: Config) -> 'Session':
         """Creates a new repair session according to a given configuration."""
-        client_bugzoo = environment.bugzoo
-
-        # create the patch directory
+        logger.debug('preparing patch directory')
         dir_patches = cfg.dir_patches
         if os.path.exists(dir_patches):
             logger.warning("clearing existing patch directory")
             for fn in glob.glob(f'{dir_patches}/*.diff'):
                 if os.path.isfile(fn):
                     os.remove(fn)
+        logger.debug('prepared patch directory')
 
         # seed the RNG
         # FIXME use separate RNG for each session
@@ -97,9 +86,8 @@ class Session(DarjeelingEventProducer):
             Localization.from_config(coverage, cfg.localization)
         logger.info(f"computed fault localization:\n{localization}")
 
-        # determine implicated files and lines
+        # determine implicated files
         files = localization.files
-        lines: List[FileLine] = list(localization)
 
         if program.language in (Language.CPP, Language.C):
             kaskara_project = kaskara.Project(dockerblade=environment.dockerblade,

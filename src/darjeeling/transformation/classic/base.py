@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __all__ = ('StatementTransformation', 'StatementTransformationSchema')
 
-from typing import Generic, List, Iterator, FrozenSet, Mapping, TypeVar
+from typing import List, Iterator, FrozenSet, Mapping
 import abc
 import typing
 
@@ -10,11 +10,10 @@ import attr
 import kaskara
 
 from ..base import Transformation, TransformationSchema
-from ..config import TransformationSchemaConfig
 from ...snippet import (StatementSnippet, SnippetDatabase,
                         StatementSnippetDatabase)
-from ...core import (Replacement, FileLine, FileLocationRange, FileLocation,
-                     FileLineSet, Location, LocationRange)
+from ...core import (FileLine, FileLocationRange, FileLocation, Location,
+                     LocationRange)
 from ...exceptions import BadConfigurationException
 
 if typing.TYPE_CHECKING:

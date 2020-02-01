@@ -10,10 +10,7 @@ import attr
 
 from .. import exceptions as exc
 from .collector import CoverageCollectorConfig
-from ..container import ProgramContainer
-from ..core import (FileLineSet, FileLine, TestCoverageMap, Test, TestCoverage,
-                    TestOutcome)
-from ..test import TestSuite
+from ..core import FileLineSet, FileLine, TestCoverageMap
 
 if typing.TYPE_CHECKING:
     from ..environment import Environment

@@ -21,7 +21,7 @@ class ResourceUsageTracker:
     limits: ResourceLimits
         Specifies limits on the resources that may be consumed.
     wall_clock: Stopwatch
-        The amount of time spent searching for a patch. 
+        The amount of time spent searching for a patch.
     tests: int
         The number of test executions.
     candidates: int

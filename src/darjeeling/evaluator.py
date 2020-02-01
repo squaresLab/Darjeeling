@@ -7,7 +7,6 @@ __all__ = ('Evaluator',)
 
 from typing import (Tuple, List, Optional, Iterator, Set, Sequence, Union,
                     FrozenSet)
-from timeit import default_timer as timer
 from concurrent.futures import Future
 import concurrent.futures
 import math
@@ -23,8 +22,7 @@ from .candidate import Candidate
 from .container import ProgramContainer
 from .outcome import (BuildOutcome, CandidateOutcome, CandidateOutcomeStore,
                       TestOutcome, TestOutcomeSet)
-from .events import (DarjeelingEventHandler, DarjeelingEventProducer,
-                     DarjeelingEvent)
+from .events import DarjeelingEventProducer
 from .events import (BuildStarted, BuildFinished,
                      CandidateEvaluationStarted, CandidateEvaluationFinished,
                      CandidateEvaluationError,
@@ -33,7 +31,6 @@ from .events import (BuildStarted, BuildFinished,
 from .exceptions import BuildFailure
 from .core import Test
 from .resources import ResourceUsageTracker
-from .test import TestSuite
 from .util import Stopwatch
 
 if typing.TYPE_CHECKING:
@@ -176,7 +173,7 @@ class Evaluator(DarjeelingEventProducer):
 
         # select a subset of tests to use for this evaluation
         tests, remainder = self._select_tests()
-        tests, redundant  = self._filter_redundant_tests(candidate, tests)
+        tests, redundant = self._filter_redundant_tests(candidate, tests)
 
         # compute outcomes for redundant tests
         test_outcomes = TestOutcomeSet({
