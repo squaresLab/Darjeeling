@@ -17,7 +17,7 @@ from bugzoo.core import TestCoverage as BugZooTestCoverage
 from bugzoo.core import TestOutcome as BugZooTestOutcome
 from sourcelocation import (Location, LocationRange,
                             FileLocation, FileLocationRange,
-                            FileLine, FileLineSet)
+                            FileLine, FileLineSet, FileLineMap)
 
 from .exceptions import LanguageNotSupported
 
