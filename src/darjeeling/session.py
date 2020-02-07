@@ -50,6 +50,12 @@ class Session(DarjeelingEventProducer):
                     os.remove(fn)
         logger.debug('prepared patch directory')
 
+        # ensure that Kaskara is installed
+        logger.info('ensuring that kaskara installation is complete '
+                    '(this may take 20 minutes if Kaskara is not up-to-date)')
+        kaskara.post_install()
+        logger.info('ensured that kaskara installation is complete')
+
         # seed the RNG
         # FIXME use separate RNG for each session
         random.seed(cfg.seed)

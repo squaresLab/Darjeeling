@@ -15,7 +15,7 @@ import yaml
 from bugzoo.core import TestSuiteCoverage as BugZooTestSuiteCoverage
 from bugzoo.core import TestCoverage as BugZooTestCoverage
 from bugzoo.core import TestOutcome as BugZooTestOutcome
-from sourcelocation import (Location, LocationRange,
+from sourcelocation import (Location, LocationRange,  # noqa: F401
                             FileLocation, FileLocationRange,
                             FileLine, FileLineSet, FileLineMap)
 
