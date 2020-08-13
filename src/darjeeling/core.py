@@ -149,6 +149,10 @@ class BuildOutcome:
     successful: bool
     time_taken: float
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {'successful': self.successful,
+                'time-taken': self.time_taken}
+
 
 class TestOutcomeSet:
     """Records the outcome of different test executions for a single patch."""
@@ -175,6 +179,9 @@ class TestOutcomeSet:
         for test_name in other:
             outcomes[test_name] = other[test_name]
         return TestOutcomeSet(outcomes)
+
+    def to_dict(self) -> List[Dict[str, Any]]:
+        return [outcome.to_dict() for outcome in self.__outcomes.values()]
 
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)

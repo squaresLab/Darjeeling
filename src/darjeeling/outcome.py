@@ -43,6 +43,11 @@ class CandidateOutcome:
                                 self.tests.merge(other.tests),
                                 self.is_repair and other_is_repair)
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {'build': self.build.to_dict(),
+                'tests': self.tests.to_dict(),
+                'is-repair': self.is_repair}
+
 
 class CandidateOutcomeStore(Mapping[Candidate, CandidateOutcome]):
     """Maintains a record of candidate patch evaluation outcomes."""
