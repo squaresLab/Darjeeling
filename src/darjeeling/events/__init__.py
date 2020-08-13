@@ -4,3 +4,4 @@ from .handler import DarjeelingEventHandler
 from .producer import DarjeelingEventProducer
 from .echo import EventEchoer
 from .csv_event_logger import CsvEventLogger
+from .websocket_event_handler import WebSocketEventHandler

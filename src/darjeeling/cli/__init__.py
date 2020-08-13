@@ -17,7 +17,7 @@ from ..environment import Environment
 from ..problem import Problem
 from ..version import __version__ as VERSION
 from ..config import Config
-from ..events import CsvEventLogger
+from ..events import CsvEventLogger, WebSocketEventHandler
 from ..plugins import LOADED_PLUGINS
 from ..resources import ResourceUsageTracker
 from ..session import Session
@@ -165,6 +165,9 @@ class BaseController(cement.Controller):
             (['-v', '--verbose'],
              {'help': 'enables verbose DEBUG-level logging to the stdout',
               'action': 'store_true'}),
+            (['--web'],
+             {'help': 'enables a web interface',
+              'action': 'store_true'}),
             (['--seed'],
              {'help': 'random number generator seed',
               'type': int}),
@@ -269,6 +272,11 @@ class BaseController(cement.Controller):
                 csv_logger = CsvEventLogger(csv_logger_fn,
                                             session._problem)
                 session.attach_handler(csv_logger)
+
+            # add optional websocket handler
+            if self.app.pargs.web:
+                websocket_handler = WebSocketEventHandler()
+                session.attach_handler(websocket_handler)
 
             if interactive:
                 with UI(session):
