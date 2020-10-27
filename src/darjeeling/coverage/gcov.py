@@ -79,7 +79,7 @@ class GCovCollectorConfig(CoverageCollectorConfig):
             endings = ('.cpp', '.cc', '.c', '.h', '.hh', '.hpp', '.cxx')
             command = ' -o '.join([f"-name \*{e}" for e in endings])
             command = f'find {source_directory} -type f \( {command} \)'
-            output = container.shell.check_output(command)
+            output = container.shell.check_output(command, text=True)
             return frozenset(filename.strip() for filename in output.split('\n'))
 
     def build(self,

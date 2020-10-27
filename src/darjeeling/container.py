@@ -5,7 +5,7 @@ import typing
 from typing import Optional
 
 import attr
-import dockerblade as _dockerblade
+import dockerblade
 from bugzoo.core.patch import Patch as BugZooPatch
 
 from . import exceptions as exc
@@ -21,17 +21,18 @@ class ProgramContainer:
     id: str
     program: 'ProgramDescription'
     _environment: Environment
-    _dockerblade: _dockerblade.Container
+    _dockerblade: dockerblade.Container
 
     @staticmethod
     def for_program(environment: Environment,
                     program: 'ProgramDescription'
                     ) -> 'ProgramContainer':
-        dockerblade = environment.dockerblade.provision(program.image)
-        return ProgramContainer(id=dockerblade.id,
+        dockerblade_container = \
+            environment.dockerblade.provision(program.image)
+        return ProgramContainer(id=dockerblade_container.id,
                                 program=program,
                                 environment=environment,
-                                dockerblade=dockerblade)
+                                dockerblade=dockerblade_container)
 
     def __repr__(self) -> str:
         return f'ProgramContainer(id={self.id})'
@@ -57,15 +58,15 @@ class ProgramContainer:
         unified_diff = str(patch)
         try:
             self.filesystem.patch(context=context, diff=unified_diff)
-        except _dockerblade.CalledProcessError:
+        except dockerblade.CalledProcessError:
             raise exc.FailedToApplyPatch
 
     @property
-    def shell(self) -> _dockerblade.Shell:
+    def shell(self) -> dockerblade.Shell:
         return self._dockerblade.shell('/bin/bash')
 
     @property
-    def filesystem(self) -> _dockerblade.FileSystem:
+    def filesystem(self) -> dockerblade.FileSystem:
         return self._dockerblade.filesystem()
 
     @property
