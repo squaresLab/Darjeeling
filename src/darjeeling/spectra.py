@@ -84,3 +84,9 @@ class Spectra(Mapping[FileLine, SpectraRow]):
     def __len__(self) -> int:
         """Returns a count of the number of locations in this spectra."""
         return len(self.__locations)
+
+    def __str__(self) -> str:
+        output = ["LINE: (ep, ef, np, nf)"]
+        for line, row in self.items():
+            output.append(f'{line}: ({row.ep}, {row.ef}, {row.np}, {row.nf})')
+        return '\n'.join(output)
