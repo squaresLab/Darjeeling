@@ -2,6 +2,7 @@
 __all__ = ('ProgramContainer',)
 
 import typing
+from typing import Optional
 
 import attr
 import dockerblade as _dockerblade
@@ -70,4 +71,8 @@ class ProgramContainer:
     @property
     def ip_address(self) -> str:
         """The local IP address assigned to this container."""
-        return self._dockerblade.ip_address
+        ip_address: Optional[str] = self._dockerblade.ip_address
+        if not ip_address:
+            m = f"unable to obtain IP address for container: {self}"
+            raise exc.UnableToObtainIpAddress(m)
+        return ip_address

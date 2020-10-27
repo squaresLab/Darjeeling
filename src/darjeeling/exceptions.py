@@ -12,6 +12,10 @@ class DarjeelingError(Exception):
     """Base class used by all Darjeeling exceptions."""
 
 
+class UnableToObtainIpAddress(DarjeelingError):
+    """Failed to obtain the IP address of a container."""
+
+
 class LanguageNotSupported(DarjeelingError):
     """Darjeeling does not support the given language."""
     def __init__(self, name: str) -> None:
