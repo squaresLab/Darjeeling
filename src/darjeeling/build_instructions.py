@@ -61,10 +61,17 @@ class BuildStep:
                                        cwd=self.directory,
                                        time_limit=time_limit)
         except dockerblade.exceptions.CalledProcessError as err:
+            output: Optional[str]
+            if err.output is None:
+                output = None
+            elif isinstance(err.output, str):
+                output = err.output
+            else:
+                output = err.output.decode('utf-8')
             raise exc.BuildStepFailed(step=self,
                                       returncode=err.returncode,
                                       duration=err.duration,
-                                      output=err.output)
+                                      output=output)
 
 
 @attr.s(frozen=True, auto_attribs=True, slots=True)
