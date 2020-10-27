@@ -1,7 +1,7 @@
 all: docker
 
 docker:
-	docker build -t darjeeling/example:flask .
+	docker build -t darjeeling/example:zune docker
 
 check:
 	darjeeling repair repair.yml

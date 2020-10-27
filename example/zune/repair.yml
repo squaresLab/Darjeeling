@@ -1,7 +1,7 @@
 version: '1.0'
 
 program:
-  image: squareslab/tse2012:zune
+  image: darjeeling/example:zune
   language: c
   source-directory: /experiment/source
   build-instructions:
@@ -22,8 +22,6 @@ threads: 16
 localization:
   type: spectrum
   metric: tarantula
-  exclude-files:
-    - foo.c
 algorithm:
   type: exhaustive
 coverage:
