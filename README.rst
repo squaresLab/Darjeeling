@@ -123,53 +123,96 @@ Configuration File Format (v1.0)
 --------------------------------
 
 The Darjeeling configuration file format is written in YAML. Below is an
-example of a configuration file.
+example of a configuration file. The configuration file itself can be
+found in the `example/gcd <example/gcd>`_ directory.
 
 .. code:: yaml
 
    version: '1.0'
-   snapshot: 'manybugs:python:69223-69224'
-   language: c
    seed: 0
    threads: 16
+
+   # provides information about the program under repair, including
+   # the name of the Docker image that is used to provide it, the
+   # location of the source code for the program within that image,
+   # and instructions for building and testing it.
+   program:
+     image: darjeeling/example:gcd
+     language: c
+     source-directory: /experiment/source
+     build-instructions:
+       time-limit: 10
+       steps:
+         - gcc gcd.c -o gcd
+       steps-for-coverage:
+         - gcc gcd.c -o gcd --coverage
+     tests:
+       type: genprog
+       workdir: /experiment
+       number-of-failing-tests: 1
+       number-of-passing-tests: 10
+       time-limit: 5
+
+   # specifies the method/tool that should be used to obtain coverage for
+   # the program.
+   coverage:
+     method:
+       type: gcov
+       files-to-instrument:
+         - gcd.c
+
    localization:
      type: spectrum
      metric: tarantula
-     exclude-files:
-       - foo.c
+
    algorithm:
      type: exhaustive
+
    transformations:
      schemas:
        - type: delete-statement
        - type: replace-statement
        - type: prepend-statement
+
    optimizations:
      ignore-equivalent-prepends: yes
      ignore-dead-code: yes
      ignore-string-equivalent-snippets: yes
+
+   # places a limit on the resources (e.g., wall-clock time, test executions,
+   # candidate patches) that may be consumed during the search for a repair.
    resource-limits:
-     candidates: 5000
-     time-minutes: 3600
+     candidates: 100
+
 
 Below, we describe the top-level options exposed by the configuration file:
 
 * :code:`version`: the version of the Darjeeling configuration file format
   that was used to write the file.
-* :code:`snapshot`: the name of the `BugZoo <https://github.com/squaresLab/BugZoo>`_
-  snapshot that should be used to provide the bug as a Docker container.
 * :code:`seed`: a seed for the random number generator.
 * :code:`threads`: number of threads over which the repair workload should be
   distributed.
-* :code:`limits`: limits on the resources that may be consumed during the search.
 
+:code:`program`
+...............
 
-:code:`language`
-................
+The :code:`program` section is used to provide essential details about the
+program that should be repaired. This section contains the following
+properties:
 
-The :code:`language` property specifies the language used by the program under
-repair. Although Darjeeling supports multiple languages, it is not yet
-possible to fix bugs that involve more than one language.
+* :code:`image`: the name of the Docker image that provides the program
+  under repair.
+* :code:`source-directory`: the absolute path of the source code for the program
+  within the provided Docker image.
+* :code:`language`: the language used by the program under repair. Note that,
+  although Darjeeling supports multiple languages, it is not currently possible
+  to fix bugs that involve more than one language.
+* :code:`build-instructions`: executable instructions for (re-)building the
+  program inside the container. Discussed below.
+* :code:`tests`: details of the test suite used by the program. Discussed below.
+
+:code:`program.language`
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Below is a list of the languages that are fully supported by Darjeeling.
 Darjeeling can automatically perform static analysis and compute coverage
@@ -177,12 +220,178 @@ information for each of these languages.
 
 * *C:* :code:`c`
 * *C++:* :code:`cpp`
-* *Python:* :code:`python` **(added in Jan. 2020)**
+* *Python:* :code:`python`
 
 The :code:`text` option (i.e., `language: text`) may be used to ignore the language
 of the program under repair and to treat each file as a text file. When this
 option is used, users will need to manually provide coverage information, and
 static analysis will not be performed.
+
+:code:`program.build-instructions`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This section provides instructions to Darjeeling for re-building the program
+for purposes of (a) evaluating candidate patches, and (b) instrumenting the
+program for coverage collection. Below is an except of the
+:code:`build-instructions` section from the example above.
+
+.. code:: yaml
+
+   build-instructions:
+      time-limit: 10
+      steps:
+        - gcc gcd.c -o gcd
+      steps-for-coverage:
+        - gcc gcd.c -o gcd --coverage
+
+
+The :code:`time-limit` specifies the maximum number of seconds that Darjeeling
+should wait before cancelling a build attempt. The :code:`steps` property
+provides a sequence of shell commands that are used to build the program
+for the purpose of patch evaluation. Similarly, the :code:`steps-for-coverage`
+property gives a sequence of shell commands that are used to build the
+program with coverage instrumentation.
+
+
+:code:`program.tests`
+~~~~~~~~~~~~~~~~~~~~~
+
+This section is used to describe the test suite used by the program.
+Darjeeling uses the program's test suite to determine the correctness
+of patches and to find acceptable patches that pass all tests.
+Darjeeling offers a number of test suite options out of the box,
+specified by the :code:`type` property within the :code:`tests`
+section. We describe these below.
+
+:code:`program.tests[type:genprog]`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This type of test suite provides convenient support for GenProg-style test
+scripts used by benchmarks such as ManyBugs, IntroClass, and the GenProg TSE
+2012 benchmarks. GenProg-style test scripts accept a single argument specifying
+the name of the positive or negative test case that should be executed.
+Positive tests correspond to tests that pass on the original, unmodified
+program, whereas negative tests correpond to tests that fail on the original
+program. The positive tests are named using the form :code:`p{k}`, where
+:code:`{k}` is replaced by the number of the positive test (starting from 1).
+Similarly, negative tests are named :code:`n{k}`, where :code:`{k}` is replaced
+by the number of the negative test (starting from 1).
+
+Below is an example of a :code:`genprog` test suite:
+
+.. code:: yaml
+
+     tests:
+       type: genprog
+       workdir: /experiment
+       number-of-failing-tests: 1
+       number-of-passing-tests: 10
+       time-limit: 5
+
+
+The :code:`time-limit` property specifies the maximum number of seconds that may elapse
+before a test execution is aborted and declared a failure. The
+:code:`number-of-passing-tests` and :code:`number-of-failing-tests`
+properties state the number of passing and failing tests.
+The :code:`workdir` property gives the absolute path of the directory
+that contains the :code:`test.sh` for the test harness.
+
+:code:`program.tests[type:pytest]`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This test suite is used by Python programs that support the popular
+`pytest <https://docs.pytest.org/en/stable/>`_ framework. Note that
+pytest can run `unittest <https://docs.pytest.org/en/stable/unittest.html#unittest>`_
+and `nose <https://docs.pytest.org/en/stable/nose.html#noseintegration>`_
+tests natively.
+
+Below is an except from a configuration file that uses :code:`pytest`:
+
+.. code:: yaml
+
+  tests:
+    type: pytest
+    workdir: /opt/flask
+    tests:
+      - tests/test_config.py::test_get_namespace
+      - tests/test_config.py::test_config_from_pyfile
+      - tests/test_config.py::test_config_from_object
+
+The :code:`workdir` directory specifies the location at which :code:`pytest`
+should be executed. The :code:`tests` property gives a list of the names of
+the individual tests belonging to the test suite. Each name is given the
+format expected by pytest. That is, the name of the file containing the
+test (relative to :code:`workdir`), followed by :code:`::` and the name
+of the test method.
+**Note that automated discovery of test cases is not currently
+implemented, but is planned for a future release.**
+
+
+:code:`coverage`
+................
+
+The :code:`coverage` section provides Darjeeling with instructions for computing
+test coverage for the program under repair. Below, we describe the properties
+contained within this section:
+
+* :code:`method`: the tool that should be used to compute coverage for the program
+  under repair. This information is necessary since Darjeeling deals with multiple
+  languages, and each languages may have more than one associated tool for
+  obtaining coverage. Out of the box, Darjeeling provides support for :code:`gcov`,
+  used for C and C++ programs, and :code:`pycoverage`, used for Python programs.
+  Support for additional coverage methods may be added via Darjeeling's plugin
+  mechanism.
+  Further details on these two methods are provided below.
+* :code:`load-from-file`: optionally specifies the location of a file from which
+  coverage should be read. An example of such a coverage file can be found in
+  `example/flask/coverage.yml <example/flask/coverage.yml>`_.
+* :code:`restrict-to-files`: optionally gives a list of files to which the
+  coverage collection should be restricted to. Files should be given as paths
+  relative to the specified :code:`source-directory` for the program.
+  Coverage that is generated for files outside of this set will be automatically
+  discarded by Darjeeling. Note that this property uses the same format as
+  :code:`localization.restrict-to-files`.
+* :code:`restrict-to-lines`: optionally gives a list of lines that the coverage
+  coverage collection should be restricted to. Lines outside of this set will be
+  automatically ignored.
+  This method uses the same format as :code:`localization.restrict-to-lines`,
+  shown below.
+
+
+:code:`gcov`
+~~~~~~~~~~~~
+
+Below is an excerpt from an example configuration that uses :code:`gcov` for
+coverage collection.
+
+.. code:: yaml
+
+   coverage:
+     method:
+       type: gcov
+       files-to-instrument:
+         - gcd.c
+
+
+This method accepts a single, optional property, :code:`files-to-instrument`.
+**This property is very important.**
+By default, programs compiled with the appropriate :code:`--coverage` option
+set in their :code:`CFLAGS`, :code:`CXXFLAGS`, and :code:`LDFLAGS` will produce
+:code:`.gcda` files at runtime. The gcov tool computes coverage by reading both
+those :code:`.gcda` files and their associated :code:`.gcno` files, generated
+during compilation. More specifically, programs compiled with the :code:`--coverage`
+option will write coverage data to disk during the *normal termination* of the
+program (i.e., the program exits with code zero). If the program abruptly
+terminates (e.g., due to memory corruption), :code:`.gcda` files will NOT be
+produced.
+
+This behavior is problematic for Darjeeling. It prevents collection from being
+obtained for failing tests that crash the program. As a workaround, Darjeeling
+adds source-based instrumentation to the program (in the form of a signal
+handler) that causes the program to (attempt to) flush its coverage information
+in thee event of abrupt termination. The :code:`files-to-instrument` property
+gives the names of the source code files that provide entrypoints to the program
+binaries (i.e., :code:`main` functions).
 
 
 :code:`localization`
