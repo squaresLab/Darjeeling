@@ -84,7 +84,7 @@ class OptimizationsConfig:
     use_scope_checking: bool = attr.ib(default=False)
     use_syntax_scope_checking: bool = attr.ib(default=True)
     ignore_dead_code: bool = attr.ib(default=False)
-    ignore_equivalent_appends: bool = attr.ib(default=False)
+    ignore_equivalent_insertions: bool = attr.ib(default=False)
     ignore_untyped_returns: bool = attr.ib(default=False)
     ignore_string_equivalent_snippets: bool = attr.ib(default=False)
     ignore_decls: bool = attr.ib(default=True)
@@ -96,7 +96,7 @@ class OptimizationsConfig:
             use_scope_checking=yml.get('use-scope-checking', True),
             use_syntax_scope_checking=yml.get('use-syntax-scope-checking', True),
             ignore_dead_code=yml.get('ignore-dead-code', True),
-            ignore_equivalent_appends=yml.get('ignore-equivalent-prepends', True),
+            ignore_equivalent_insertions=yml.get('ignore-equivalent-insertions', True),
             ignore_untyped_returns=yml.get('ignore-untyped-returns', True),
             ignore_string_equivalent_snippets=yml.get('ignore-string-equivalent-snippets', True),
             ignore_decls=yml.get('ignore-decls', True),

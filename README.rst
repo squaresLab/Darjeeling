@@ -172,10 +172,10 @@ found in the `example/gcd <example/gcd>`_ directory.
      schemas:
        - type: delete-statement
        - type: replace-statement
-       - type: prepend-statement
+       - type: append-statement
 
    optimizations:
-     ignore-equivalent-prepends: yes
+     ignore-equivalent-insertions: yes
      ignore-dead-code: yes
      ignore-string-equivalent-snippets: yes
 
@@ -535,7 +535,7 @@ list of optimizations that can be toggled by the configuration file.
   surrounding context.
 * :code:`ignore-dead-code`: prevents the insertion of code that exclusively
   writes to dead variables.
-* :code:`ignore-equivalent-prepends`: uses an approach inspired by
+* :code:`ignore-equivalent-insertions`: uses an approach inspired by
   instruction scheduling to prevent equivalent insertions of code.
 * :code:`ignore-untyped-returns`: prevents insertion of a :code:`return` statement into
   a context where the type of the retval is incompatible with the return type

@@ -49,7 +49,7 @@ optimizations:
   use-scope-checking: false
   use-syntax-scope-checking: false
   ignore-dead-code: false
-  ignore-equivalent-prepends: false
+  ignore-equivalent-insertions: false
   ignore-untyped-returns: false
   ignore-string-equivalent-snippets: false
   ignore-decls: false
