@@ -64,6 +64,7 @@ class Session(DarjeelingEventProducer):
         logger.info(f"using language: {cfg.program.language.value}")
         logger.info(f"using optimizations: {cfg.optimizations}")
         logger.info(f"using coverage config: {cfg.coverage}")
+        logger.info(f"running redundant tests? {cfg.run_redundant_tests}")
         logger.info(f"using random number generator seed: {cfg.seed}")
 
         if not cfg.terminate_early:
@@ -133,7 +134,8 @@ class Session(DarjeelingEventProducer):
                                     resources=resources,
                                     transformations=transformations,
                                     localization=localization,
-                                    threads=cfg.threads)
+                                    threads=cfg.threads,
+                                    run_redundant_tests=cfg.run_redundant_tests)
 
         # build session
         return Session(dir_patches=dir_patches,

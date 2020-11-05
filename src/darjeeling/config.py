@@ -118,6 +118,10 @@ class Config:
         discovering an acceptable patch.
     threads: int
         The number of threads over which the search should be distributed.
+    run_redundant_tests: bool
+        Specifies if redundant tests should be run. Tests are deemed 
+        redundant if a candidate patch does not change lines that the
+        test uses. Lines used are determined by test coverage.
     resource_limits: ResourceLimits
         Limits on the resources that may be consumed during the search.
     limit_time_minutes: int, optional
@@ -141,6 +145,7 @@ class Config:
     optimizations: OptimizationsConfig = attr.ib(factory=OptimizationsConfig)
     terminate_early: bool = attr.ib(default=True)
     threads: int = attr.ib(default=1)
+    run_redundant_tests: bool = attr.ib(default=False)
 
     @seed.validator
     def validate_seed(self, attribute, value):
@@ -167,6 +172,7 @@ class Config:
                  terminate_early: bool = True,
                  seed: Optional[int] = None,
                  threads: Optional[int] = None,
+                 run_redundant_tests: Optional[bool] = False,
                  limit_candidates: Optional[int] = None,
                  limit_time_minutes: Optional[int] = None,
                  dir_patches: Optional[str] = None
@@ -200,6 +206,11 @@ class Config:
             threads = yml['threads']
         elif threads is None:
             threads = 1
+
+        if 'run_redundant_tests' in yml:
+            if not isinstance(yml['run_redundant_tests'], bool):
+                err("'threads' property should be an bool")
+            run_redundant_tests = yml['run_redundant_tests']
 
         # no seed override; seed provided in config
         if seed is None and 'seed' in yml:
@@ -251,6 +262,7 @@ class Config:
 
         return Config(seed=seed,
                       threads=threads,
+                      run_redundant_tests=run_redundant_tests,
                       terminate_early=terminate_early,
                       resource_limits=resource_limits,
                       transformations=transformations,
