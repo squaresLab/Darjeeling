@@ -119,7 +119,7 @@ class Config:
     threads: int
         The number of threads over which the search should be distributed.
     run_redundant_tests: bool
-        Specifies if redundant tests should be run. Tests are deemed 
+        Specifies if redundant tests should be run. Tests are deemed
         redundant if a candidate patch does not change lines that the
         test uses. Lines used are determined by test coverage.
     resource_limits: ResourceLimits

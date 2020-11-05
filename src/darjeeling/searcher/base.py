@@ -42,7 +42,7 @@ class Searcher(DarjeelingEventProducer, abc.ABC):
             the number of threads that should be made available to
             the search process.
         run_redundant_tests: bool
-            Specifies if redundant tests should be run. Tests are deemed 
+            Specifies if redundant tests should be run. Tests are deemed
             redundant if a candidate patch does not change lines that the
             test uses. Lines used are determined by test coverage.
         """

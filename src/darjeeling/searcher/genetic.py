@@ -71,7 +71,7 @@ class GeneticSearcherConfig(SearcherConfig):
                                rate_mutation=self.rate_mutation,
                                tournament_size=self.tournament_size,
                                test_sample_size=self.sample_size,
-                                  run_redundant_tests=run_redundant_tests)
+                               run_redundant_tests=run_redundant_tests)
 
 
 class GeneticSearcher(Searcher):
