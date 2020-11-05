@@ -172,7 +172,7 @@ class Config:
                  terminate_early: bool = True,
                  seed: Optional[int] = None,
                  threads: Optional[int] = None,
-                 run_redundant_tests: Optional[bool] = False,
+                 run_redundant_tests: bool = False,
                  limit_candidates: Optional[int] = None,
                  limit_time_minutes: Optional[int] = None,
                  dir_patches: Optional[str] = None
