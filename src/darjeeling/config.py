@@ -207,10 +207,10 @@ class Config:
         elif threads is None:
             threads = 1
 
-        if 'run_redundant_tests' in yml:
-            if not isinstance(yml['run_redundant_tests'], bool):
-                err("'threads' property should be an bool")
-            run_redundant_tests = yml['run_redundant_tests']
+        if 'run-redundant-tests' in yml:
+            if not isinstance(yml['run-redundant-tests'], bool):
+                err("'run-redundant-tests' property should be an bool")
+            run_redundant_tests = yml['run-redundant-tests']
 
         # no seed override; seed provided in config
         if seed is None and 'seed' in yml:
