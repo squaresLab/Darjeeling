@@ -47,7 +47,8 @@ class Evaluator(DarjeelingEventProducer):
                  num_workers: int = 1,
                  terminate_early: bool = True,
                  sample_size: Optional[Union[float, int]] = None,
-                 outcomes: Optional[CandidateOutcomeStore] = None
+                 outcomes: Optional[CandidateOutcomeStore] = None,
+                 run_redundant_tests: bool = False
                  ) -> None:
         super().__init__()
         self.__problem = problem
@@ -59,6 +60,7 @@ class Evaluator(DarjeelingEventProducer):
         self.__num_workers = num_workers
         self.__terminate_early = terminate_early
         self.__outcomes = outcomes or CandidateOutcomeStore()
+        self.__run_redundant_tests = run_redundant_tests
 
         self.__tests_failing: FrozenSet[Test] = \
             frozenset(self.__problem.failing_tests)
@@ -173,7 +175,10 @@ class Evaluator(DarjeelingEventProducer):
 
         # select a subset of tests to use for this evaluation
         tests, remainder = self._select_tests()
-        tests, redundant = self._filter_redundant_tests(candidate, tests)
+        if not self.__run_redundant_tests:
+            tests, redundant = self._filter_redundant_tests(candidate, tests)
+        else:
+            redundant = set()
 
         # compute outcomes for redundant tests
         test_outcomes = TestOutcomeSet({

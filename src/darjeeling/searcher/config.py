@@ -48,5 +48,6 @@ class SearcherConfig(abc.ABC):
               localization: 'Localization',
               *,
               threads: int = 1,
+              run_redundant_tests: bool = False
               ) -> 'Searcher':
         ...

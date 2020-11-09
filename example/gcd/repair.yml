@@ -1,7 +1,7 @@
 version: '1.0'
 
 program:
-  image: squareslab/tse2012:gcd
+  image: darjeeling/example:gcd
   language: c
   source-directory: /experiment/source
   build-instructions:
