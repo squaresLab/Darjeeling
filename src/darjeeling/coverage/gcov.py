@@ -116,9 +116,19 @@ class GCovCollector(CoverageCollector):
         return set(int(l.attrib['number']) for l in lines
                    if int(l.attrib['hits']) > 0)
 
-    def _corrected_lines(self, filename: str, lines: Set[int]) -> Set[int]:
-        if filename not in self._files_to_instrument:
+    def _corrected_lines(self,
+                         relative_filename: str,
+                         lines: Set[int]
+                         ) -> Set[int]:
+        if os.path.isabs(relative_filename):
+            absolute_filename = relative_filename
+        else:
+            absolute_filename = os.path.join(self._source_directory, relative_filename)
+
+        if absolute_filename not in self._files_to_instrument:
+            logger.debug(f"file was not instrumented: {absolute_filename}")
             return lines
+
         lines = lines - _LINES_TO_REMOVE
         return set(i - _NUM_INSTRUMENTATION_LINES for i in lines)
 
