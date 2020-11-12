@@ -21,8 +21,11 @@ if typing.TYPE_CHECKING:
     from ..problem import Problem
 
 
+@attr.s(frozen=True, auto_attribs=True)
 class LineTransformation(Transformation):
     """Base class for all line-based transformations."""
+    _schema: 'LineTransformationSchema'
+    line: FileLine
 
 
 @attr.s(frozen=True, auto_attribs=True)
@@ -63,9 +66,6 @@ class LineTransformationSchema(TransformationSchema[LineTransformation]):
 
 @attr.s(frozen=True, auto_attribs=True)
 class DeleteLine(LineTransformation):
-    _schema: LineTransformationSchema
-    line: FileLine
-
     def to_replacement(self) -> Replacement:
         sources = self._schema._problem.sources
         loc = sources.line_to_location_range(self.line)
@@ -99,8 +99,6 @@ class DeleteLine(LineTransformation):
 
 @attr.s(frozen=True, auto_attribs=True)
 class ReplaceLine(LineTransformation):
-    _schema: LineTransformationSchema
-    line: FileLine
     replacement: FileLine
 
     @property
@@ -140,8 +138,6 @@ class ReplaceLine(LineTransformation):
 
 @attr.s(frozen=True, auto_attribs=True)
 class InsertLine(LineTransformation):
-    _schema: LineTransformationSchema
-    line: FileLine
     insertion: FileLine
 
     @property
