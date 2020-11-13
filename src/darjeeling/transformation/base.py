@@ -14,16 +14,18 @@ T = TypeVar('T', bound='Transformation')
 
 
 class Transformation(abc.ABC):
-    """Represents a source code transformation."""
+    """Represents a source code transformation.
+
+    Attributes
+    ----------
+    line: FileLine
+        The line at which this transformation is applied.
+    """
+    line: FileLine
+
     @abc.abstractmethod
     def to_replacement(self) -> Replacement:
         """Converts a transformation into a source code replacement."""
-        ...
-
-    @property
-    @abc.abstractmethod
-    def line(self) -> FileLine:
-        """The line at which this transformation is applied."""
         ...
 
     @property
