@@ -40,10 +40,7 @@ class Candidate:
         Returns a list of source lines that are changed by this candidate
         patch.
         """
-        replacements = \
-            map(lambda t: t.to_replacement(), self.transformations)
-        locations = [rep.location for rep in replacements]
-        return [FileLine(loc.filename, loc.start.line) for loc in locations]
+        return [t.line for t in self.transformations]
 
     @property
     def id(self) -> str:
