@@ -1,9 +1,14 @@
 all: docker
 
-docker:
-	docker build -t darjeeling/example:flask .
-
 check: docker
 	darjeeling repair repair.yml
 
-.PHONY: docker check
+clean:
+	rm -f darjeeling.log.*
+	rm -f bugzood.log
+	rm -rf patches
+
+docker:
+	docker build -t darjeeling/example:flask .
+
+.PHONY: check clean docker
