@@ -145,12 +145,11 @@ class Problem:
         repair problem must have at least one failing test case and one
         implicated line.
         """
-        lines = list(self.lines)
         files = set(self.implicated_files)
-        logger.info("implicated lines [{}]:\n{}", len(lines), lines)
+        logger.info("implicated lines [{}]:\n{}", len(self.lines), self.lines)
         logger.info("implicated files [{}]:\n* {}", len(files),
                     '\n* '.join(files))
-        if len(lines) == 0:
+        if len(self.lines) == 0:
             raise NoImplicatedLines
 
     @property

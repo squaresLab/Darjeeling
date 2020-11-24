@@ -97,7 +97,7 @@ class GCovCollectorConfig(CoverageCollectorConfig):
                                   source_directory=source_directory,
                                   source_filenames=source_filenames,
                                   files_to_instrument=files_to_instrument)
-        logger.debug(f"built coverage collector: {collector}")
+        logger.trace(f"built coverage collector: {collector}")
         return collector
 
 
@@ -126,7 +126,7 @@ class GCovCollector(CoverageCollector):
             absolute_filename = os.path.join(self._source_directory, relative_filename)
 
         if absolute_filename not in self._files_to_instrument:
-            logger.debug(f"file was not instrumented: {absolute_filename}")
+            logger.trace(f"file was not instrumented: {absolute_filename}")
             return lines
 
         lines = lines - _LINES_TO_REMOVE
@@ -159,7 +159,7 @@ class GCovCollector(CoverageCollector):
             try:
                 filename_original = filename
                 filename = self._resolve_filepath(filename)
-                logger.debug(f"resolving path '{filename_original}' "
+                logger.trace(f"resolving path '{filename_original}' "
                              f"-> '{filename}'")
             except ValueError:
                 logger.warning(f'failed to resolve file: {filename}')
@@ -173,7 +173,7 @@ class GCovCollector(CoverageCollector):
         return FileLineSet(filename_to_lines)
 
     def _parse_xml_file_contents(self, contents: str) -> FileLineSet:
-        logger.debug(f"Parsing gcovr report:\n{contents}")
+        logger.trace(f"Parsing gcovr report:\n{contents}")
         root = ET.fromstring(contents)
         return self._parse_xml_report(root)
 
@@ -196,11 +196,11 @@ class GCovCollector(CoverageCollector):
         """
         files = container.filesystem
         for filename in self._files_to_instrument:
-            logger.debug(f'adding gcov instrumentation to {filename}')
+            logger.trace(f'adding gcov instrumentation to {filename}')
             contents_original = files.read(filename)
-            logger.debug(f'original file [{filename}]:\n{contents_original}')
+            logger.trace(f'original file [{filename}]:\n{contents_original}')
             contents_instrumented = _INSTRUMENTATION + contents_original
-            logger.debug(f'instrumented file [{filename}]:\n{contents_instrumented}')
+            logger.trace(f'instrumented file [{filename}]:\n{contents_instrumented}')
             files.write(filename, contents_instrumented)
 
         build_instructions = self.program.build_instructions_for_coverage
