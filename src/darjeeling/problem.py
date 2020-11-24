@@ -10,7 +10,7 @@ from bugzoo.core.bug import Bug
 from kaskara.analysis import Analysis
 from loguru import logger
 
-from .core import Language, Test, TestCoverageMap, FileLine
+from .core import Language, Test, TestCoverageMap, FileLine, FileLineSet
 from .environment import Environment
 from .program import ProgramDescription
 from .source import ProgramSource, ProgramSourceLoader
@@ -146,10 +146,11 @@ class Problem:
         implicated line.
         """
         files = set(self.implicated_files)
-        logger.info("implicated lines [{}]:\n{}", len(self.lines), self.lines)
+        lines = FileLineSet.from_iter(self.lines)
+        logger.info("implicated lines [{}]:\n{}", len(lines), lines)
         logger.info("implicated files [{}]:\n* {}", len(files),
                     '\n* '.join(files))
-        if len(self.lines) == 0:
+        if len(lines) == 0:
             raise NoImplicatedLines
 
     @property
