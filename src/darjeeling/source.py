@@ -197,6 +197,10 @@ class ProgramSourceLoader:
                                              relative_filename)
             try:
                 content = filesystem.read(absolute_filename)
+            except UnicodeDecodeError:
+                logger.exception("failed to decode contents of file: "
+                                 f"{absolute_filename}")
+                raise
             except dockerblade.exceptions.ContainerFileNotFound as err:
                 filename = err.path
                 logger.exception("failed to read source file "
