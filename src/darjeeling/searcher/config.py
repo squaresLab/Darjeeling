@@ -5,13 +5,12 @@ from typing import Dict, Optional, Any, Type, Iterator
 import abc
 import typing
 
-from ..resources import ResourceUsageTracker
 from ..util import dynamically_registered
 
 if typing.TYPE_CHECKING:
     from .base import Searcher
-    from ..localization import Localization
     from ..problem import Problem
+    from ..resources import ResourceUsageTracker
     from ..transformation import ProgramTransformations
 
 
@@ -43,9 +42,8 @@ class SearcherConfig(abc.ABC):
     @abc.abstractmethod
     def build(self,
               problem: 'Problem',
-              resources: ResourceUsageTracker,
+              resources: 'ResourceUsageTracker',
               transformations: 'ProgramTransformations',
-              localization: 'Localization',
               *,
               threads: int = 1,
               run_redundant_tests: bool = False

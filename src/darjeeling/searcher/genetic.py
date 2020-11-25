@@ -16,7 +16,6 @@ from ..transformation import Transformation, ProgramTransformations
 from ..outcome import CandidateOutcome
 
 if typing.TYPE_CHECKING:
-    from ..localization import Localization
     from ..problem import Problem
 
 Population = List[Candidate]
@@ -56,7 +55,6 @@ class GeneticSearcherConfig(SearcherConfig):
               problem: 'Problem',
               resources: ResourceUsageTracker,
               transformations: ProgramTransformations,
-              localization: 'Localization',
               *,
               threads: int = 1,
               run_redundant_tests: bool = False

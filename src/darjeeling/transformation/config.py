@@ -18,7 +18,6 @@ from .transformations import ProgramTransformations
 from .. import exceptions as exc
 from ..snippet import SnippetDatabase
 from ..util import dynamically_registered, tuple_from_iterable
-from ..localization import Localization
 
 if typing.TYPE_CHECKING:
     from .base import TransformationSchema
@@ -99,8 +98,7 @@ class ProgramTransformationsConfig:
     def build(self,
               problem: 'Problem',
               snippets: SnippetDatabase,
-              localization: Localization
               ) -> 'ProgramTransformations':
         """Constructs the transformation space described by this config."""
         schemas = [schema.build(problem, snippets) for schema in self.schemas]
-        return ProgramTransformations.build(schemas, problem, snippets, localization)  # noqa
+        return ProgramTransformations.build(schemas, problem, snippets)

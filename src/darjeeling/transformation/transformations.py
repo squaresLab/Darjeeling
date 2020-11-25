@@ -9,11 +9,10 @@ import attr
 
 from .base import Transformation, TransformationSchema
 from .index import TransformationIndex
-from ..snippet import SnippetDatabase
-from ..localization import Localization
 
 if typing.TYPE_CHECKING:
     from ..problem import Problem
+    from ..snippet import SnippetDatabase
 
 
 @attr.s
@@ -33,11 +32,10 @@ class ProgramTransformations:
     def build(cls,
               schemas: Collection[TransformationSchema],
               problem: 'Problem',
-              snippets: SnippetDatabase,
-              localization: Localization
+              snippets: 'SnippetDatabase',
               ) -> 'ProgramTransformations':
         logger.debug("generating program transformations")
-        lines = list(localization)
+        lines = list(problem.localization)
         index = TransformationIndex.build(schemas, problem, snippets, lines)
         logger.debug("generated program transformations")
         return ProgramTransformations(schemas, index)

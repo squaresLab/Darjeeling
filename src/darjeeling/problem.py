@@ -10,16 +10,17 @@ from bugzoo.core.bug import Bug
 from kaskara.analysis import Analysis
 from loguru import logger
 
-from .core import Language, Test, TestCoverageMap, FileLine, FileLineSet
-from .environment import Environment
-from .program import ProgramDescription
+from .core import Test, FileLine, FileLineSet
 from .source import ProgramSource, ProgramSourceLoader
 from .exceptions import NoFailingTests, NoImplicatedLines
-from .config import OptimizationsConfig
-from .test import TestSuite
 
 if typing.TYPE_CHECKING:
-    from .config import Config
+    from .config import Config, OptimizationsConfig
+    from .core import Language, TestCoverageMap
+    from .environment import Environment
+    from .localization import Localization
+    from .program import ProgramDescription
+    from .test import TestSuite
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -45,26 +46,30 @@ class Problem:
         The passing tests for this problem.
     test_ordering: Iterable[Test]
         The order in which tests should be executed.
+    localization: Localization
+        Fault localization based on the associated test suite.
     """
-    environment: Environment
+    environment: 'Environment'
     config: 'Config'
-    language: Language
-    coverage: TestCoverageMap
+    language: 'Language'
+    coverage: 'TestCoverageMap'
     sources: ProgramSource
-    program: ProgramDescription
+    program: 'ProgramDescription'
     failing_tests: Sequence[Test]
     passing_tests: Sequence[Test]
     test_ordering: Iterable[Test]
     analysis: Optional[Analysis]
+    localization: 'Localization'
 
     @staticmethod
-    def build(environment: Environment,
+    def build(environment: 'Environment',
               config: 'Config',
-              language: Language,
-              coverage: TestCoverageMap,
-              program: ProgramDescription,
+              language: 'Language',
+              coverage: 'TestCoverageMap',
+              program: 'ProgramDescription',
+              localization: 'Localization',
               *,
-              analysis: Optional[Analysis] = None
+              analysis: Optional[Analysis] = None,
               ) -> 'Problem':
         """Constructs a problem description.
 
@@ -135,6 +140,7 @@ class Problem:
                           config=config,
                           passing_tests=passing_tests,
                           failing_tests=failing_tests,
+                          localization=localization,
                           test_ordering=test_ordering)
         problem.validate()
         return problem
@@ -154,7 +160,7 @@ class Problem:
             raise NoImplicatedLines
 
     @property
-    def settings(self) -> OptimizationsConfig:
+    def settings(self) -> 'OptimizationsConfig':
         return self.config.optimizations
 
     @property
@@ -168,7 +174,7 @@ class Problem:
         yield from self.test_ordering
 
     @property
-    def test_suite(self) -> TestSuite:
+    def test_suite(self) -> 'TestSuite':
         return self.program.tests
 
     @property
