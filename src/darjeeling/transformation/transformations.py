@@ -12,7 +12,6 @@ from .index import TransformationIndex
 
 if typing.TYPE_CHECKING:
     from ..problem import Problem
-    from ..snippet import SnippetDatabase
 
 
 @attr.s
@@ -31,12 +30,11 @@ class ProgramTransformations:
     @classmethod
     def build(cls,
               schemas: Collection[TransformationSchema],
-              problem: 'Problem',
-              snippets: 'SnippetDatabase',
+              problem: 'Problem'
               ) -> 'ProgramTransformations':
         logger.debug("generating program transformations")
         lines = list(problem.localization)
-        index = TransformationIndex.build(schemas, problem, snippets, lines)
+        index = TransformationIndex.build(schemas, problem, lines)
         logger.debug("generated program transformations")
         return ProgramTransformations(schemas, index)
 

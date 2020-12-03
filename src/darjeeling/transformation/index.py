@@ -10,7 +10,6 @@ import attr
 
 from .base import Transformation, TransformationSchema
 from ..core import FileLine
-from ..snippet import SnippetDatabase
 
 if typing.TYPE_CHECKING:
     from ..problem import Problem
@@ -27,7 +26,6 @@ class TransformationIndex(Iterable[Transformation]):
     def build(cls,
               schemas: Collection[TransformationSchema],
               problem: 'Problem',
-              snippets: SnippetDatabase,
               lines: List[FileLine]
               ) -> 'TransformationIndex':
         logger.debug("generating transformation index")
