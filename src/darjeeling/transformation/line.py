@@ -30,17 +30,6 @@ class LineTransformationSchema(TransformationSchema[LineTransformation]):
     _problem: 'Problem' = attr.ib(hash=False)
     _snippets: LineSnippetDatabase = attr.ib(hash=False)
 
-    @classmethod
-    def build(cls,
-              problem: 'Problem',
-              snippets: SnippetDatabase,
-              threads: int
-              ) -> 'TransformationSchema':
-        if not isinstance(snippets, LineSnippetDatabase):
-            m = 'line transformations require a line snippet pool'
-            raise BadConfigurationException(m)
-        return cls(problem=problem, snippets=snippets)
-
     def find_all_in_file(self, filename: str) -> Iterator[Transformation]:
         m = "find_all_in_file is not required or supported by this schema"
         raise NotImplementedError(m)

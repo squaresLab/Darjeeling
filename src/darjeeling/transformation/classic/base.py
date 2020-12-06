@@ -29,17 +29,6 @@ class StatementTransformationSchema(TransformationSchema):
     _problem: 'Problem' = attr.ib(hash=False)
     _snippets: StatementSnippetDatabase = attr.ib(hash=False)
 
-    @classmethod
-    def build(cls,
-              problem: 'Problem',
-              snippets: SnippetDatabase,
-              threads: int
-              ) -> 'TransformationSchema':
-        if not isinstance(snippets, StatementSnippetDatabase):
-            m = 'statement transformations require a statement snippet pool'
-            raise BadConfigurationException(m)
-        return cls(problem=problem, snippets=snippets)
-
     @staticmethod
     def _source_with_indentation(source: str,
                                  indentation: str,
