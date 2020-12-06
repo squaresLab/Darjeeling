@@ -8,16 +8,17 @@ from typing import Optional, Type
 import attr
 from bugzoo import Client as BugZooClient
 from bugzoo.server import ephemeral as bugzoo_server
+from comby import Comby
 from dockerblade import DockerDaemon
 from loguru import logger
 
 
 @attr.s(auto_attribs=True, slots=True)
 class Environment:
-    _contexts: ExitStack = attr.ib(factory=ExitStack)
     _bugzoo: Optional[BugZooClient] = attr.ib(default=None)
-    dockerblade: DockerDaemon = \
-        attr.ib(factory=DockerDaemon)
+    _contexts: ExitStack = attr.ib(factory=ExitStack)
+    comby: Comby = attr.ib(factory=Comby)
+    dockerblade: DockerDaemon = attr.ib(factory=DockerDaemon)
 
     @property
     def bugzoo(self) -> BugZooClient:
