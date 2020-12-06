@@ -53,9 +53,9 @@ class ReplaceStatement(StatementTransformation):
 
 
 class ReplaceStatementSchema(StatementTransformationSchema):
-    def all_at_statement(self,
-                         statement: kaskara.Statement
-                         ) -> Iterator[Transformation]:
+    def find_all_at_statement(self,
+                              statement: kaskara.Statement
+                              ) -> Iterator[Transformation]:
         problem = self._problem
 
         # do not replace declaration statements

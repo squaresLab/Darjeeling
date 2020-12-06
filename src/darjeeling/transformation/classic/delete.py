@@ -42,9 +42,9 @@ class DeleteStatement(StatementTransformation):
 
 
 class DeleteStatementSchema(StatementTransformationSchema):
-    def all_at_statement(self,
-                         statement: kaskara.Statement
-                         ) -> Iterator[Transformation]:
+    def find_all_at_statement(self,
+                              statement: kaskara.Statement
+                              ) -> Iterator[Transformation]:
         problem = self._problem
         if problem.settings.ignore_decls and statement.kind == 'DeclStmt':
             return

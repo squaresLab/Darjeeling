@@ -67,9 +67,9 @@ class PrependStatementSchema(StatementTransformationSchema):
             return False
         return True
 
-    def all_at_statement(self,
-                         statement: kaskara.Statement
-                         ) -> Iterator[Transformation]:
+    def find_all_at_statement(self,
+                              statement: kaskara.Statement
+                              ) -> Iterator[Transformation]:
         location = FileLocation(statement.location.filename,
                                 statement.location.start)
         if not self.should_insert_at_location(location):
