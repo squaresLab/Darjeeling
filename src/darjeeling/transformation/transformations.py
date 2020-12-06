@@ -43,13 +43,12 @@ class ProgramTransformations:
             for schema in schemas:
                 yield from schema.find_all(problem)
 
-        logger.info("building transformation database")
-        timer = Stopwatch()
-        timer.start()
-        transformations = find_transformations()
-        database = SimpleTransformationDatabase.build(transformations)
-        logger.info("built transformation database "
-                    f"(took {timer.duration:.3f} seconds)")
+        with Stopwatch() as timer:
+            logger.info("building transformation database")
+            transformations = find_transformations()
+            database = SimpleTransformationDatabase.build(transformations)
+            logger.info("built transformation database "
+                        f"(took {timer.duration:.3f} seconds)")
 
         return ProgramTransformations(schemas, database)
 
