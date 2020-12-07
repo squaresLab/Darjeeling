@@ -254,10 +254,7 @@ class BaseController(cement.Controller):
         logger.info(f"using configuration: {cfg}")
 
         # connect to BugZoo
-        logger.info("connecting to BugZoo server")
-        with bugzoo.server.ephemeral(timeout_connection=120) as client_bugzoo:
-            logger.info("connected to BugZoo server")
-            environment = Environment(bugzoo=client_bugzoo)
+        with Environment() as environment:
             try:
                 session = Session.from_config(environment, cfg)
             except BadConfigurationException as err:
