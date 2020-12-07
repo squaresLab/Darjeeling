@@ -10,11 +10,14 @@ import attr
 import kaskara
 
 from ..base import Transformation, TransformationSchema
-from ...snippet import (StatementSnippet, SnippetDatabase,
-                        StatementSnippetDatabase)
-from ...core import (FileLine, FileLocationRange, FileLocation, Location,
-                     LocationRange)
-from ...exceptions import BadConfigurationException
+from ...snippet import StatementSnippet, StatementSnippetDatabase
+from ...core import (
+    FileLine,
+    FileLocationRange,
+    FileLocation,
+    Location,
+    LocationRange,
+)
 
 if typing.TYPE_CHECKING:
     from ..problem import Problem

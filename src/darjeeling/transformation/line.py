@@ -15,7 +15,6 @@ from .base import Transformation, TransformationSchema
 from .config import TransformationSchemaConfig
 from ..snippet import SnippetDatabase, LineSnippetDatabase
 from ..core import Replacement, FileLine, FileLocationRange, LocationRange
-from ..exceptions import BadConfigurationException
 
 if typing.TYPE_CHECKING:
     from ..problem import Problem
