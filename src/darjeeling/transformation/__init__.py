@@ -5,6 +5,7 @@ code files.
 """
 from . import classic
 from . import line
+from . import template
 from .base import Transformation, TransformationSchema
 from .transformations import ProgramTransformations
 from .config import TransformationSchemaConfig, ProgramTransformationsConfig
