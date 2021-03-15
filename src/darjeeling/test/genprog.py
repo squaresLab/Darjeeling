@@ -91,4 +91,12 @@ class GenProgTestSuite(TestSuite[GenProgTest]):
                                       cwd=self._workdir,
                                       time_limit=self._time_limit_seconds)  # noqa
         successful = outcome.returncode == 0
-        return TestOutcome(successful=successful, time_taken=outcome.duration)
+
+        output_path = os.path.join(self._workdir, "test_output")
+        if container.filesystem.isfile(output_path):
+            output = container.filesystem.read(output_path)
+        else:
+            output = None
+
+        return TestOutcome(successful=successful, time_taken=outcome.duration,
+                output=output)
