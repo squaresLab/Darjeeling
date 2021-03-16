@@ -3,6 +3,7 @@ __all__ = ('Session',)
 
 from typing import Iterator, List
 import glob
+import json
 import os
 import random
 
@@ -187,7 +188,7 @@ class Session(DarjeelingEventProducer):
     @property
     def patches(self) -> Iterator[Patch]:
         """Returns an iterator over the patches found during this session."""
-        for candidate in self._patches:
+        for candidate, outcome in self._patches:
             yield candidate.to_diff()
 
     def close(self) -> None:
@@ -210,7 +211,7 @@ class Session(DarjeelingEventProducer):
     def _save_patches_to_disk(self) -> None:
         logger.debug("saving patches to disk...")
         os.makedirs(self.dir_patches, exist_ok=True)
-        for i, patch in enumerate(self._patches):
+        for i, (patch, outcome) in enumerate(self._patches):
             diff = str(patch.to_diff())
             fn_patch = os.path.join(self.dir_patches, f'{i}.diff')
             logger.debug(f"writing patch to {fn_patch}")
@@ -221,6 +222,15 @@ class Session(DarjeelingEventProducer):
                 logger.exception(f"failed to write patch: {fn_patch}")
                 raise
             logger.debug(f"wrote patch to {fn_patch}")
+            fn_outcome = os.path.join(self.dir_patches, f'{i}.json')
+            try:
+                with open(fn_outcome, 'w') as f:
+                    json.dump(outcome.to_dict(), f)
+            except OSError:
+                logger.exception(f"failed to write test information:"\
+                        f"{fn_outcome}")
+                raise
+            logger.debug(f"wrote test information to {fn_outcome}")
         logger.debug("saved patches to disk")
 
     def __enter__(self) -> 'Session':

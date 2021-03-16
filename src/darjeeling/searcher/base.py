@@ -127,7 +127,7 @@ class Searcher(DarjeelingEventProducer, abc.ABC):
             results[candidate] = outcome
             num_evaluated += 1
             if outcome.is_repair:
-                yield candidate
+                yield candidate, outcome
             if i < size:
                 self.evaluate(candidates[i])
                 i += 1
@@ -169,7 +169,7 @@ class Searcher(DarjeelingEventProducer, abc.ABC):
         for candidate, outcome in self.as_evaluated():
             if outcome.is_repair:
                 stopwatch.stop()
-                yield candidate
+                yield candidate, outcome
                 stopwatch.start()
 
         stopwatch.stop()

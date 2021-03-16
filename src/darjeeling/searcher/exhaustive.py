@@ -96,5 +96,5 @@ class ExhaustiveSearcher(Searcher):
 
         for candidate, outcome in self.as_evaluated():
             if outcome.is_repair:
-                yield candidate
+                yield candidate, outcome
             self.evaluate(self._generate())
