@@ -29,9 +29,10 @@ class CandidateOutcome:
     def with_test_outcome(self,
                           test: str,
                           successful: bool,
+                          output: str,
                           time_taken: float
                           ) -> 'CandidateOutcome':
-        outcome = TestOutcome(successful, time_taken)
+        outcome = TestOutcome(successful, time_taken, output)
         test_outcomes = self.tests.with_outcome(test, outcome)
         return CandidateOutcome(self.build, test_outcomes, self.is_repair)
 
