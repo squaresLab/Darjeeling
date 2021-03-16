@@ -32,7 +32,7 @@ class CandidateOutcome:
                           output: str,
                           time_taken: float
                           ) -> 'CandidateOutcome':
-        outcome = TestOutcome(successful, time_taken, output)
+        outcome = TestOutcome(test, successful, time_taken, output)
         test_outcomes = self.tests.with_outcome(test, outcome)
         return CandidateOutcome(self.build, test_outcomes, self.is_repair)
 

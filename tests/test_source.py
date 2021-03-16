@@ -17,14 +17,16 @@ class TestOutcome:
 
     @staticmethod
     def from_bugzoo(outcome: BugZooTestOutcome) -> 'TestOutcome':
-        return TestOutcome(successful=outcome.passed,
+        return TestOutcome(name="???", successful=outcome.passed,
                            time_taken=outcome.duration,
                            output=None)
 
     @staticmethod
-    def from_dict(d: Dict[str, Any]) -> 'TestOutcome':
-        return TestOutcome(d['successful'], d['time-taken'],
-            d.get('output', None))
+    def from_dict(d: Dict[str, Any], name:str=None) -> 'TestOutcome':
+        if name is None:
+            name = "???"
+        return TestOutcome(d.get('name', name), d['successful'], 
+                d['time-taken'], d.get('output', None))
 
     def to_dict(self) -> Dict[str, Any]:
         return {'successful': self.successful,

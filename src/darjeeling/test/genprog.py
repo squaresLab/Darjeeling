@@ -98,5 +98,5 @@ class GenProgTestSuite(TestSuite[GenProgTest]):
         else:
             output = None
 
-        return TestOutcome(successful=successful, time_taken=outcome.duration,
-                output=output)
+        return TestOutcome(test.name, successful=successful, 
+                time_taken=outcome.duration, output=output)

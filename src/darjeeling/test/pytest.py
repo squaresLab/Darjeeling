@@ -85,6 +85,7 @@ class PyTestSuite(TestSuite[PyTestCase]):
         else:
             output = None
 
-        return TestOutcome(successful=successful, 
+        return TestOutcome(test.name, 
+                successful=successful, 
                 time_taken=outcome.duration,
                 output=output)
