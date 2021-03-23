@@ -231,7 +231,10 @@ class Evaluator(DarjeelingEventProducer):
                 logger.debug(f"built candidate: {candidate}")
                 logger.debug(f"executing tests for candidate: {candidate}")
                 for test in tests:
-                    if self.__terminate_early and known_bad_patch:
+                    if self.__allow_partial_patches:
+                        if self.__terminate_early and breaks_positive_test:
+                            break
+                    elif self.__terminate_early and known_bad_patch:
                         break
                     test_outcome = self._run_test(container, candidate, test)
                     test_outcomes = \
