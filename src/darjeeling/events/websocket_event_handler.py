@@ -9,6 +9,7 @@ import queue
 
 import attr
 import websockets
+import websockets.legacy.server
 
 from .event import DarjeelingEvent
 from .handler import DarjeelingEventHandler
@@ -32,7 +33,7 @@ class WebSocketEventHandler(DarjeelingEventHandler):
     """
     hostname: str = attr.ib(default='127.0.0.1')
     port: int = attr.ib(default=8888)
-    _server: websockets.server.Serve = \
+    _server: websockets.legacy.server.Serve = \
         attr.ib(init=False, repr=False)
     _thread: threading.Thread = attr.ib(init=False, repr=False)
     _event_queue: EventQueue = attr.ib(init=False, repr=False)

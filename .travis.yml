@@ -3,7 +3,7 @@ sudo: required
 services:
 - docker
 python:
-- '3.6'
+- '3.9'
 install:
 - pip install -r requirements.dev.txt
 - pip install tox-travis
@@ -19,4 +19,4 @@ deploy:
       secure: "ZSBT+c4HCe/Ue/2vOMLprkVduOvw0EQKJYL3HMUqeiwQnslzfo1UV5s+RTkp/DSb0qpBeOoO6px8A0csUXyYvfvXzM6C1YbQBLyLeFEtx92WtZJvWody4pf0r0ZOmypNyRTOI1nM02uk1CFf8IZ8dyiRm0Fx3VYxtnmfmWtWoLsJ6gIWfWErNhjFsvdhywDDt1mLnr9h1Q0wW9NJAH1ph73jAC5Y8NopVyDufpbz8TnZNeAKxjwOqokm3sXWPGIRBIC8XfhBjKnPtl/cVjj0waKOHoBIykiPO4wSNm6KrgLzzcaybwGATgdgO8ag7luSycAhvAR5kKuGGTAGAWogNIFVhJDd9njsof6AmWqAQxVSqnroKasWEaBSdNvuUVUa0/jCvWnc5K50zeFeYBuuN4NHFTbybcN+N5M+7IPZNuwbaNwh70CAMnSQc2esPpE1Ej/hZX8fxopiqvAUl+xjGUOrJugL1DgGlI33uFU0uJEPAe3COsrK27xhFH66cB3w36mrkdjiigpoCbXysEi5iZg6zHMpA1kIVWlqNjnNhvJQcR8HjcWjTm1fusAfRsOPhJgD6YTKk3VWzqDFNZhSx3EFv3915T5PkEMzF1mMEQ82cqJjADxN6gk19FnSl8Q76LqVQJC9gZjYkbdbufR8vPDFnoNBzrFDZMqMweqBSJY="
     on:
       tags: true
-      python: 3.6
+      python: 3.9
