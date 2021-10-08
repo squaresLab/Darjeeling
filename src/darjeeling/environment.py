@@ -4,13 +4,17 @@ __all__ = ('Environment',)
 from contextlib import ExitStack
 from types import TracebackType
 from typing import Optional, Type
+import os
 
 import attr
+import dockerblade
 from bugzoo import Client as BugZooClient
 from bugzoo.server import ephemeral as bugzoo_server
 from comby import Comby
 from dockerblade import DockerDaemon
 from loguru import logger
+
+_DEFAULT_URL = os.environ.get("DOCKER_HOST", "unix://var/run/docker.sock")
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -18,7 +22,11 @@ class Environment:
     _bugzoo: Optional[BugZooClient] = attr.ib(default=None)
     _contexts: ExitStack = attr.ib(factory=ExitStack)
     comby: Comby = attr.ib(factory=Comby)
-    dockerblade: DockerDaemon = attr.ib(factory=DockerDaemon)
+    docker_url: str = attr.ib(default=_DEFAULT_URL)
+    dockerblade: DockerDaemon = attr.ib(init=False)
+
+    def __attrs_post_init__(self) -> None:
+        self.dockerblade = dockerblade.DockerDaemon(self.docker_url)
 
     @property
     def bugzoo(self) -> BugZooClient:
