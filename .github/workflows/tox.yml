@@ -1,0 +1,26 @@
+name: Tox lint checking
+on: [pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9.5
+    - name: Install pipenv
+      run: pip install pipenv==2021.5.29
+    - id: cache-pipenv
+      uses: actions/cache@v2
+      with:
+        path: ~/.local/share/virtualenvs
+        key: ${{ runner.os }}-pipenv-${{ hashFiles('**/Pipfile.lock') }}
+    - name: Install package
+      if: steps.cache-pipenv.outputs.cache-hit != 'true'
+      run: |
+        pipenv install --dev
+    - name: Flake8
+      run: pipenv run flake8 src
+    - name: MyPy
+      run: pipenv run mypy src
