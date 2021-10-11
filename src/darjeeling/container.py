@@ -23,16 +23,33 @@ class ProgramContainer:
     _environment: Environment
     _dockerblade: dockerblade.Container
 
-    @staticmethod
-    def for_program(environment: Environment,
-                    program: 'ProgramDescription'
-                    ) -> 'ProgramContainer':
+    @classmethod
+    def for_program(
+        cls,
+        environment: Environment,
+        program: 'ProgramDescription'
+    ) -> 'ProgramContainer':
         dockerblade_container = \
             environment.dockerblade.provision(program.image)
-        return ProgramContainer(id=dockerblade_container.id,
-                                program=program,
-                                environment=environment,
-                                dockerblade=dockerblade_container)
+        return cls.for_dockerblade(
+            program=program,
+            environment=environment,
+            container=dockerblade_container,
+        )
+
+    @classmethod
+    def for_dockerblade(
+        cls,
+        environment: Environment,
+        program: "ProgramDescription",
+        container: dockerblade.Container,
+    ) -> "ProgramContainer":
+        return ProgramContainer(
+            id=container.id,
+            program=program,
+            environment=environment,
+            dockerblade=container,
+        )
 
     def __repr__(self) -> str:
         return f'ProgramContainer(id={self.id})'
