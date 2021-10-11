@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 __all__ = ('BuildStep', 'BuildInstructions')
 
-from typing import (Sequence, Optional, Tuple, Union, Mapping, Iterator, Any,
-                    NoReturn)
+import typing as t
 
 import attr
 import bugzoo
@@ -20,10 +19,10 @@ class BuildStep:
     directory: str
 
     @staticmethod
-    def from_dict(dict_: Union[str, Mapping[str, Any]],
+    def from_dict(dict_: t.Union[str, t.Mapping[str, t.Any]],
                   source_directory: str
                   ) -> 'BuildStep':
-        def err(message: str) -> NoReturn:
+        def err(message: str) -> t.NoReturn:
             raise exc.BadConfigurationException(message)
 
         if isinstance(dict_, str):
@@ -44,11 +43,13 @@ class BuildStep:
 
         return BuildStep(command, directory)
 
-    def execute(self,
-                container: ProgramContainer,
-                *,
-                time_limit: Optional[int] = None
-                ) -> None:
+    def execute(
+        self,
+        container: ProgramContainer,
+        *,
+        time_limit: t.Optional[int] = None,
+        environment: t.Optional[t.Mapping[str, str]] = None,
+    ) -> None:
         """Applies this build step to a given container.
 
         Raises
@@ -57,11 +58,14 @@ class BuildStep:
             if the build step timed out or returned a non-zero code.
         """
         try:
-            container.shell.check_call(self.command,
-                                       cwd=self.directory,
-                                       time_limit=time_limit)
+            container.shell.check_call(
+                self.command,
+                cwd=self.directory,
+                time_limit=time_limit,
+                environment=environment,
+            )
         except dockerblade.exceptions.CalledProcessError as err:
-            output: Optional[str]
+            output: t.Optional[str]
             if err.output is None:
                 output = None
             elif isinstance(err.output, str):
@@ -75,16 +79,17 @@ class BuildStep:
 
 
 @attr.s(frozen=True, auto_attribs=True, slots=True)
-class BuildInstructions(Sequence[BuildStep]):
+class BuildInstructions(t.Sequence[BuildStep]):
     """Provides executable instructions for building the program."""
-    steps: Sequence[BuildStep]
-    time_limit: Optional[int]
+    steps: t.Sequence[BuildStep]
+    time_limit: t.Optional[int]
 
     @staticmethod
-    def from_dict(dict_: Mapping[str, Any],
-                  source_directory: str
-                  ) -> Tuple['BuildInstructions', 'BuildInstructions']:
-        def err(message: str) -> NoReturn:
+    def from_dict(
+        dict_: t.Mapping[str, t.Any],
+        source_directory: str
+    ) -> t.Tuple['BuildInstructions', 'BuildInstructions']:
+        def err(message: str) -> t.NoReturn:
             raise exc.BadConfigurationException(message)
 
         if not isinstance(dict_, dict):
@@ -117,8 +122,9 @@ class BuildInstructions(Sequence[BuildStep]):
         return instructions, instructions_for_coverage
 
     @staticmethod
-    def from_bugzoo(snapshot: bugzoo.Bug
-                    ) -> Tuple['BuildInstructions', 'BuildInstructions']:
+    def from_bugzoo(
+        snapshot: bugzoo.Bug
+    ) -> t.Tuple['BuildInstructions', 'BuildInstructions']:
         """Extracts build instructions from a BugZoo object.
 
         Parameters
@@ -128,7 +134,7 @@ class BuildInstructions(Sequence[BuildStep]):
 
         Returns
         -------
-        Tuple[BuildInstructions, BuildInstructions]
+        t.Tuple[BuildInstructions, BuildInstructions]
             A tuple that contains, in order, instructions for building the
             associated program, and a set of instructions for building the
             program with coverage instrumentation.
@@ -157,7 +163,7 @@ class BuildInstructions(Sequence[BuildStep]):
         """Returns the number of build steps."""
         return len(self.steps)
 
-    def __iter__(self) -> Iterator[BuildStep]:
+    def __iter__(self) -> t.Iterator[BuildStep]:
         """Returns an iterator over the build steps."""
         yield from self.steps
 
@@ -169,11 +175,20 @@ class BuildInstructions(Sequence[BuildStep]):
         """Executes these build instructions in a given container."""
         self.execute(container)
 
-    def execute(self, container: ProgramContainer) -> None:
+    def execute(
+        self,
+        container: ProgramContainer,
+        *,
+        environment: t.Optional[t.Mapping[str, str]] = None,
+    ) -> None:
         """Executes these build instructions in a given container."""
         with Stopwatch() as timer:
             for step in self.steps:
-                time_left: Optional[int] = None
+                time_left: t.Optional[int] = None
                 if self.time_limit:
                     time_left = int(max(0, timer.duration - self.time_limit))
-                step.execute(container, time_limit=time_left)
+                step.execute(
+                    container,
+                    time_limit=time_left,
+                    environment=environment,
+                )
