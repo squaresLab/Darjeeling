@@ -229,6 +229,7 @@ class BaseController(cement.Controller):
                 stdout_logging_level = 'TRACE'
             else:
                 stdout_logging_level = 'INFO'
+            logger.enable('kaskara')
             logger.add(sys.stdout, level=stdout_logging_level)
 
         # setup logging to file

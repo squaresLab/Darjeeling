@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 __all__ = ('GCovCollector',)
 
-from typing import FrozenSet, Mapping, Any, Set, Dict, Optional, ClassVar
 import os
-import typing
+import typing as t
 import xml.etree.ElementTree as ET
 
 from loguru import logger
@@ -11,8 +10,9 @@ import attr
 
 from .collector import CoverageCollector, CoverageCollectorConfig
 from ..core import FileLineSet
+from ..source import ProgramSourceFile
 
-if typing.TYPE_CHECKING:
+if t.TYPE_CHECKING:
     from ..container import ProgramContainer
     from ..environment import Environment
     from ..program import ProgramDescription
@@ -56,23 +56,64 @@ _NUM_INSTRUMENTATION_LINES = _INSTRUMENTATION.count('\n')
 _LINES_TO_REMOVE = set(range(1, _NUM_INSTRUMENTATION_LINES))
 
 
-@attr.s(frozen=True, slots=True, auto_attribs=True)
-class GCovCollectorConfig(CoverageCollectorConfig):
-    NAME: ClassVar[str] = 'gcov'
-    files_to_instrument: FrozenSet[str]
+@attr.s(auto_attribs=True, slots=True)
+class FileToInstrument:
+    filename: str
+    line: int = attr.ib(default=0)
 
     @classmethod
-    def from_dict(self,
-                  dict_: Mapping[str, Any],
-                  dir_: Optional[str] = None
-                  ) -> 'CoverageCollectorConfig':
+    def from_dict(
+        cls,
+        dict_or_filename: t.Union[str, t.Dict[str, t.Any]],
+    ) -> "FileToInstrument":
+        if isinstance(dict_or_filename, str):
+            filename = dict_or_filename
+            line = 0
+        else:
+            filename = dict_or_filename["filename"]
+            line = dict_or_filename["line"]
+        return FileToInstrument(
+            filename=filename,
+            line=line,
+        )
+
+    def resolve(self, source_directory: str) -> "FileToInstrument":
+        if os.path.isabs(self.filename):
+            return self
+        return FileToInstrument(
+            filename=os.path.join(source_directory, self.filename),
+            line=self.line,
+        )
+
+
+@attr.s(frozen=True, slots=True, auto_attribs=True)
+class GCovCollectorConfig(CoverageCollectorConfig):
+    NAME: t.ClassVar[str] = 'gcov'
+    files_to_instrument: t.Collection[FileToInstrument]
+
+    @classmethod
+    def from_dict(
+        cls,
+        dict_: t.Mapping[str, t.Any],
+        dir_: t.Optional[str] = None
+    ) -> 'CoverageCollectorConfig':
         assert dict_['type'] == 'gcov'
-        files_to_instrument = frozenset(dict_.get('files-to-instrument', []))
-        return GCovCollectorConfig(files_to_instrument=files_to_instrument)
+
+        # files to instrument
+        files_to_instrument: t.Collection[FileToInstrument] = frozenset()
+        if "files-to-instrument" in dict_:
+            files_to_instrument = [
+                FileToInstrument.from_dict(dd)
+                for dd in dict_['files-to-instrument']
+            ]
+
+        config = GCovCollectorConfig(files_to_instrument=files_to_instrument)
+        logger.trace(f"gcov config: {config}")
+        return config
 
     def _find_source_filenames(self,
                                program: 'ProgramDescription'
-                               ) -> FrozenSet[str]:
+                               ) -> t.FrozenSet[str]:
         """Determines the set of all source files within a program."""
         with program.provision() as container:
             source_directory = program.source_directory
@@ -82,21 +123,23 @@ class GCovCollectorConfig(CoverageCollectorConfig):
             output = container.shell.check_output(command, text=True)
             return frozenset(filename.strip() for filename in output.split('\n'))
 
-    def build(self,
-              environment: 'Environment',
-              program: 'ProgramDescription'
-              ) -> 'CoverageCollector':
+    def build(
+        self,
+        environment: 'Environment',
+        program: 'ProgramDescription',
+    ) -> 'CoverageCollector':
         source_directory = program.source_directory
         source_filenames = self._find_source_filenames(program)
-        files_to_instrument = frozenset(
-            fn if os.path.isabs(fn) else os.path.join(source_directory, fn)
-            for fn in self.files_to_instrument)
-
-        collector = GCovCollector(environment=environment,
-                                  program=program,
-                                  source_directory=source_directory,
-                                  source_filenames=source_filenames,
-                                  files_to_instrument=files_to_instrument)
+        files_to_instrument = [
+            f.resolve(source_directory) for f in self.files_to_instrument
+        ]
+        collector = GCovCollector(
+            environment=environment,
+            program=program,
+            source_directory=source_directory,
+            source_filenames=source_filenames,
+            files_to_instrument=files_to_instrument,
+        )
         logger.trace(f"built coverage collector: {collector}")
         return collector
 
@@ -105,11 +148,11 @@ class GCovCollectorConfig(CoverageCollectorConfig):
 class GCovCollector(CoverageCollector):
     program: 'ProgramDescription'
     _source_directory: str
-    _files_to_instrument: FrozenSet[str]
-    _source_filenames: FrozenSet[str]
+    _files_to_instrument: t.Collection[FileToInstrument]
+    _source_filenames: t.FrozenSet[str]
     _environment: 'Environment' = attr.ib(repr=False)
 
-    def _read_line_coverage_for_class(self, xml_class: ET.Element) -> Set[int]:
+    def _read_line_coverage_for_class(self, xml_class: ET.Element) -> t.Set[int]:
         xml_lines = xml_class.find('lines')
         assert xml_lines
         lines = xml_lines.findall('line')
@@ -118,14 +161,15 @@ class GCovCollector(CoverageCollector):
 
     def _corrected_lines(self,
                          relative_filename: str,
-                         lines: Set[int]
-                         ) -> Set[int]:
+                         lines: t.Set[int]
+                         ) -> t.Set[int]:
         if os.path.isabs(relative_filename):
             absolute_filename = relative_filename
         else:
             absolute_filename = os.path.join(self._source_directory, relative_filename)
 
-        if absolute_filename not in self._files_to_instrument:
+        instrumented_filenames = set(f.filename for f in self._files_to_instrument)
+        if absolute_filename not in instrumented_filenames:
             logger.trace(f"file was not instrumented: {absolute_filename}")
             return lines
 
@@ -153,7 +197,7 @@ class GCovCollector(CoverageCollector):
         package_nodes = packages_node.findall('package')
         class_nodes = [c for p in package_nodes for c in p.find('classes').findall('class')]  # type: ignore
 
-        filename_to_lines: Dict[str, Set[int]] = {}
+        filename_to_lines: t.Dict[str, t.Set[int]] = {}
         for node in class_nodes:
             filename = node.attrib['filename']
             try:
@@ -189,6 +233,18 @@ class GCovCollector(CoverageCollector):
 
         return self._parse_xml_file_contents(xml_file_contents)
 
+    def _instrument(
+        self,
+        filename: str,
+        contents: str,
+        inject_at_line: int,
+    ) -> str:
+        file_ = ProgramSourceFile(filename, contents)
+        inject_at_location = file_.line_to_location_range(inject_at_line).start
+        inject_at_offset = file_.location_to_offset(inject_at_location)
+        contents = contents[0:inject_at_offset] + _INSTRUMENTATION + contents[inject_at_offset:]
+        return contents
+
     def _prepare(self, container: 'ProgramContainer') -> None:
         """
         Adds source code instrumentation and recompiles the program inside
@@ -196,11 +252,18 @@ class GCovCollector(CoverageCollector):
         gcovr is installed inside the container.
         """
         files = container.filesystem
-        for filename in self._files_to_instrument:
+        for file_to_instrument in self._files_to_instrument:
+            filename = file_to_instrument.filename
             logger.trace(f'adding gcov instrumentation to {filename}')
             contents_original = files.read(filename)
             logger.trace(f'original file [{filename}]:\n{contents_original}')
-            contents_instrumented = _INSTRUMENTATION + contents_original
+            # FIXME add instrumentation at before specified line
+            # contents_instrumented = _INSTRUMENTATION + contents_original
+            contents_instrumented = self._instrument(
+                filename=filename,
+                contents=contents_original,
+                inject_at_line=file_to_instrument.line,
+            )
             logger.trace(f'instrumented file [{filename}]:\n{contents_instrumented}')
             files.write(filename, contents_instrumented)
 
