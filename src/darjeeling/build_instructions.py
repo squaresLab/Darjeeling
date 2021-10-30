@@ -7,6 +7,7 @@ import attr
 import bugzoo
 import dockerblade
 from dockerblade.stopwatch import Stopwatch
+from loguru import logger
 
 from . import exceptions as exc
 from .container import ProgramContainer
@@ -58,7 +59,7 @@ class BuildStep:
             if the build step timed out or returned a non-zero code.
         """
         try:
-            container.shell.check_call(
+            container.shell.check_output(
                 self.command,
                 cwd=self.directory,
                 time_limit=time_limit,
@@ -72,6 +73,7 @@ class BuildStep:
                 output = err.output
             else:
                 output = err.output.decode('utf-8')
+            logger.trace(f"build output: {output}")
             raise exc.BuildStepFailed(step=self,
                                       returncode=err.returncode,
                                       duration=err.duration,
