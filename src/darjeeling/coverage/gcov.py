@@ -183,6 +183,7 @@ class GCovCollector(CoverageCollector):
         temporary_filename = files.mktemp()
 
         command = f'gcovr -o "{temporary_filename}" -x -d -r .'
+        logger.trace(f"executing gcovr command: {command}")
         shell.check_call(command, cwd=self._source_directory)
         xml_file_contents = files.read(temporary_filename)
 

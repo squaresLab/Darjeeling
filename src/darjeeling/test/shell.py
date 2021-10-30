@@ -5,6 +5,7 @@ import os
 import typing as t
 
 import attr
+from loguru import logger
 
 from .. import exceptions as exc
 from .base import TestSuite
@@ -109,6 +110,7 @@ class ShellTestSuite(TestSuite[ShellTest]):
             cwd=self._workdir,
             time_limit=self._time_limit_seconds,
         )
+        logger.trace(f"shell test outcome: {outcome}")
         successful = outcome.returncode == 0
         return TestOutcome(
             successful=successful,

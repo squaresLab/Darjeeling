@@ -226,7 +226,7 @@ class BaseController(cement.Controller):
             if interactive:
                 stdout_logging_level = 'CRITICAL'
             elif verbose_logging:
-                stdout_logging_level = 'DEBUG'
+                stdout_logging_level = 'TRACE'
             else:
                 stdout_logging_level = 'INFO'
             logger.add(sys.stdout, level=stdout_logging_level)
@@ -236,7 +236,7 @@ class BaseController(cement.Controller):
             if not log_to_filename:
                 log_to_filename = self._default_log_filename
             logger.info(f'logging to file: {log_to_filename}')
-            logger.add(log_to_filename, level='DEBUG')
+            logger.add(log_to_filename, level='TRACE')
 
         # load the configuration file
         filename = os.path.abspath(filename)

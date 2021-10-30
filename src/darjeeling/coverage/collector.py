@@ -5,6 +5,8 @@ from typing import Any, Dict, Mapping, Optional, Type
 from typing_extensions import final
 import abc
 
+from loguru import logger
+
 from .. import exceptions as exc
 from ..core import FileLineSet, TestCoverage, TestCoverageMap
 from ..container import ProgramContainer
@@ -63,12 +65,19 @@ class CoverageCollector(abc.ABC):
     def collect(self) -> TestCoverageMap:
         """Computes coverage for a given program."""
         test_to_coverage: Dict[str, TestCoverage] = {}
+        logger.trace("collecting coverage")
         with self.program.provision() as container:
+            logger.trace("provisioned container for coverage")
             self._prepare(container)
+            logger.trace("prepared program for coverage collection")
             test_suite = self.program.tests
+            logger.trace("collecting coverage for each test")
             for test in test_suite:
+                logger.trace(f"executing test for coverage: {test}")
                 outcome = test_suite.execute(container, test, coverage=True)
+                logger.trace(f"executed test for coverage: {outcome}")
                 lines = self._extract(container)
+                logger.trace(f"lines covered by test [{test}]: {lines}")
                 test_coverage = TestCoverage(test=test.name,
                                              outcome=outcome,
                                              lines=lines)
