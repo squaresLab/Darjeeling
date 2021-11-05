@@ -49,7 +49,7 @@ class WebSocketEventHandler(DarjeelingEventHandler):
         loop = asyncio.new_event_loop()
         self._event_queue = queue.Queue()
         self._server = \
-            websockets.serve(self.__serve, self.hostname, self.port, loop=loop)
+            websockets.serve(self.__serve, self.hostname, self.port, loop=loop)  # type: ignore
 
         def loop_in_thread(loop) -> None:
             loop.run_until_complete(self._server)
