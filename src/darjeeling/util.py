@@ -62,7 +62,9 @@ def get_lines(fn: str) -> List[str]:
     """
     Attempts to return a list of all the lines in a given source code file.
     """
-    return [l.rstrip('\n') for l in get_file_contents(fn).splitlines()]
+    return [
+        line.rstrip('\n') for line in get_file_contents(fn).splitlines()
+    ]
 
 
 def _dynamically_registered(cls,

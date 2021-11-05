@@ -104,7 +104,7 @@ class Language(Enum):
     @classmethod
     def find(cls, name: str) -> 'Language':
         try:
-            return next(l for l in cls if l.value == name)
+            return next(line for line in cls if line.value == name)
         except StopIteration:
             raise LanguageNotSupported(name)
 
@@ -302,7 +302,7 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
             out_lines.append(f'{name_test} [{result}]: {{')
             out_lines.extend('  ' + s for s in str(lines_covered).split('\n'))
             out_lines.append('}')
-        out = '\n'.join(f'  {l}' for l in out_lines)
+        out = '\n'.join(f'  {line}' for line in out_lines)
         out = f'{{\n{out}\n}}'
         return out
 

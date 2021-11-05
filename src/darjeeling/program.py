@@ -60,7 +60,7 @@ class ProgramDescriptionConfig:
         try:
             language: Language = Language.find(dict_['language'])
         except exc.LanguageNotSupported:
-            supported = ', '.join([l.value for l in Language])
+            supported = ', '.join([lang.value for lang in Language])
             supported = f'(supported languages: {supported})'
             err(f"unsupported language [{dict_['language']}]. {supported}")
 

@@ -126,7 +126,7 @@ class Problem:
         logger.info('test order: {}', ', '.join(t.name for t in test_ordering))
 
         logger.debug("storing contents of source code files")
-        source_files = set(l.filename for l in coverage.failing.locations)
+        source_files = set(location.filename for location in coverage.failing.locations)
         source_loader = ProgramSourceLoader(environment)
         sources = source_loader.for_program(program, files=source_files)
         logger.debug("stored contents of source code files")
@@ -187,4 +187,4 @@ class Problem:
 
     @property
     def implicated_files(self) -> Iterator[str]:
-        yield from set(l.filename for l in self.coverage.failing.locations)
+        yield from set(location.filename for location in self.coverage.failing.locations)

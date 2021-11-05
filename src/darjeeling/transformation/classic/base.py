@@ -113,7 +113,7 @@ class StatementTransformationSchema(TransformationSchema):
 
         if problem.settings.only_insert_executed_code:
             executed = problem.coverage.locations
-            viable = filter(lambda s: any(l in executed for l in get_lines(s)),
+            viable = filter(lambda s: any(line in executed for line in get_lines(s)),
                             viable)
 
         # do not insert declaration statements

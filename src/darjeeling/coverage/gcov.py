@@ -113,8 +113,8 @@ class GCovCollector(CoverageCollector):
         xml_lines = xml_class.find('lines')
         assert xml_lines
         lines = xml_lines.findall('line')
-        return set(int(l.attrib['number']) for l in lines
-                   if int(l.attrib['hits']) > 0)
+        return set(int(line.attrib['number']) for line in lines
+                   if int(line.attrib['hits']) > 0)
 
     def _corrected_lines(self,
                          relative_filename: str,
