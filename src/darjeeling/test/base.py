@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from typing import Iterator, TypeVar, Sequence, Generic
 import abc
+import typing as t
 
 from ..core import TestOutcome, Test
 from ..container import ProgramContainer
@@ -26,12 +27,14 @@ class TestSuite(Generic[T]):
         return self.__name_to_test[name]
 
     @abc.abstractmethod
-    def execute(self,
-                container: ProgramContainer,
-                test: T,
-                *,
-                coverage: bool = False
-                ) -> TestOutcome:
+    def execute(
+        self,
+        container: ProgramContainer,
+        test: T,
+        *,
+        coverage: bool = False,
+        environment: t.Optional[t.Mapping[str, str]] = None,
+    ) -> TestOutcome:
         """Executes a given test inside a container.
 
         Parameters
@@ -44,6 +47,9 @@ class TestSuite(Generic[T]):
             If :code:`True`, the test harness will be instructed to run the
             test in coverage collection mode. If no such mode is supported,
             the test will be run as usual.
+        environment: Mapping[str, str], optional
+            An optional set of environment variables that should be used when
+            executing the test.
 
         Returns
         -------

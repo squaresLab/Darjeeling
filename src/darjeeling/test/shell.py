@@ -104,11 +104,14 @@ class ShellTestSuite(TestSuite[ShellTest]):
         test: ShellTest,
         *,
         coverage: bool = False,
+        environment: t.Optional[t.Mapping[str, str]] = None,
     ) -> TestOutcome:
         outcome = container.shell.run(
             test.command,
             cwd=self._workdir,
             time_limit=self._time_limit_seconds,
+            environment=environment,
+            text=True,
         )
         logger.trace(f"shell test outcome: {outcome}")
         successful = outcome.returncode == 0

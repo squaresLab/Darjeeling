@@ -2,7 +2,7 @@
 __all__ = ('PyTestCase', 'PyTestSuite', 'PyTestSuiteConfig')
 
 from typing import Optional, Sequence, Dict, Any
-import typing
+import typing as t
 
 import attr
 
@@ -10,7 +10,7 @@ from .base import TestSuite
 from .config import TestSuiteConfig
 from ..core import TestOutcome, Test
 
-if typing.TYPE_CHECKING:
+if t.TYPE_CHECKING:
     from ..container import ProgramContainer
     from ..environment import Environment
 
@@ -62,12 +62,14 @@ class PyTestSuite(TestSuite[PyTestCase]):
         self._workdir = workdir
         self._time_limit_seconds = time_limit_seconds
 
-    def execute(self,
-                container: 'ProgramContainer',
-                test: PyTestCase,
-                *,
-                coverage: bool = False
-                ) -> TestOutcome:
+    def execute(
+        self,
+        container: 'ProgramContainer',
+        test: PyTestCase,
+        *,
+        coverage: bool = False,
+        environment: t.Optional[t.Mapping[str, str]] = None,
+    ) -> TestOutcome:
         if coverage:
             command = f'coverage run -m pytest {test.name}'
         else:

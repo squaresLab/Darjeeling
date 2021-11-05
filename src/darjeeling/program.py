@@ -3,7 +3,7 @@ __all__ = ('ProgramDescription', 'ProgramDescriptionConfig')
 
 from typing import Iterator, NoReturn, Mapping, Optional, Any
 import contextlib
-import typing
+import typing as t
 
 import attr
 from bugzoo import Bug as Snapshot
@@ -17,7 +17,7 @@ from .container import ProgramContainer
 from .test import TestSuiteConfig, TestSuite
 from .exceptions import BuildFailure, FailedToApplyPatch
 
-if typing.TYPE_CHECKING:
+if t.TYPE_CHECKING:
     from .environment import Environment
 
 
@@ -132,12 +132,14 @@ class ProgramDescription:
     tests: 'TestSuite'
     source_directory: str
 
-    def execute(self,
-                container: ProgramContainer,
-                test: Test,
-                *,
-                coverage: bool = False
-                ) -> TestOutcome:
+    def execute(
+        self,
+        container: ProgramContainer,
+        test: Test,
+        *,
+        coverage: bool = False,
+        environment: t.Optional[t.Mapping[str, str]] = None,
+    ) -> TestOutcome:
         """Executes a given test in a container.
 
         Parameters
@@ -150,13 +152,21 @@ class ProgramDescription:
             If :code:`True`, the test harness will be instructed to run the
             test in coverage collection mode. If no such mode is supported,
             the test will be run as usual.
+        environment: Mapping[str, str], optional
+            An optional set of environment variables that should be used when
+            executing the test.
 
         Returns
         -------
         TestOutcome
             A concise summary of the test execution.
         """
-        return self.tests.execute(container, test)
+        return self.tests.execute(
+            container,
+            test,
+            coverage=coverage,
+            environment=environment,
+        )
 
     def provision(self) -> ProgramContainer:
         """Provisions a container for this program."""

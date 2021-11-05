@@ -3,7 +3,7 @@ __all__ = ('GenProgTest', 'GenProgTestSuite', 'GenProgTestSuiteConfig')
 
 from typing import Optional, Sequence, Dict, Any
 import os
-import typing
+import typing as t
 
 import attr
 
@@ -12,7 +12,7 @@ from .base import TestSuite
 from .config import TestSuiteConfig
 from ..core import TestOutcome, Test
 
-if typing.TYPE_CHECKING:
+if t.TYPE_CHECKING:
     from ..container import ProgramContainer
     from ..environment import Environment
 
@@ -80,15 +80,21 @@ class GenProgTestSuite(TestSuite[GenProgTest]):
         self._workdir = workdir
         self._time_limit_seconds = time_limit_seconds
 
-    def execute(self,
-                container: 'ProgramContainer',
-                test: GenProgTest,
-                *,
-                coverage: bool = False
-                ) -> TestOutcome:
+    def execute(
+        self,
+        container: 'ProgramContainer',
+        test: GenProgTest,
+        *,
+        coverage: bool = False,
+        environment: t.Optional[t.Mapping[str, str]] = None,
+    ) -> TestOutcome:
         command = f'./test.sh {test.name}'
-        outcome = container.shell.run(command,
-                                      cwd=self._workdir,
-                                      time_limit=self._time_limit_seconds)  # noqa
+        outcome = container.shell.run(
+            command,
+            cwd=self._workdir,
+            time_limit=self._time_limit_seconds,
+            environment=environment,
+            text=True,
+        )
         successful = outcome.returncode == 0
         return TestOutcome(successful=successful, time_taken=outcome.duration)
