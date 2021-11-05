@@ -2,9 +2,6 @@
 darjeeling.log.*
 bugzood.log*
 
-Pipfile
-Pipfile.lock
-
 .eggs
 .mypy_cache
 .pytest_cache
