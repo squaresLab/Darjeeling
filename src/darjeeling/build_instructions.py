@@ -64,6 +64,7 @@ class BuildStep:
                 cwd=self.directory,
                 time_limit=time_limit,
                 environment=environment,
+                text=True,
             )
         except dockerblade.exceptions.CalledProcessError as err:
             output: t.Optional[str]
