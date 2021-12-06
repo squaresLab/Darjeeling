@@ -32,8 +32,8 @@ _INSTRUMENTATION = (
     "  if(sig != SIGUSR1 && sig != SIGUSR2)\n"
     "    exit(1);\n"
     "}\n"
-    "void darjeeling_ctor (void) __attribute__ ((constructor));\n"
-    "void darjeeling_ctor (void) {\n"
+    "void __attribute__ ((constructor)) darjeeling_ctor (void) {\n"
+    #"void darjeeling_ctor (void) {\n"
     "  struct sigaction new_action;\n"
     "  new_action.sa_handler = darjeeling_sighandler;\n"
     "  sigemptyset(&new_action.sa_mask);\n"
@@ -181,7 +181,7 @@ class GCovCollector(CoverageCollector):
         filename_absolute = os.path.join(source_directory, filename_relative)
         return filename_absolute in self._source_filenames
 
-    # FIXME is this a general solution?
+    # FIXME is this a general solution? nope, not a general solution
     def _resolve_filepath(self, filename_relative: str) -> str:
         if not filename_relative:
             raise ValueError('failed to resolve path')
@@ -190,6 +190,10 @@ class GCovCollector(CoverageCollector):
 
         filename_relative_child = '/'.join(filename_relative.split('/')[1:])
         return self._resolve_filepath(filename_relative_child)
+
+    def _resolve_filepath_pdr(self, base_filename: str) -> str:
+        similar=[x for x in self._source_filenames if x.endswith(base_filename)]
+        return similar[-1].lstrip(self._source_directory)
 
     def _parse_xml_report(self, root: ET.Element) -> FileLineSet:
         packages_node = root.find('packages')
@@ -202,7 +206,7 @@ class GCovCollector(CoverageCollector):
             filename = node.attrib['filename']
             try:
                 filename_original = filename
-                filename = self._resolve_filepath(filename)
+                filename = self._resolve_filepath_pdr(filename)
                 logger.trace(f"resolving path '{filename_original}' "
                              f"-> '{filename}'")
             except ValueError:
