@@ -88,7 +88,7 @@ class BaseController(cement.Controller):
     def _default_log_filename(self) -> str:
         # find all log file numbers that have been used in this directory
         used_numbers = [int(s.rpartition('.')[-1])
-                        for s in glob.glob('darjeeling.log.*')]
+                        for s in glob.glob('darjeeling.log.[0-9]*')]
 
         if not used_numbers:
             return os.path.join(os.getcwd(), 'darjeeling.log.0')

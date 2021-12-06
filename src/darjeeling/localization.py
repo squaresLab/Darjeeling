@@ -150,6 +150,7 @@ class Localization:
             m = f"suspiciousness metric not supported: {cfg.metric}"
             raise BadConfigurationException(m)
         logger.info(f"using suspiciousness metric: {cfg.metric}")
+        logger.info(f"coverage: {str(coverage)}")
 
         loc = Localization.from_coverage(coverage, metric)
         logger.trace(f"excluding files from localization: {cfg.exclude_files}")
