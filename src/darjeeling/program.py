@@ -29,6 +29,8 @@ class ProgramDescriptionConfig:
     build_instructions_for_coverage: BuildInstructions
     tests: TestSuiteConfig
     source_directory: str
+    build_directory: str
+    src_subdirectory: str
     snapshot: Optional[Snapshot]
 
     @staticmethod
@@ -51,6 +53,20 @@ class ProgramDescriptionConfig:
         if not isinstance(dict_['source-directory'], str):
             err("'source-directory' property should be a string")
         source_directory: str = dict_['source-directory']
+
+        # build directory
+        if 'build-directory' not in dict_:
+            err("'build-directory' property is missing from 'program' section")
+        if not isinstance(dict_['build-directory'], str):
+            err("'build-directory' property should be a string")
+        build_directory: str = dict_['build-directory']
+
+        # src-subdirectory (where coverage content is generated)
+        if 'src-subdirectory' not in dict_:
+            err("'src-subdirectory' property is missing from 'program' section")
+        if not isinstance(dict_['src-subdirectory'], str):
+            err("'src-subdirectory' property should be a string")
+        src_subdirectory: str = dict_['src-subdirectory']
 
         # language
         if 'language' not in dict_:
@@ -86,7 +102,10 @@ class ProgramDescriptionConfig:
                                         build_instructions_for_coverage=build_instructions_for_coverage,
                                         tests=tests,
                                         snapshot=None,
-                                        source_directory=source_directory)
+                                        source_directory=source_directory,
+                                        build_directory=build_directory,
+                                        src_subdirectory=src_subdirectory
+                                        )
 
     def build(self, environment: 'Environment') -> 'ProgramDescription':
         tests = self.tests.build(environment)
@@ -97,7 +116,10 @@ class ProgramDescriptionConfig:
                                   build_instructions=self.build_instructions,
                                   build_instructions_for_coverage=self.build_instructions_for_coverage,
                                   tests=tests,
-                                  source_directory=self.source_directory)
+                                  source_directory=self.source_directory,
+                                  build_directory=self.build_directory,
+                                  src_subdirectory=self.src_subdirectory
+                                  )
 
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
@@ -122,6 +144,13 @@ class ProgramDescription:
     source_directory: str
         The absolute path to the source directory for this program inside
         its associated Docker image.
+    build_directory: str
+        The absolute path to the build directory for this program inside
+        its associated Docker image.
+    src_subdirectory: str
+        The relative path to the source for both build- and source-directory,
+        used for coverage path resolution
+        for this program inside its associated Docker image.
     """
     _environment: 'Environment'
     image: str
@@ -131,6 +160,8 @@ class ProgramDescription:
     build_instructions_for_coverage: BuildInstructions
     tests: 'TestSuite'
     source_directory: str
+    build_directory: str
+    src_subdirectory: str
 
     def execute(
         self,

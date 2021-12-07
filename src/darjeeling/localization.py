@@ -150,10 +150,11 @@ class Localization:
             m = f"suspiciousness metric not supported: {cfg.metric}"
             raise BadConfigurationException(m)
         logger.info(f"using suspiciousness metric: {cfg.metric}")
-        logger.info(f"coverage: {str(coverage)}")
+        logger.debug(f"coverage: {str(coverage)}")
 
         loc = Localization.from_coverage(coverage, metric)
-        logger.trace(f"excluding files from localization: {cfg.exclude_files}")
+        logger.debug(f"exclude_files: {cfg.exclude_files}")
+        logger.debug(f"exclude_lines: {cfg.exclude_lines}")
         loc = loc.exclude_files(cfg.exclude_files)
         logger.trace(f"excluding lines from localization: {cfg.exclude_lines}")
         loc = loc.exclude_lines(cfg.exclude_lines)
@@ -166,6 +167,7 @@ class Localization:
     @staticmethod
     def from_dict(d: Dict[str, float]) -> 'Localization':
         scores = {FileLine.from_string(l): v for (l, v) in d.items()}
+        logger.debug(f"localization from dict: {scores}")
         return Localization(scores)
 
     @staticmethod
@@ -264,7 +266,9 @@ class Localization:
         Returns a variant of this fault localization that does not contain
         lines from any of the specified files.
         """
+        logger.debug(f"files_to_exclude: {files_to_exclude}")
         lines = [line for line in self if line.filename not in files_to_exclude]
+        logger.debug(f"lines: {lines}")
         return self.restrict_to_lines(lines)
 
     def exclude_lines(self, lines: Iterable[FileLine]) -> 'Localization':
@@ -316,6 +320,7 @@ class Localization:
             line: score for (line, score) in self.__line_to_score.items()
             if line in lines
         }
+        logger.debug(f"scores: {scores}")
         return Localization(scores)
 
     def sample(self) -> FileLine:
