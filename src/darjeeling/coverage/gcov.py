@@ -117,6 +117,8 @@ class GCovCollectorConfig(CoverageCollectorConfig):
         """Determines the set of all source files within a program."""
         with program.provision() as container:
             source_directory = program.source_directory
+            build_directory = program.build_directory
+            src_subdirectory = program.src_subdirectory
             endings = ('.cpp', '.cc', '.c', '.h', '.hh', '.hpp', '.cxx')
             command = ' -o '.join([f"-name \*{e}" for e in endings])
             command = f'find {source_directory} -type f \( {command} \)'
@@ -129,6 +131,8 @@ class GCovCollectorConfig(CoverageCollectorConfig):
         program: 'ProgramDescription',
     ) -> 'CoverageCollector':
         source_directory = program.source_directory
+        build_directory = program.build_directory
+        src_subdirectory = program.src_subdirectory
         source_filenames = self._find_source_filenames(program)
         files_to_instrument = [
             f.resolve(source_directory) for f in self.files_to_instrument
@@ -137,6 +141,8 @@ class GCovCollectorConfig(CoverageCollectorConfig):
             environment=environment,
             program=program,
             source_directory=source_directory,
+            build_directory=build_directory,
+            src_subdirectory=src_subdirectory,
             source_filenames=source_filenames,
             files_to_instrument=files_to_instrument,
         )
@@ -148,6 +154,8 @@ class GCovCollectorConfig(CoverageCollectorConfig):
 class GCovCollector(CoverageCollector):
     program: 'ProgramDescription'
     _source_directory: str
+    _build_directory: str
+    _src_subdirectory: str
     _files_to_instrument: t.Collection[FileToInstrument]
     _source_filenames: t.FrozenSet[str]
     _environment: 'Environment' = attr.ib(repr=False)
@@ -192,8 +200,8 @@ class GCovCollector(CoverageCollector):
         return self._resolve_filepath(filename_relative_child)
 
     def _resolve_filepath_pdr(self, base_filename: str) -> str:
-        similar=[x for x in self._source_filenames if x.endswith(base_filename)]
-        return similar[-1].lstrip(self._source_directory)
+        src_file=os.path.join(self._src_subdirectory,base_filename)
+        return self._resolve_filepath(src_file)
 
     def _parse_xml_report(self, root: ET.Element) -> FileLineSet:
         packages_node = root.find('packages')
@@ -232,8 +240,11 @@ class GCovCollector(CoverageCollector):
 
         command = f'gcovr -o "{temporary_filename}" -x -d -r .'
         logger.trace(f"executing gcovr command: {command}")
-        shell.check_call(command, cwd=self._source_directory)
+        fpath=os.path.join(self._build_directory,self._src_subdirectory)
+        logger.info(f"executing gcovr command: '{command}' in '{fpath}'")
+        shell.check_call(command, cwd=fpath)
         xml_file_contents = files.read(temporary_filename)
+        #logger.info(f"XML Contents: \n>>>>\n{xml_file_contents}\n<<<<")
 
         return self._parse_xml_file_contents(xml_file_contents)
 
