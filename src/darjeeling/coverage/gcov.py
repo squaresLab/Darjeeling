@@ -238,13 +238,16 @@ class GCovCollector(CoverageCollector):
         shell = container.shell
         temporary_filename = files.mktemp()
 
-        command = f'gcovr -o "{temporary_filename}" -x -d -r .'
+        command = f'gcovr -o "{temporary_filename}" -x -d --root {self._source_directory} . '
+        if self._src_subdirectory and self._src_subdirectory != "":
+            command+=f" {self._src_subdirectory} "
         logger.trace(f"executing gcovr command: {command}")
-        fpath=os.path.join(self._build_directory,self._src_subdirectory)
+        #fpath=os.path.join(self._build_directory,self._src_subdirectory)
+        fpath=self._build_directory
         logger.info(f"executing gcovr command: '{command}' in '{fpath}'")
         shell.check_call(command, cwd=fpath)
         xml_file_contents = files.read(temporary_filename)
-        #logger.info(f"XML Contents: \n>>>>\n{xml_file_contents}\n<<<<")
+        logger.info(f"XML Contents: \n>>>>\n{xml_file_contents}\n<<<<")
 
         return self._parse_xml_file_contents(xml_file_contents)
 
