@@ -115,7 +115,7 @@ class BaseController(cement.Controller):
         filename = os.path.abspath(filename)
         cfg_dir = os.path.dirname(filename)
         with open(filename, 'r') as f:
-            yml = yaml.safe_load(f)
+            yml = yaml.safe_load(f, Loader=Loader)
         cfg = Config.from_yml(yml, dir_=cfg_dir)
 
         with bugzoo.server.ephemeral(timeout_connection=120) as client_bugzoo:
@@ -243,7 +243,7 @@ class BaseController(cement.Controller):
         filename = os.path.abspath(filename)
         cfg_dir = os.path.dirname(filename)
         with open(filename, 'r') as f:
-            yml = yaml.safe_load(f)
+            yml = yaml.safe_load(f, Loader=Loader)
         cfg = Config.from_yml(yml,
                               dir_=cfg_dir,
                               threads=threads,
