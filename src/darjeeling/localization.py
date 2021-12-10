@@ -144,7 +144,9 @@ class Localization:
         logger.info(f"using suspiciousness metric: {cfg.metric}")
 
         loc = Localization.from_coverage(coverage, metric)
+        logger.trace(f"excluding files from localization: {cfg.exclude_files}")
         loc = loc.exclude_files(cfg.exclude_files)
+        logger.trace(f"excluding lines from localization: {cfg.exclude_lines}")
         loc = loc.exclude_lines(cfg.exclude_lines)
         if cfg.restrict_to_files:
             loc = loc.restrict_to_files(cfg.restrict_to_files)
@@ -278,9 +280,10 @@ class Localization:
         """
         return self.exclude_lines([line])
 
-    def restrict_to_files(self,
-                          restricted_files: Iterable[str]
-                          ) -> 'Localization':
+    def restrict_to_files(
+        self,
+        restricted_files: Iterable[str]
+    ) -> 'Localization':
         """
         Returns a variant of this fault localization that is restricted to
         lines that belong to a given set of files.
@@ -288,9 +291,10 @@ class Localization:
         lines = [line for line in self if line.filename in restricted_files]
         return self.restrict_to_lines(lines)
 
-    def restrict_to_lines(self,
-                          lines: Iterable[FileLine]
-                          ) -> 'Localization':
+    def restrict_to_lines(
+        self,
+        lines: Iterable[FileLine]
+    ) -> 'Localization':
         """
         Returns a variant of this fault localization that is restricted to a
         given set of lines.
@@ -301,7 +305,7 @@ class Localization:
         """
         scores = {
             line: score for (line, score) in self.__line_to_score.items()
-            if lines in lines
+            if line in lines
         }
         return Localization(scores)
 
