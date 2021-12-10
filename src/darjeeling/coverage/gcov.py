@@ -238,7 +238,7 @@ class GCovCollector(CoverageCollector):
         shell = container.shell
         temporary_filename = files.mktemp()
 
-        command = f'gcovr -o "{temporary_filename}" -x -d --root {self._source_directory} . '
+        command = f'gcovr -o "{temporary_filename}" -x --root {self._source_directory} '
         if self._src_subdirectory and self._src_subdirectory != "":
             command+=f" {self._src_subdirectory} "
         logger.trace(f"executing gcovr command: {command}")
