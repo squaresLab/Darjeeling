@@ -3,6 +3,7 @@ __all__ = ('Spectra', 'SpectraRow')
 
 from typing import Mapping, MutableMapping, Set, Iterator
 
+from loguru import logger
 import attr
 
 from .core import TestCoverageMap, FileLine, FileLineMap, FileLineSet
@@ -54,7 +55,9 @@ class Spectra(Mapping[FileLine, SpectraRow]):
             for line in test_coverage:
                 tally[line] = tally.get(line, 0) + 1
 
-        return Spectra(num_pass, num_fail, tally_pass, tally_fail)
+        spectra = Spectra(num_pass, num_fail, tally_pass, tally_fail)
+        logger.trace(f"computed spectra: {spectra}")
+        return spectra
 
     def __init__(self,
                  num_pass: int,
