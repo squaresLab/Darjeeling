@@ -55,18 +55,18 @@ class ProgramDescriptionConfig:
         source_directory: str = dict_['source-directory']
 
         # build directory
-        if 'build-directory' not in dict_:
-            err("'build-directory' property is missing from 'program' section")
-        if not isinstance(dict_['build-directory'], str):
-            err("'build-directory' property should be a string")
-        build_directory: str = dict_['build-directory']
+        if 'gcovr-build-directory' not in dict_:
+            err("'gcovr-build-directory' property is missing from 'program' section")
+        if not isinstance(dict_['gcovr-build-directory'], str):
+            err("'gcovr-build-directory' property should be a string")
+        build_directory: str = dict_['gcovr-build-directory']
 
         # src-subdirectory (where coverage content is generated)
-        if 'src-subdirectory' not in dict_:
-            err("'src-subdirectory' property is missing from 'program' section")
-        if not isinstance(dict_['src-subdirectory'], str):
-            err("'src-subdirectory' property should be a string")
-        src_subdirectory: str = dict_['src-subdirectory']
+        if 'gcovr-src-subdirectory' not in dict_:
+            err("'gcovr-src-subdirectory' property is missing from 'program' section")
+        if not isinstance(dict_['gcovr-src-subdirectory'], str):
+            err("'gcovr-src-subdirectory' property should be a string")
+        src_subdirectory: str = dict_['gcovr-src-subdirectory']
 
         # language
         if 'language' not in dict_:
