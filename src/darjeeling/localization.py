@@ -101,6 +101,11 @@ def jaccard(ep: int, np: int, ef: int, nf: int) -> float:
 
 @absolute_suspiciousness_metric
 def tarantula(ep: int, np: int, ef: int, nf: int) -> float:
+    # protect against division by zero
+    tests_at_line = ep + ef
+    if tests_at_line == 0:
+        return 0
+
     top = ef / (ef + nf)
     br = ep / (ep + np)
     bottom = top + br
