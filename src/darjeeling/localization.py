@@ -103,11 +103,14 @@ def jaccard(ep: int, np: int, ef: int, nf: int) -> float:
 def tarantula(ep: int, np: int, ef: int, nf: int) -> float:
     # protect against division by zero
     tests_at_line = ep + ef
+    num_passing_tests = ep + np
+    num_failing_tests = ef + nf
+
     if tests_at_line == 0:
         return 0
 
-    top = ef / (ef + nf)
-    br = ep / (ep + np)
+    top = ef / num_failing_tests
+    br = ep / num_passing_tests if num_passing_tests > 0 else 0
     bottom = top + br
     return top / bottom
 
