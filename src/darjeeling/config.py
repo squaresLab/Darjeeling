@@ -116,6 +116,8 @@ class Config:
     terminate_early: bool
         Specifies whether or not the search should terminate upon
         discovering an acceptable patch.
+    plus: bool
+        overrides coverage mechanism and uses Darjeeling++ localization content
     threads: int
         The number of threads over which the search should be distributed.
     run_redundant_tests: bool
@@ -144,6 +146,7 @@ class Config:
     seed: int = attr.ib(default=0)
     optimizations: OptimizationsConfig = attr.ib(factory=OptimizationsConfig)
     terminate_early: bool = attr.ib(default=True)
+    plus: bool = attr.ib(default=False)
     threads: int = attr.ib(default=1)
     run_redundant_tests: bool = attr.ib(default=False)
 
@@ -170,6 +173,7 @@ class Config:
                  dir_: Optional[str] = None,
                  *,
                  terminate_early: bool = True,
+                 plus: bool = False,
                  seed: Optional[int] = None,
                  threads: Optional[int] = None,
                  run_redundant_tests: bool = False,
@@ -235,6 +239,8 @@ class Config:
 
         # coverage config
         if 'coverage' in yml:
+            if plus:
+                yml['coverage']['method']['type']='plus'
             coverage = CoverageConfig.from_dict(yml['coverage'], dir_)
         else:
             m = "'coverage' section is expected"
@@ -264,6 +270,7 @@ class Config:
                       threads=threads,
                       run_redundant_tests=run_redundant_tests,
                       terminate_early=terminate_early,
+                      plus=plus,
                       resource_limits=resource_limits,
                       transformations=transformations,
                       program=program,

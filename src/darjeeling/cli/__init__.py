@@ -190,7 +190,12 @@ class BaseController(cement.Controller):
              {'dest': 'threads',
               'type': int,
               'help': ('number of threads over which the repair workload '
-                       'should be distributed')})
+                       'should be distributed')}),
+            (['--plus'],
+             {'dest': 'plus',
+              'action': 'store_true',
+              'help': ('Utilize Darjeeling++ '
+                       'localization feature')})
         ]
     )
     def repair(self) -> bool:
@@ -205,6 +210,7 @@ class BaseController(cement.Controller):
         interactive: bool = self.app.pargs.interactive
         seed: Optional[int] = self.app.pargs.seed
         terminate_early: bool = self.app.pargs.terminate_early
+        plus: bool = self.app.pargs.plus
         threads: Optional[int] = self.app.pargs.threads
         limit_candidates: Optional[int] = \
             self.app.pargs.limit_candidates
@@ -249,6 +255,7 @@ class BaseController(cement.Controller):
                               threads=threads,
                               seed=seed,
                               terminate_early=terminate_early,
+                              plus=plus,
                               limit_candidates=limit_candidates,
                               limit_time_minutes=limit_time_minutes,
                               dir_patches=dir_patches)

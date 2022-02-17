@@ -33,6 +33,7 @@ class Session(DarjeelingEventProducer):
     resources: ResourceUsageTracker = attr.ib()
     _problem: Problem = attr.ib()
     terminate_early: bool = attr.ib(default=True)
+    plus: bool = attr.ib(default=False)
     _patches: List[Candidate] = attr.ib(factory=list)
 
     def __attrs_post_init__(self) -> None:
@@ -142,7 +143,8 @@ class Session(DarjeelingEventProducer):
                        resources=resources,
                        problem=problem,
                        searcher=searcher,
-                       terminate_early=cfg.terminate_early)
+                       terminate_early=cfg.terminate_early,
+                       plus=cfg.plus)
 
     @property
     def snapshot(self) -> Snapshot:
