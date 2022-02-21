@@ -245,13 +245,34 @@ class PlusCollector(CoverageCollector):
                 if floc:
                    for f in floc:
                        traces=f.get('trace',None)
-                       for trace in traces:
-                           if trace:
-                               fname=trace[0]
-                               fdir =trace[1]
-                               fline=trace[2]
-                               fcol =trace[3]
-                               ffun =trace[4]
+                       if traces:
+                           for trace in traces:
+                               if trace:
+                                   fname=trace[0]
+                                   fdir =trace[1]
+                                   fline=trace[2]
+                                   fcol =trace[3]
+                                   ffun =trace[4]
+                                   if fname != "" and fdir != "":
+                                       try: 
+                                           fpath = os.path.join(fdir, fname)
+                                           absolute_filename = os.path.abspath(fpath)
+                                           rel_file=self.get_relative_filename(absolute_filename)
+                                           x=ftl.get(rel_file,None)
+                                           if not x:
+                                               ftl[rel_file]=set()
+                                           ftl[rel_file].add(fline)
+                                           logger.info(f"filename: {absolute_filename} => {rel_file} => {fline}")
+                                       except Exception as e:
+                                           raise(e)
+                       else:
+                           loc=f.get('loc',None)
+                           if loc:
+                               fname=loc[0]
+                               fdir =loc[1] if isinstance(loc[1],str) else loc[1][0]
+                               fline=loc[2]
+                               fcol =loc[3]
+                               ffun =loc[4]
                                if fname != "" and fdir != "":
                                    try: 
                                        fpath = os.path.join(fdir, fname)
