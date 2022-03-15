@@ -200,8 +200,12 @@ class GCovCollector(CoverageCollector):
         return self._resolve_filepath(filename_relative_child)
 
     def _resolve_filepath_pdr(self, base_filename: str) -> str:
-        src_file=os.path.join(self._src_subdirectory,base_filename)
-        return self._resolve_filepath(src_file)
+        base=os.path.basename(base_filename)
+        # may make sense to check for duplicate basenames, but TBD
+        source_lut = { os.path.basename(i):i for i in self._source_filenames }
+        #return source_lut.get(base,self._resolve_filepath(base)) # doesn't work 
+        #return source_lut.get(base,base_filename) # works
+        return source_lut.get(base,base) # works
 
     def _parse_xml_report(self, root: ET.Element) -> FileLineSet:
         packages_node = root.find('packages')
@@ -242,9 +246,10 @@ class GCovCollector(CoverageCollector):
         if self._src_subdirectory and self._src_subdirectory != "":
             command+=f" {self._src_subdirectory} "
         logger.trace(f"executing gcovr command: {command}")
-        #fpath=os.path.join(self._build_directory,self._src_subdirectory)
         fpath=self._build_directory
         logger.info(f"executing gcovr command: '{command}' in '{fpath}'")
+        #gcda=shell.check_output("find . -type f -name \"*.gcda\"", cwd=fpath)
+        #logger.info(f"GCDA: \n>>>{gcda}\n<<<")
         shell.check_call(command, cwd=fpath)
         xml_file_contents = files.read(temporary_filename)
         logger.info(f"XML Contents: \n>>>>\n{xml_file_contents}\n<<<<")
