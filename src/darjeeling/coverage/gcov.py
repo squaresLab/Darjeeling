@@ -205,7 +205,7 @@ class GCovCollector(CoverageCollector):
         source_lut = { os.path.basename(i):i for i in self._source_filenames }
         #return source_lut.get(base,self._resolve_filepath(base)) # doesn't work 
         #return source_lut.get(base,base_filename) # works
-        return source_lut.get(base,base) # works
+        return os.path.relpath(source_lut.get(base,base),self._source_directory) # works
 
     def _parse_xml_report(self, root: ET.Element) -> FileLineSet:
         packages_node = root.find('packages')
