@@ -109,4 +109,12 @@ class CoverageConfig:
         if self.restrict_to_lines:
             coverage = coverage.restrict_to_locations(self.restrict_to_lines)
 
+        # exclude yacc and lex files
+        def is_yacc_or_lex_file(filename: str) -> bool:
+            return filename.endswith(".y") or filename.endswith(".l")
+        
+        covered_files = set(filename for test_coverage in coverage.values() for filename in test_coverage.lines.files)
+        restrict_to_files = set(filename for filename in covered_files if not is_yacc_or_lex_file(filename))
+        coverage = coverage.restrict_to_files(restrict_to_files)
+
         return coverage
