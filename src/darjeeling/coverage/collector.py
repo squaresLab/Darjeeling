@@ -8,7 +8,13 @@ import abc
 from loguru import logger
 
 from .. import exceptions as exc
-from ..core import FileLineSet, TestCoverage, TestCoverageMap
+from ..core import (
+    FileLineSet,
+    Test,
+    TestCoverage,
+    TestCoverageMap,
+    TestOutcome,
+)
 from ..container import ProgramContainer
 from ..environment import Environment
 from ..program import ProgramDescription
@@ -61,6 +67,10 @@ class CoverageCollector(abc.ABC):
         """Prepares a container for coverage collection."""
         return
 
+    def _override_test_outcome(self, test: Test, outcome: TestOutcome) -> TestOutcome:
+        """This method can be overridden by coverage collectors to force the outcome for a particular test"""
+        return outcome
+
     @final
     def collect(self) -> TestCoverageMap:
         """Computes coverage for a given program."""
@@ -75,6 +85,7 @@ class CoverageCollector(abc.ABC):
             for test in test_suite:
                 logger.trace(f"executing test for coverage: {test}")
                 outcome = test_suite.execute(container, test, coverage=True)
+                outcome = self._override_test_outcome(test, outcome)
                 logger.trace(f"executed test for coverage: {outcome}")
                 lines = self._extract(container)
                 logger.trace(f"lines covered by test [{test}]: {lines}")

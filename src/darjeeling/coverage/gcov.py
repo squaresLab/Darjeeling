@@ -9,7 +9,7 @@ from loguru import logger
 import attr
 
 from .collector import CoverageCollector, CoverageCollectorConfig
-from ..core import FileLineSet
+from ..core import FileLineSet, Test, TestOutcome
 from ..source import ProgramSourceFile
 
 if t.TYPE_CHECKING:
@@ -90,6 +90,7 @@ class FileToInstrument:
 class GCovCollectorConfig(CoverageCollectorConfig):
     NAME: t.ClassVar[str] = 'gcov'
     files_to_instrument: t.Collection[FileToInstrument]
+    override_test_outcomes: t.Mapping[str, bool] = attr.ib(factory=dict)
 
     @classmethod
     def from_dict(
@@ -107,7 +108,13 @@ class GCovCollectorConfig(CoverageCollectorConfig):
                 for dd in dict_['files-to-instrument']
             ]
 
-        config = GCovCollectorConfig(files_to_instrument=files_to_instrument)
+        # test outcome overrides
+        override_test_outcomes: t.Dict[str, bool] = dict_.get("override-test-outcomes", {})
+
+        config = GCovCollectorConfig(
+            files_to_instrument=files_to_instrument,
+            override_test_outcomes=override_test_outcomes,
+        )
         logger.trace(f"gcov config: {config}")
         return config
 
@@ -145,6 +152,7 @@ class GCovCollectorConfig(CoverageCollectorConfig):
             src_subdirectory=src_subdirectory,
             source_filenames=source_filenames,
             files_to_instrument=files_to_instrument,
+            override_test_outcomes=self.override_test_outcomes,
         )
         logger.trace(f"built coverage collector: {collector}")
         return collector
@@ -159,6 +167,16 @@ class GCovCollector(CoverageCollector):
     _files_to_instrument: t.Collection[FileToInstrument]
     _source_filenames: t.FrozenSet[str]
     _environment: 'Environment' = attr.ib(repr=False)
+    _override_test_outcomes: t.Mapping[str, bool]
+
+    def _override_test_outcome(self, test: Test, outcome: TestOutcome) -> TestOutcome:
+        test_name = test.name
+        if test_name not in self._override_test_outcomes:
+            return outcome
+        desired_success_flag = self._override_test_outcomes[test_name]
+        outcome = attr.evolve(outcome, successful=desired_success_flag)
+        logger.debug(f"overridden test outcome: {outcome}")
+        return outcome
 
     def _read_line_coverage_for_class(self, xml_class: ET.Element) -> t.Set[int]:
         xml_lines = xml_class.find('lines')
@@ -200,12 +218,10 @@ class GCovCollector(CoverageCollector):
         return self._resolve_filepath(filename_relative_child)
 
     def _resolve_filepath_pdr(self, base_filename: str) -> str:
-        base=os.path.basename(base_filename)
+        base = os.path.basename(base_filename)
         # may make sense to check for duplicate basenames, but TBD
-        source_lut = { os.path.basename(i):i for i in self._source_filenames }
-        #return source_lut.get(base,self._resolve_filepath(base)) # doesn't work 
-        #return source_lut.get(base,base_filename) # works
-        return os.path.relpath(source_lut.get(base,base),self._source_directory) # works
+        source_lut = { os.path.basename(fn): fn for fn in self._source_filenames }
+        return os.path.relpath(source_lut.get(base, base), self._source_directory)
 
     def _parse_xml_report(self, root: ET.Element) -> FileLineSet:
         packages_node = root.find('packages')
