@@ -59,6 +59,7 @@ class BuildStep:
             if the build step timed out or returned a non-zero code.
         """
         try:
+            logger.debug(f"executing build step [{self.command}] with time limit: {time_limit}")
             container.shell.check_output(
                 self.command,
                 cwd=self.directory,
@@ -66,6 +67,7 @@ class BuildStep:
                 environment=environment,
                 text=True,
             )
+            logger.debug(f"executed build step [{self.command}] with time limit: {time_limit}")
         except dockerblade.exceptions.CalledProcessError as err:
             output: t.Optional[str]
             if err.output is None:
@@ -79,6 +81,9 @@ class BuildStep:
                                       returncode=err.returncode,
                                       duration=err.duration,
                                       output=output)
+        except Exception as err:
+            logger.exception("SOMETHING REALLY BAD HAPPENED!")
+            raise err
 
 
 @attr.s(frozen=True, auto_attribs=True, slots=True)
@@ -189,7 +194,7 @@ class BuildInstructions(t.Sequence[BuildStep]):
             for step in self.steps:
                 time_left: t.Optional[int] = None
                 if self.time_limit:
-                    time_left = int(max(0, timer.duration - self.time_limit))
+                    time_left = int(max(0, self.time_limit - timer.duration))
                 step.execute(
                     container,
                     time_limit=time_left,
