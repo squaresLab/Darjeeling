@@ -59,13 +59,14 @@ class BuildStep:
             if the build step timed out or returned a non-zero code.
         """
         try:
-            container.shell.check_output(
+            outcome = container.shell.run(
                 self.command,
                 cwd=self.directory,
                 time_limit=time_limit,
                 environment=environment,
                 text=True,
             )
+            outcome.check_returncode()
         except dockerblade.exceptions.CalledProcessError as err:
             output: t.Optional[str]
             if err.output is None:
