@@ -101,8 +101,16 @@ def jaccard(ep: int, np: int, ef: int, nf: int) -> float:
 
 @absolute_suspiciousness_metric
 def tarantula(ep: int, np: int, ef: int, nf: int) -> float:
-    top = ef / (ef + nf)
-    br = ep / (ep + np)
+    # protect against division by zero
+    tests_at_line = ep + ef
+    num_passing_tests = ep + np
+    num_failing_tests = ef + nf
+
+    if tests_at_line == 0:
+        return 0
+
+    top = ef / num_failing_tests
+    br = ep / num_passing_tests if num_passing_tests > 0 else 0
     bottom = top + br
     return top / bottom
 
@@ -149,6 +157,7 @@ class Localization:
         logger.debug(f"exclude_files: {cfg.exclude_files}")
         logger.debug(f"exclude_lines: {cfg.exclude_lines}")
         loc = loc.exclude_files(cfg.exclude_files)
+        logger.trace(f"excluding lines from localization: {cfg.exclude_lines}")
         loc = loc.exclude_lines(cfg.exclude_lines)
         if cfg.restrict_to_files:
             loc = loc.restrict_to_files(cfg.restrict_to_files)
@@ -285,9 +294,10 @@ class Localization:
         """
         return self.exclude_lines([line])
 
-    def restrict_to_files(self,
-                          restricted_files: Iterable[str]
-                          ) -> 'Localization':
+    def restrict_to_files(
+        self,
+        restricted_files: Iterable[str]
+    ) -> 'Localization':
         """
         Returns a variant of this fault localization that is restricted to
         lines that belong to a given set of files.
@@ -295,9 +305,10 @@ class Localization:
         lines = [line for line in self if line.filename in restricted_files]
         return self.restrict_to_lines(lines)
 
-    def restrict_to_lines(self,
-                          lines: Iterable[FileLine]
-                          ) -> 'Localization':
+    def restrict_to_lines(
+        self,
+        lines: Iterable[FileLine]
+    ) -> 'Localization':
         """
         Returns a variant of this fault localization that is restricted to a
         given set of lines.
