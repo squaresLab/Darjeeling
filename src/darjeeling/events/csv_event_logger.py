@@ -67,7 +67,8 @@ class CsvEventLogger(DarjeelingEventHandler):
         if isinstance(event, CandidateEvaluationFinished):
             diff = str(event.candidate.to_diff())
             is_repair = event.outcome.is_repair
-            return ['PATCH-ACCEPTED' if is_repair else 'PATCH-REJECTED',
+            is_general_repair = '-GENERAL' if event.outcome.is_general_repair else ''
+            return ['PATCH-ACCEPTED'+is_general_repair if is_repair else 'PATCH-REJECTED',
                     event.candidate.id, diff]
         if isinstance(event, BuildStarted):
             return ['BUILD-STARTED', event.candidate.id]

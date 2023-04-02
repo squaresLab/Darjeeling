@@ -24,12 +24,15 @@ class ResourceUsageTracker:
         The amount of time spent searching for a patch.
     tests: int
         The number of test executions.
+    heldout_tests: int
+        The number of heldout test executions.        
     candidates: int
         The number of candidate patch evaluations.
     """
     limits: 'ResourceLimits'
     wall_clock: Stopwatch = attr.ib(factory=Stopwatch)
     tests: int = attr.ib(default=0)
+    heldout_tests: int = attr.ib(default=0)    
     candidates: int = attr.ib(default=0)
 
     @staticmethod
@@ -84,6 +87,12 @@ class ResourceLimits(ResourceLimit):
                 err("'tests' property in 'resource-limits' section "
                     "should be an int")
             limits.append(TestLimit(dict_['tests']))
+        
+        if 'heldout_tests' in dict_:
+            if not isinstance(dict_['heldout_tests'], int):
+                err("'heldout_tests' property in 'resource-limits' section "
+                    "should be an int")
+            limits.append(TestLimit(dict_['heldout_tests']))
 
         if 'time-minutes' in dict_:
             if not isinstance(dict_['time-minutes'], int):

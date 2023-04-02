@@ -142,7 +142,7 @@ class CandidateEvaluationFinished(DarjeelingEvent):
 
     def __str__(self) -> str:
         if self.outcome.is_repair:
-            return f"found acceptable patch [{self.candidate.id}]"
+            return f"found acceptable patch [{self.candidate.id}] [generalizes={self.outcome.is_general_repair}]"
         else:
             return f"rejected candidate patch [{self.candidate.id}]"
 

@@ -28,7 +28,8 @@ class Searcher(DarjeelingEventProducer, abc.ABC):
                  threads: int = 1,
                  terminate_early: bool = True,
                  test_sample_size: Optional[Union[int, float]] = None,
-                 run_redundant_tests: bool = True
+                 run_redundant_tests: bool = True,
+                 run_heldout_tests: bool = True
                  ) -> None:
         """Constructs a new searcher.
 
@@ -45,6 +46,8 @@ class Searcher(DarjeelingEventProducer, abc.ABC):
             Specifies if redundant tests should be run. Tests are deemed
             redundant if a candidate patch does not change lines that the
             test uses. Lines used are determined by test coverage.
+        run_heldout_tests: bool
+            Specifies if heldout tests should be run. 
         """
         logger.debug("constructing searcher")
         super().__init__()
@@ -56,7 +59,8 @@ class Searcher(DarjeelingEventProducer, abc.ABC):
                                      num_workers=threads,
                                      terminate_early=terminate_early,
                                      sample_size=test_sample_size,
-                                     run_redundant_tests=run_redundant_tests)
+                                     run_redundant_tests=run_redundant_tests,
+                                     run_heldout_tests=run_heldout_tests)
 
         self.__started = False
         self.__stopped = False

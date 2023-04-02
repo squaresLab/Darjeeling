@@ -48,7 +48,8 @@ class Evaluator(DarjeelingEventProducer):
                  terminate_early: bool = True,
                  sample_size: Optional[Union[float, int]] = None,
                  outcomes: Optional[CandidateOutcomeStore] = None,
-                 run_redundant_tests: bool = False
+                 run_redundant_tests: bool = False,
+                 run_heldout_tests: bool = False
                  ) -> None:
         super().__init__()
         self.__problem = problem
@@ -61,6 +62,7 @@ class Evaluator(DarjeelingEventProducer):
         self.__terminate_early = terminate_early
         self.__outcomes = outcomes or CandidateOutcomeStore()
         self.__run_redundant_tests = run_redundant_tests
+        self.__run_heldout_tests = run_heldout_tests
 
         self.__tests_failing: FrozenSet[Test] = \
             frozenset(self.__problem.failing_tests)
@@ -69,6 +71,9 @@ class Evaluator(DarjeelingEventProducer):
 
         # FIXME used the precomputed test ordering for now
         self.__test_ordering: Sequence[Test] = list(self.__problem.tests)
+
+        self.__heldout_tests: Sequence[Test] = list(self.__problem.heldout_tests)
+
 
         # if the sample size is passed as a fraction, convert that fraction
         # to an integer
@@ -138,12 +143,16 @@ class Evaluator(DarjeelingEventProducer):
     def _run_test(self,
                   container: ProgramContainer,
                   candidate: Candidate,
-                  test: Test
+                  test: Test,
+                  heldout: bool = False
                   ) -> TestOutcome:
         """Runs a test for a given patch using a provided container."""
         logger.debug(f"executing test: {test.name} [{candidate}]")
         self.dispatch(TestExecutionStarted(candidate, test))
-        self.__resources.tests += 1
+        if heldout:
+            self.__resources.heldout_tests += 1
+        else:
+            self.__resources.tests += 1
 
         # if an unexpected exception occurs during test execution, log the
         # event and report the test execution as a failure.
@@ -175,15 +184,29 @@ class Evaluator(DarjeelingEventProducer):
 
         # select a subset of tests to use for this evaluation
         tests, remainder = self._select_tests()
+
         if not self.__run_redundant_tests:
             tests, redundant = self._filter_redundant_tests(candidate, tests)
         else:
             redundant = set()
 
+        heldout = set()
+        if not self.__run_heldout_tests:
+            heldout = self.heldout_tests    
+        valid_heldout = True if len(heldout)>0 else False
+        
+            
+
+
         # compute outcomes for redundant tests
         test_outcomes = TestOutcomeSet({
             t.name: TestOutcome(True, 0.0) for t in redundant
         })  # type: TestOutcomeSet
+
+        heldout_test_outcomes = TestOutcomeSet({
+            t.name: TestOutcome(False, 0.0) for t in heldout
+        }) 
+        is_general_repair = True
 
         # if we have evidence that this patch is not a complete repair,
         # there is no need to extend beyond the test sample in the event
@@ -194,6 +217,7 @@ class Evaluator(DarjeelingEventProducer):
             logger.info(f"found candidate in cache: {candidate}")
             cached_outcome = outcomes[candidate]
             known_bad_patch |= not cached_outcome.is_repair
+            is_general_repair &= cached_outcome.is_general_repair
 
             if not cached_outcome.build.successful:
                 return cached_outcome
@@ -210,12 +234,22 @@ class Evaluator(DarjeelingEventProducer):
             tests = filtered_tests
             logger.debug(f"filtered tests: {tests}")
 
+            for test in heldout_tests:
+                if test.name in cached_outcome.heldout_tests:
+                    test_outcome = cached_outcome.heldout_tests[test.name]
+                    heldout_test_outcomes = \
+                        heldout_test_outcomes.with_outcome(test.name, test_outcome)
+
             # if no tests remain, construct a partial view of the candidate
             # outcome
             if not tests:
+                
                 return CandidateOutcome(cached_outcome.build,
                                         test_outcomes,
-                                        not known_bad_patch)
+                                        not known_bad_patch,
+                                        heldout_test_outcomes,
+                                        is_general_repair
+                                        )
 
         self.__resources.candidates += 1
         logger.debug(f"building candidate: {candidate}")
@@ -249,15 +283,28 @@ class Evaluator(DarjeelingEventProducer):
                         test_outcomes = \
                             test_outcomes.with_outcome(test.name, test_outcome)
                         known_bad_patch |= not test_outcome.successful
+                
+                if not known_bad_patch and valid_heldout:
+                    for test in heldout_tests:
+                        if not is_general_repair:
+                            break
+                        heldout_test_outcome = self._run_test(container, candidate, test, True)
+                        heldout_test_outcomes = \
+                            heldout_test_outcomes.with_outcome(test.name, test_outcome)
+                        is_general_repair &= heldout_test_outcome.successful
 
                 return CandidateOutcome(outcome_build,
                                         test_outcomes,
-                                        not known_bad_patch)
+                                        not known_bad_patch,
+                                        heldout_test_outcomes,
+                                        is_general_repair)
         except BuildFailure:
             logger.debug(f"failed to build candidate: {candidate}")
             outcome_build = BuildOutcome(False, timer_build.duration)
             self.dispatch(BuildFinished(candidate, outcome_build))
             return CandidateOutcome(outcome_build,
+                                    TestOutcomeSet(),
+                                    False,
                                     TestOutcomeSet(),
                                     False)
         except Exception:
