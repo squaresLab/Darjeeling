@@ -46,6 +46,8 @@ class Problem:
         The passing tests for this problem.
     test_ordering: Iterable[Test]
         The order in which tests should be executed.
+    heldout_tests__: Iterable[Test]
+        The heldout tests for this problem.        
     localization: Localization
         Fault localization based on the associated test suite.
     """
@@ -58,6 +60,7 @@ class Problem:
     failing_tests: Sequence[Test]
     passing_tests: Sequence[Test]
     test_ordering: Iterable[Test]
+    heldout_tests__: Iterable[Test]
     analysis: Optional[Analysis]
     localization: 'Localization'
 
@@ -125,6 +128,12 @@ class Problem:
             tuple(sorted(program.tests, key=functools.cmp_to_key(ordering)))
         logger.info('test order: {}', ', '.join(t.name for t in test_ordering))
 
+        heldout_tests__: Sequence[Test] = None
+        if program.heldout_tests:
+            heldout_tests__  = \
+                tuple(sorted(program.heldout_tests, key=functools.cmp_to_key(ordering)))
+            logger.info('heldout_test order: {}', ', '.join(t.name for t in heldout_tests__))            
+
         logger.debug("storing contents of source code files")
         source_files = set(location.filename for location in coverage.failing.locations)
         source_loader = ProgramSourceLoader(environment)
@@ -141,7 +150,8 @@ class Problem:
                           passing_tests=passing_tests,
                           failing_tests=failing_tests,
                           localization=localization,
-                          test_ordering=test_ordering)
+                          test_ordering=test_ordering,
+                          heldout_tests__=heldout_tests__)
         problem.validate()
         return problem
 
@@ -172,6 +182,17 @@ class Problem:
     def tests(self) -> Iterator[Test]:
         """Returns an iterator over the tests for this problem."""
         yield from self.test_ordering
+
+    @property
+    def heldout_tests(self) -> Iterator[Test]:
+        """Returns an iterator over the tests for this problem."""
+        if self.heldout_tests__:
+            yield from self.heldout_tests__
+        
+
+    @property
+    def heldout_test_suite(self) -> 'TestSuite':
+        return self.program.heldout_tests
 
     @property
     def test_suite(self) -> 'TestSuite':

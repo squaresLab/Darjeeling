@@ -41,13 +41,15 @@ class ExhaustiveSearcherConfig(SearcherConfig):
               transformations: 'ProgramTransformations',
               *,
               threads: int = 1,
-              run_redundant_tests: bool = False
+              run_redundant_tests: bool = False,
+              run_heldout_tests: bool = False
               ) -> Searcher:
         return ExhaustiveSearcher(problem=problem,
                                   resources=resources,
                                   transformations=transformations,
                                   threads=threads,
-                                  run_redundant_tests=run_redundant_tests)
+                                  run_redundant_tests=run_redundant_tests,
+                                  run_heldout_tests=run_heldout_tests)
 
 
 class ExhaustiveSearcher(Searcher):
@@ -57,14 +59,16 @@ class ExhaustiveSearcher(Searcher):
                  transformations: 'ProgramTransformations',
                  *,
                  threads: int = 1,
-                 run_redundant_tests: bool = False
+                 run_redundant_tests: bool = False,
+                 run_heldout_tests: bool = False
                  ) -> None:
         # FIXME for now!
         self.__candidates = self.all_single_edit_patches(problem, transformations)
         super().__init__(problem=problem,
                          resources=resources,
                          threads=threads,
-                         run_redundant_tests=run_redundant_tests)
+                         run_redundant_tests=run_redundant_tests,
+                         run_heldout_tests=run_heldout_tests)
 
     @staticmethod
     def all_single_edit_patches(problem: 'Problem',

@@ -46,6 +46,7 @@ class SearcherConfig(abc.ABC):
               transformations: 'ProgramTransformations',
               *,
               threads: int = 1,
-              run_redundant_tests: bool = False
+              run_redundant_tests: bool = False,
+              run_heldout_tests: bool = False
               ) -> 'Searcher':
         ...

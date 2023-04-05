@@ -25,28 +25,44 @@ class CandidateOutcome:
     build: BuildOutcome
     tests: TestOutcomeSet
     is_repair: bool
+    heldout_tests: TestOutcomeSet
+    is_general_repair: bool
 
     def with_test_outcome(self,
                           test: str,
                           successful: bool,
-                          time_taken: float
+                          time_taken: float,
+                          is_heldout: bool,
                           ) -> 'CandidateOutcome':
         outcome = TestOutcome(successful, time_taken)
-        test_outcomes = self.tests.with_outcome(test, outcome)
-        return CandidateOutcome(self.build, test_outcomes, self.is_repair)
+        test_outcomes = None
+        heldout_test_outcomes = None
+        if heldout:
+            heldout_test_outcomes = self.heldout_tests.with_outcome(test, outcome)
+        else:
+            test_outcomes = self.tests.with_outcome(test, outcome)
+        return CandidateOutcome(
+                self.build, test_outcomes, self.is_repair, 
+                heldout_test_outcomes, self.is_general_repair
+            )
 
     def merge(self,
               other: 'CandidateOutcome'
               ) -> 'CandidateOutcome':
         other_is_repair = all(other.tests[t].successful for t in other.tests)
+        other_is_general_repair = all(other.heldout_tests[t].successful for t in other.heldout_tests)
         return CandidateOutcome(self.build,
                                 self.tests.merge(other.tests),
-                                self.is_repair and other_is_repair)
+                                self.heldout_tests.merge(other.heldout_tests),
+                                self.is_repair and other_is_repair,
+                                self.is_general_repair and other_is_general_repair)
 
     def to_dict(self) -> Dict[str, Any]:
         return {'build': self.build.to_dict(),
                 'tests': self.tests.to_dict(),
-                'is-repair': self.is_repair}
+                'is-repair': self.is_repair,
+                'heldout_tests': self.heldout_tests.to_dict(),
+                'is-general-repair': self.is_general_repair}
 
 
 class CandidateOutcomeStore(Mapping[Candidate, CandidateOutcome]):

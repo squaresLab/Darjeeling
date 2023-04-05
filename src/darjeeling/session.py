@@ -136,7 +136,9 @@ class Session(DarjeelingEventProducer):
                                     resources=resources,
                                     transformations=transformations,
                                     threads=cfg.threads,
-                                    run_redundant_tests=cfg.run_redundant_tests)
+                                    run_redundant_tests=cfg.run_redundant_tests,
+                                    run_heldout_tests=cfg.run_heldout_tests
+                                    )
 
         # build session
         return Session(dir_patches=dir_patches,
@@ -201,6 +203,7 @@ class Session(DarjeelingEventProducer):
         logger.info(f"found {len(self._patches)} plausible patches")
         logger.info(f"time taken: {time_running_mins:.2f} minutes")
         logger.info(f"# test evaluations: {self.resources.tests}")
+        logger.info(f"# heldout_test evaluations: {self.resources.heldout_tests}")
         logger.info(f"# candidate evaluations: {self.resources.candidates}")
 
         self._save_patches_to_disk()

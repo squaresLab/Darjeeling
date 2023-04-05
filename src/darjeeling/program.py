@@ -28,6 +28,7 @@ class ProgramDescriptionConfig:
     build_instructions: BuildInstructions
     build_instructions_for_coverage: BuildInstructions
     tests: TestSuiteConfig
+    heldout_tests: TestSuiteConfig
     source_directory: str
     build_directory: str
     src_subdirectory: str
@@ -87,6 +88,15 @@ class ProgramDescriptionConfig:
             err("'tests' section should be an object")
         tests = TestSuiteConfig.from_dict(dict_.get('tests', {}), dir_)
 
+        heldout_tests=None
+        # test suite
+        if 'heldout-tests' not in dict_:
+            logger.info("'heldout-tests' section is missing from 'program' section")
+        else:
+            if not isinstance(dict_['heldout-tests'], dict):
+                err("'heldout-tests' section should be an object")
+            heldout_tests = TestSuiteConfig.from_dict(dict_.get('heldout-tests', {}), dir_)
+
         # build instructions
         if 'build-instructions' not in dict_:
             err("'build-instructions' section is missing from 'program' section")
@@ -101,6 +111,7 @@ class ProgramDescriptionConfig:
                                         build_instructions=build_instructions,
                                         build_instructions_for_coverage=build_instructions_for_coverage,
                                         tests=tests,
+                                        heldout_tests=heldout_tests,
                                         snapshot=None,
                                         source_directory=source_directory,
                                         build_directory=build_directory,
@@ -109,6 +120,9 @@ class ProgramDescriptionConfig:
 
     def build(self, environment: 'Environment') -> 'ProgramDescription':
         tests = self.tests.build(environment)
+        heldout_tests=None
+        if self.heldout_tests:
+            heldout_tests = self.heldout_tests.build(environment)
         return ProgramDescription(environment=environment,
                                   image=self.image,
                                   language=self.language,
@@ -116,6 +130,7 @@ class ProgramDescriptionConfig:
                                   build_instructions=self.build_instructions,
                                   build_instructions_for_coverage=self.build_instructions_for_coverage,
                                   tests=tests,
+                                  heldout_tests=heldout_tests,
                                   source_directory=self.source_directory,
                                   build_directory=self.build_directory,
                                   src_subdirectory=self.src_subdirectory
@@ -159,6 +174,7 @@ class ProgramDescription:
     build_instructions: BuildInstructions
     build_instructions_for_coverage: BuildInstructions
     tests: 'TestSuite'
+    heldout_tests: 'TestSuite'
     source_directory: str
     build_directory: str
     src_subdirectory: str
@@ -170,6 +186,7 @@ class ProgramDescription:
         *,
         coverage: bool = False,
         environment: t.Optional[t.Mapping[str, str]] = None,
+        heldout: bool = False,
     ) -> TestOutcome:
         """Executes a given test in a container.
 
@@ -192,7 +209,10 @@ class ProgramDescription:
         TestOutcome
             A concise summary of the test execution.
         """
-        return self.tests.execute(
+        tests_=self.tests
+        if heldout:
+            tests_=self.heldout_tests
+        return tests_.execute(
             container,
             test,
             coverage=coverage,
