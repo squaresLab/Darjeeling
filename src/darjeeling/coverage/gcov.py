@@ -303,7 +303,7 @@ class GCovCollector(CoverageCollector):
             filename = file_to_instrument.filename
             logger.trace(f'adding gcov instrumentation to {filename}')
             contents_original = files.read(filename)
-            logger.trace(f'original file [{filename}]:\n{contents_original}')
+            # logger.trace(f'original file [{filename}]:\n{contents_original}')
             # FIXME add instrumentation at before specified line
             # contents_instrumented = _INSTRUMENTATION + contents_original
             contents_instrumented = self._instrument(
@@ -311,7 +311,7 @@ class GCovCollector(CoverageCollector):
                 contents=contents_original,
                 inject_at_line=file_to_instrument.line,
             )
-            logger.trace(f'instrumented file [{filename}]:\n{contents_instrumented}')
+            # logger.trace(f'instrumented file [{filename}]:\n{contents_instrumented}')
             files.write(filename, contents_instrumented)
 
         build_instructions = self.program.build_instructions_for_coverage
