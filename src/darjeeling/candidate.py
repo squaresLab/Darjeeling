@@ -7,7 +7,7 @@ import typing
 from bugzoo.core.patch import Patch
 import attr
 
-from .core import Replacement, FileLine
+from .core import ( Replacement, FileLine )
 from .transformation import Transformation
 from .util import tuple_from_iterable
 
@@ -64,6 +64,10 @@ class DiffPatch:
         return self._patch.files
 
     @property
+    def patch(self) -> Patch:
+        return self._patch
+    
+    @property
     def file_name(self) -> str:
         return self._file
     
@@ -74,21 +78,33 @@ class DiffPatch:
 class DiffCandidate:
     """Represents a repair as a set of atomic program transformations."""
     problem: 'Problem' = attr.ib(hash=False, eq=False)
-    patch: DiffPatch = attr.ib(factory=DiffPatch)
+    _diffpatch: DiffPatch = attr.ib(factory=DiffPatch)
 
     def lines_changed(self) -> List[FileLine]:
         locs: List[FileLine] = []
-        lines = [(f.old_fn,l) for f in patch.__file_patches for h in f.__hunks for l in range(h.__old_start_at,h.__old_start_at+len(h.__lines))]
-        for f,l in lines:
-            locs.append(FileLine(f,l))
+        # no accessibility to bugzoo.core.patch subcontent
+        #lines = [(f.old_fn,l) for f in self.get_file_patches() for h in f.__hunks for l in range(h.__old_start_at,h.__old_start_at+len(h.__lines))]
+        #for f,l in lines:
+        #    locs.append(FileLine(f,l))
         return locs
 
     def to_diff(self) -> Patch:
-        return self.patch.to_diff()
+        return self._diffpatch.to_diff()
+
+    def get_file_patches(self):
+        return self._diffpatch._patch.__file_patches
+
+    @property
+    def diffpatch(self) -> DiffPatch:
+        return self._diffpatch
+
+    @property
+    def patch(self) -> Patch:
+        return self._diffpatch.patch
 
     @property
     def file(self) -> str:
-        return self.patch.file_name
+        return self._diffpatch.file_name
 
     @property
     def id(self) -> str:

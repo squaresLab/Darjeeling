@@ -295,9 +295,13 @@ class EvaluateConfig:
         The number of threads over which the search should be distributed.
     program: ProgramDescriptionConfig
         A description of the program under transformation.
+    resource_limits: ResourceLimits
+        Limits on the resources that may be consumed during the search.
+
     """
     search: SearcherConfig
     program: ProgramDescriptionConfig
+    resource_limits: ResourceLimits
     dir_patches: str = attr.ib()
     threads: int = attr.ib(default=1)
 
@@ -350,6 +354,13 @@ class EvaluateConfig:
         elif threads is None:
             threads = 1
 
+        # resource limits
+        yml.setdefault('resource-limits', {})
+
+        resource_limits = \
+            ResourceLimits.from_dict(yml['resource-limits'], dir_)
+
+
 
         if 'program' not in yml:
             err("'program' section is missing")
@@ -361,5 +372,6 @@ class EvaluateConfig:
                       threads=threads,
                       program=program,
                       search=search,
-                      dir_patches=dir_patches)
+                      dir_patches=dir_patches,
+                      resource_limits=resource_limits)
 

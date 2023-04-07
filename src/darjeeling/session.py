@@ -234,8 +234,10 @@ class Session(DarjeelingEventProducer):
 @attr.s
 class EvaluateSession(DarjeelingEventProducer):
     """Used to manage and inspect an interactive evaluation session."""
+    dir_patches: str = attr.ib()
     _problem: Problem = attr.ib()
     searcher: Searcher = attr.ib()
+    resources: ResourceUsageTracker = attr.ib()
     candidates: List[DiffPatch] = attr.ib(factory=list)
     _general_patches: List[DiffPatch] = attr.ib(factory=list)
 
@@ -278,7 +280,7 @@ class EvaluateSession(DarjeelingEventProducer):
         logger.debug("building program...")
         program = cfg.program.build(environment)
 
-        resources = ResourceUsageTracker.no_limits()
+        resources = ResourceUsageTracker.with_limits(cfg.resource_limits)
 
         # build problem for solution evaluations
         problem = Problem.build_evaluation(environment=environment,
@@ -304,7 +306,9 @@ class EvaluateSession(DarjeelingEventProducer):
         return EvaluateSession(                       
                        problem=evaluation,
                        searcher=searcher,
-                       general_patches=candidates
+                       resources=resources,
+                       candidates=candidates,
+                       dir_patches=dir_patches
                     )
 
     @property

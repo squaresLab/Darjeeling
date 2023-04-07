@@ -93,5 +93,10 @@ class Reviewer(Searcher):
 
         for candidate, outcome in self.as_evaluated():
             if outcome.is_repair:
+                logger.trace(f"{repr(candidate)} PASSED additional evaluation criteria.")
+                print(f"{repr(candidate)} PASSED additional evaluation criteria.")
                 yield candidate
+            else:
+                logger.trace(f"{repr(candidate)} FAILED additional evaluation criteria.")
+                print(f"{repr(candidate)} FAILED additional evaluation criteria.")
             self.evaluate(self._generate())

@@ -330,6 +330,12 @@ class BaseController(cement.Controller):
         dir_patches: Optional[str] = self.app.pargs.dir_patches
         threads: Optional[int] = self.app.pargs.threads
         log_to_filename: Optional[str] = self.app.pargs.log_to_file
+
+        logger.remove()
+        logger.enable('darjeeling')
+        for plugin_name in LOADED_PLUGINS:
+            logger.enable(plugin_name)
+
         with open(filename, 'r') as f:
             yml = yaml.safe_load(f)
 

@@ -161,10 +161,12 @@ class Evaluator(DarjeelingEventProducer):
             outcome = TestOutcome(successful=False,
                                   time_taken=timer.duration)
 
+        id_=" heldout" if isinstance(candidate,DiffCandidate) else ""
+
         if not outcome.successful:
-            logger.debug(f"* test failed: {test.name} ({candidate})")
+            logger.debug(f"*{id_} test failed: {test.name} ({candidate})")
         else:
-            logger.debug(f"* test passed: {test.name} ({candidate})")
+            logger.debug(f"*{id_} test passed: {test.name} ({candidate})")
         self.dispatch(TestExecutionFinished(candidate, test, outcome))
         return outcome
 
