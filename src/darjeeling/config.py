@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 __all__ = ('Config', 'OptimizationsConfig', 'CoverageConfig',
-           'LocalizationConfig')
+           'LocalizationConfig', 'EvaluateConfig')
 
 from typing import Any, Collection, Dict, List, NoReturn, Optional, Set
 import datetime
@@ -279,3 +279,87 @@ class Config:
                       search=search,
                       optimizations=opts,
                       dir_patches=dir_patches)
+
+
+@attr.s(frozen=True, auto_attribs=True)
+class EvaluateConfig:
+    """A configuration for Darjeeling to evaluate patches with additional content.
+
+    Attributes
+    ----------
+    dir_patches: str
+        The absolute path to the directory to which patches are saved.
+    seed: int
+        The seed that should be used by the random number generator.
+    threads: int
+        The number of threads over which the search should be distributed.
+    program: ProgramDescriptionConfig
+        A description of the program under transformation.
+    """
+    search: SearcherConfig
+    program: ProgramDescriptionConfig
+    dir_patches: str = attr.ib()
+    threads: int = attr.ib(default=1)
+
+    @dir_patches.validator
+    def validate_patches(self, attribute, value):
+        if not os.path.isabs(value):
+            m = "patch directory should be an absolute path."
+            raise BadConfigurationException(m)
+
+    @threads.validator
+    def validate_threads(self, attribute, value):
+        if value < 1:
+            m = "number of threads must be greater than or equal to 1."
+            raise BadConfigurationException(m)
+
+    @staticmethod
+    def from_yml(yml: Dict[str, Any],
+                 dir_: Optional[str] = None,
+                 *,
+                 threads: Optional[int] = None,
+                 dir_patches: Optional[str] = None
+                 ) -> 'EvaluateConfig':
+        """Loads a configuration from a YAML dictionary.
+
+        Raises
+        ------
+        BadConfigurationException
+            If an illegal configuration is provided.
+        """
+        def err(m: str) -> NoReturn:
+            raise BadConfigurationException(m)
+
+        if dir_patches is None and 'save-patches-to' in yml:
+            dir_patches = yml['save-patches-to']
+            if not isinstance(dir_patches, str):
+                err("'save-patches-to' property should be a string")
+            if not os.path.isabs(dir_patches):
+                if not dir_:
+                    err("'save-patches-to' must be absolute for non-file-based configurations")
+                dir_patches = os.path.join(dir_, dir_patches)
+        elif dir_patches is None:
+            if not dir_:
+                err("'save-patches-to' must be specified for non-file-based configurations")
+            dir_patches = os.path.join(dir_, 'patches')
+
+        if threads is None and 'threads' in yml:
+            if not isinstance(yml['threads'], int):
+                err("'threads' property should be an int")
+            threads = yml['threads']
+        elif threads is None:
+            threads = 1
+
+
+        if 'program' not in yml:
+            err("'program' section is missing")
+        program = ProgramDescriptionConfig.from_dict(dict_=yml['program'], dir_=dir_, heldout=True)
+        
+        search = SearcherConfig.from_dict({'type':'reviewer'}, dir_)
+
+        return EvaluateConfig(
+                      threads=threads,
+                      program=program,
+                      search=search,
+                      dir_patches=dir_patches)
+

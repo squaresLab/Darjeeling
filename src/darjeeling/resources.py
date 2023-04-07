@@ -37,6 +37,11 @@ class ResourceUsageTracker:
         """Constructs a new tracker with given resource limits."""
         return ResourceUsageTracker(limits=limits)
 
+    @staticmethod
+    def no_limits() -> 'ResourceUsageTracker':
+        """Constructs a new tracker with given resource limits."""
+        return ResourceUsageTracker(limits=None)
+
     def check_limits(self) -> None:
         """Checks whether the resource limit has been reached, and if so,
         throws an exception.
@@ -46,7 +51,8 @@ class ResourceUsageTracker:
         ResourceLimitReached
             If a resource limit has been reached.
         """
-        self.limits.check(self)
+        if self.limits:
+            self.limits.check(self)
 
 
 class ResourceLimit(abc.ABC):

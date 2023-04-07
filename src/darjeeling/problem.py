@@ -14,6 +14,7 @@ from .core import Test, FileLine, FileLineSet
 from .source import ProgramSource, ProgramSourceLoader
 from .exceptions import NoFailingTests, NoImplicatedLines
 
+
 if typing.TYPE_CHECKING:
     from .config import Config, OptimizationsConfig
     from .core import Language, TestCoverageMap
@@ -145,6 +146,51 @@ class Problem:
         problem.validate()
         return problem
 
+    @staticmethod
+    def build_evaluation(environment: 'Environment',
+              config: 'EvaluateConfig',
+              language: 'Language',
+              program: 'ProgramDescription',
+              *,
+              patch_files: set,
+              ) -> 'Problem':
+        """Constructs a Problem description based on Patch file for evaluation only.
+
+        Raises
+        -------
+        """
+
+        passing_tests: Sequence[Test] = \
+            tuple( sorted(program.tests) )
+        
+        failing_tests: Sequence[Test] = tuple()
+
+        logger.info("ordering test cases")
+        test_ordering: Sequence[Test] = \
+            tuple(sorted(program.tests))
+        logger.info('test order: {}', ', '.join(t.name for t in test_ordering))
+
+        logger.debug("storing contents of source code files")
+        source_files = set(patch_files)
+        source_loader = ProgramSourceLoader(environment)
+        sources = source_loader.for_program(program, files=source_files)
+        logger.debug("stored contents of source code files")
+
+        solution = Problem(environment=environment,
+                          program=program,
+                          language=language,
+                          sources=sources,
+                          config=config,
+                          passing_tests=passing_tests,
+                          failing_tests=failing_tests,
+                          test_ordering=test_ordering,
+                          analysis=None,
+                          coverage=None,
+                          localization=None
+                          )
+        
+        return solution
+
     def validate(self) -> None:
         """
         Ensures that this repair problem is valid. To be considered valid, a
@@ -188,3 +234,4 @@ class Problem:
     @property
     def implicated_files(self) -> Iterator[str]:
         yield from set(location.filename for location in self.coverage.failing.locations)
+

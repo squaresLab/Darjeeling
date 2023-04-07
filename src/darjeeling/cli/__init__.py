@@ -16,11 +16,11 @@ import yaml
 from ..environment import Environment
 from ..problem import Problem
 from ..version import __version__ as VERSION
-from ..config import Config
+from ..config import Config, EvaluateConfig
 from ..events import CsvEventLogger, WebSocketEventHandler
 from ..plugins import LOADED_PLUGINS
 from ..resources import ResourceUsageTracker
-from ..session import Session
+from ..session import Session, EvaluateSession
 from ..exceptions import BadConfigurationException
 from ..util import duration_str
 
@@ -300,6 +300,60 @@ class BaseController(cement.Controller):
                 sys.exit(0)
             else:
                 sys.exit(1)
+
+    @cement.ex(
+        help='evaluate a repair specified by patch using additional criteria',
+        arguments=[
+            (['filename'],
+             {'help': ('a Darjeeling configuration file describing a faulty '
+                       'program and how it should be repaired.')}),
+            (['--patch-dir'],
+             {'help': 'path containing patches to restore and evaluate.',
+              'dest': 'dir_patches',
+              'type': str}),
+            (['--log-to-file'],
+             {'help': 'path to store the log file.',
+              'type': str}),
+            (['--threads'],
+             {'dest': 'threads',
+              'type': int,
+              'help': ('number of threads over which the repair workload '
+                       'should be distributed')})
+        ]
+    )
+    def evaluate(self) -> None:
+        """Evaluates a given program."""
+        # load the configuration file
+        filename = self.app.pargs.filename
+        filename = os.path.abspath(filename)
+        cfg_dir = os.path.dirname(filename)
+        dir_patches: Optional[str] = self.app.pargs.dir_patches
+        threads: Optional[int] = self.app.pargs.threads
+        log_to_filename: Optional[str] = self.app.pargs.log_to_file
+        with open(filename, 'r') as f:
+            yml = yaml.safe_load(f)
+
+        logger.info(f'logging to file: {log_to_filename}')
+        logger.add(log_to_filename, level='TRACE')
+        cfg = EvaluateConfig.from_yml(yml=yml, 
+                        dir_=cfg_dir,
+                        dir_patches=dir_patches,
+                        threads=threads)
+
+        with bugzoo.server.ephemeral(timeout_connection=120) as client_bugzoo:
+            environment = Environment(bugzoo=client_bugzoo)
+            try:
+                session = EvaluateSession.from_config(environment, cfg)
+            except BadConfigurationException:
+                print("ERROR: bad configuration file")
+                sys.exit(1)
+
+            session.run()
+            session.close()
+
+
+
+
 
 
 class CLI(cement.App):

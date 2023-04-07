@@ -18,7 +18,7 @@ import random
 from loguru import logger
 
 from . import exceptions as exc
-from .candidate import Candidate
+from .candidate import (Candidate, DiffCandidate)
 from .container import ProgramContainer
 from .outcome import (BuildOutcome, CandidateOutcome, CandidateOutcomeStore,
                       TestOutcome, TestOutcomeSet)
@@ -36,7 +36,7 @@ from .util import Stopwatch
 if typing.TYPE_CHECKING:
     from .problem import Problem
 
-Evaluation = Tuple[Candidate, CandidateOutcome]
+Evaluation = Tuple[Union[ Candidate, DiffCandidate ], CandidateOutcome]
 
 
 class Evaluator(DarjeelingEventProducer):
@@ -137,7 +137,7 @@ class Evaluator(DarjeelingEventProducer):
 
     def _run_test(self,
                   container: ProgramContainer,
-                  candidate: Candidate,
+                  candidate: Union[ Candidate, DiffCandidate ],
                   test: Test
                   ) -> TestOutcome:
         """Runs a test for a given patch using a provided container."""
@@ -168,7 +168,7 @@ class Evaluator(DarjeelingEventProducer):
         self.dispatch(TestExecutionFinished(candidate, test, outcome))
         return outcome
 
-    def _evaluate(self, candidate: Candidate) -> CandidateOutcome:
+    def _evaluate(self, candidate: Union[ Candidate, DiffCandidate ]) -> CandidateOutcome:
         outcomes = self.__outcomes
         patch = candidate.to_diff()
         logger.info(f"evaluating candidate: {candidate}\n{patch}\n")
@@ -267,7 +267,7 @@ class Evaluator(DarjeelingEventProducer):
         finally:
             logger.info(f"evaluated candidate: {candidate}")
 
-    def evaluate(self, candidate: Candidate) -> Evaluation:
+    def evaluate(self, candidate: Union[ Candidate, DiffCandidate ]) -> Evaluation:
         """Evaluates a given candidate patch."""
         outcomes = self.__outcomes
         self.dispatch(CandidateEvaluationStarted(candidate))
@@ -288,7 +288,7 @@ class Evaluator(DarjeelingEventProducer):
             self.__num_running -= 1
         return (candidate, outcome)
 
-    def submit(self, candidate: Candidate) -> 'Future[Evaluation]':
+    def submit(self, candidate: Union[ Candidate, DiffCandidate ]) -> 'Future[Evaluation]':
         """Schedules a candidate patch evaluation."""
         with self.__lock:
             self.__num_running += 1

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-__all__ = ('Candidate',)
+__all__ = ('Candidate', 'DiffCandidate',)
 
 from typing import Dict, List, Tuple
 import typing
@@ -50,3 +50,51 @@ class Candidate:
 
     def __repr__(self) -> str:
         return "Candidate<#{}>".format(self.id)
+
+@attr.s(frozen=True, repr=False, slots=True, auto_attribs=True)
+class DiffPatch:
+    _file: str = attr.ib()
+    _patch: Patch = attr.ib(factory=Patch)
+   
+    def to_diff(self) -> Patch:
+        return self._patch
+
+    @property
+    def files(self) -> List[str]:
+        return self._patch.files
+
+    @property
+    def file_name(self) -> str:
+        return self._file
+    
+    def __repr__(self) -> str:
+        return "DiffPatch<{}>".format(self.file_name)
+
+@attr.s(frozen=True, repr=False, slots=True, auto_attribs=True)
+class DiffCandidate:
+    """Represents a repair as a set of atomic program transformations."""
+    problem: 'Problem' = attr.ib(hash=False, eq=False)
+    patch: DiffPatch = attr.ib(factory=DiffPatch)
+
+    def lines_changed(self) -> List[FileLine]:
+        locs: List[FileLine] = []
+        lines = [(f.old_fn,l) for f in patch.__file_patches for h in f.__hunks for l in range(h.__old_start_at,h.__old_start_at+len(h.__lines))]
+        for f,l in lines:
+            locs.append(FileLine(f,l))
+        return locs
+
+    def to_diff(self) -> Patch:
+        return self.patch.to_diff()
+
+    @property
+    def file(self) -> str:
+        return self.patch.file_name
+
+    @property
+    def id(self) -> str:
+        """An eight-character hexadecimal identifier for this candidate."""
+        hex_hash = hex(abs(hash(self)))
+        return hex_hash[2:10]
+
+    def __repr__(self) -> str:
+        return "DiffCandidate<{}#{}>".format(self.file,self.id)

@@ -35,7 +35,8 @@ class ProgramDescriptionConfig:
 
     @staticmethod
     def from_dict(dict_: Mapping[str, Any],
-                  dir_: Optional[str] = None
+                  dir_: Optional[str] = None,
+                  heldout : Optional[bool] = False
                   ) -> 'ProgramDescriptionConfig':
         def err(message: str) -> NoReturn:
             raise exc.BadConfigurationException(message)
@@ -81,11 +82,15 @@ class ProgramDescriptionConfig:
             err(f"unsupported language [{dict_['language']}]. {supported}")
 
         # test suite
-        if 'tests' not in dict_:
-            err("'tests' section is missing from 'program' section")
-        if not isinstance(dict_['tests'], dict):
-            err("'tests' section should be an object")
-        tests = TestSuiteConfig.from_dict(dict_.get('tests', {}), dir_)
+        # populate with 'heldout-tests' content only when specified 
+        # 'tests' is default behavior
+        tests_key = 'tests' if not heldout else 'heldout-tests'
+
+        if tests_key not in dict_:
+            err(f"'{tests_key} section is missing from 'program' section")
+        if not isinstance(dict_[tests_key], dict):
+            err(f"'{tests_key}' section should be an object")
+        tests = TestSuiteConfig.from_dict(dict_.get(tests_key, {}), dir_)
 
         # build instructions
         if 'build-instructions' not in dict_:
