@@ -18,7 +18,7 @@ import random
 from loguru import logger
 
 from . import exceptions as exc
-from .candidate import (Candidate, DiffCandidate)
+from .candidate import Candidate, DiffCandidate
 from .container import ProgramContainer
 from .outcome import (BuildOutcome, CandidateOutcome, CandidateOutcomeStore,
                       TestOutcome, TestOutcomeSet)
@@ -36,7 +36,7 @@ from .util import Stopwatch
 if typing.TYPE_CHECKING:
     from .problem import Problem
 
-Evaluation = Tuple[Union[ Candidate, DiffCandidate ], CandidateOutcome]
+Evaluation = Tuple[Candidate, CandidateOutcome]
 
 
 class Evaluator(DarjeelingEventProducer):
@@ -118,26 +118,30 @@ class Evaluator(DarjeelingEventProducer):
                                 candidate: Candidate,
                                 tests: List[Test]
                                 ) -> Tuple[List[Test], Set[Test]]:
-        line_coverage_by_test = self.__problem.coverage
-        lines_changed = candidate.lines_changed()
+        if self.__problem.coverage:
+            line_coverage_by_test = self.__problem.coverage
+            lines_changed = candidate.lines_changed()
 
-        # if no lines are changed, retain all tests (fixes issue #128)
-        if not lines_changed:
+            # if no lines are changed, retain all tests (fixes issue #128)
+            if not lines_changed:
+                return (tests, set())
+
+            keep: List[Test] = []
+            drop: Set[Test] = set()
+            for test in tests:
+                test_line_coverage = line_coverage_by_test[test.name]
+                if not any(line in test_line_coverage for line in lines_changed):
+                    drop.add(test)
+                else:
+                    keep.append(test)
+            return (keep, drop)
+        else:
+            logger.warning("Attempting to run coverage-based evaluation on incompatible configuration")
             return (tests, set())
-
-        keep: List[Test] = []
-        drop: Set[Test] = set()
-        for test in tests:
-            test_line_coverage = line_coverage_by_test[test.name]
-            if not any(line in test_line_coverage for line in lines_changed):
-                drop.add(test)
-            else:
-                keep.append(test)
-        return (keep, drop)
 
     def _run_test(self,
                   container: ProgramContainer,
-                  candidate: Union[ Candidate, DiffCandidate ],
+                  candidate: Candidate,
                   test: Test
                   ) -> TestOutcome:
         """Runs a test for a given patch using a provided container."""
@@ -161,7 +165,7 @@ class Evaluator(DarjeelingEventProducer):
             outcome = TestOutcome(successful=False,
                                   time_taken=timer.duration)
 
-        id_=" heldout" if isinstance(candidate,DiffCandidate) else ""
+        id_ = " heldout" if isinstance(candidate, DiffCandidate) else ""
 
         if not outcome.successful:
             logger.debug(f"*{id_} test failed: {test.name} ({candidate})")
@@ -170,7 +174,7 @@ class Evaluator(DarjeelingEventProducer):
         self.dispatch(TestExecutionFinished(candidate, test, outcome))
         return outcome
 
-    def _evaluate(self, candidate: Union[ Candidate, DiffCandidate ]) -> CandidateOutcome:
+    def _evaluate(self, candidate: Candidate) -> CandidateOutcome:
         outcomes = self.__outcomes
         patch = candidate.to_diff()
         logger.info(f"evaluating candidate: {candidate}\n{patch}\n")
@@ -269,7 +273,7 @@ class Evaluator(DarjeelingEventProducer):
         finally:
             logger.info(f"evaluated candidate: {candidate}")
 
-    def evaluate(self, candidate: Union[ Candidate, DiffCandidate ]) -> Evaluation:
+    def evaluate(self, candidate: Candidate) -> Evaluation:
         """Evaluates a given candidate patch."""
         outcomes = self.__outcomes
         self.dispatch(CandidateEvaluationStarted(candidate))
@@ -290,7 +294,7 @@ class Evaluator(DarjeelingEventProducer):
             self.__num_running -= 1
         return (candidate, outcome)
 
-    def submit(self, candidate: Union[ Candidate, DiffCandidate ]) -> 'Future[Evaluation]':
+    def submit(self, candidate: Candidate) -> 'Future[Evaluation]':
         """Schedules a candidate patch evaluation."""
         with self.__lock:
             self.__num_running += 1

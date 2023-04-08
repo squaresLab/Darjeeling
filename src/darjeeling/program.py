@@ -36,7 +36,7 @@ class ProgramDescriptionConfig:
     @staticmethod
     def from_dict(dict_: Mapping[str, Any],
                   dir_: Optional[str] = None,
-                  heldout : Optional[bool] = False
+                  heldout: Optional[bool] = False
                   ) -> 'ProgramDescriptionConfig':
         def err(message: str) -> NoReturn:
             raise exc.BadConfigurationException(message)
@@ -82,7 +82,7 @@ class ProgramDescriptionConfig:
             err(f"unsupported language [{dict_['language']}]. {supported}")
 
         # test suite
-        # populate with 'heldout-tests' content only when specified 
+        # populate with 'heldout-tests' content only when specified
         # 'tests' is default behavior
         tests_key = 'tests' if not heldout else 'heldout-tests'
 

@@ -96,6 +96,18 @@ class BaseController(cement.Controller):
         num = max(used_numbers) + 1
         return os.path.join(os.getcwd(), 'darjeeling.log.{}'.format(num))
 
+    @property
+    def _default_eval_log_filename(self) -> str:
+        # find all log file numbers that have been used in this directory
+        used_numbers = [int(s.rpartition('.')[-1])
+                        for s in glob.glob('evaluation.log.[0-9]*')]
+
+        if not used_numbers:
+            return os.path.join(os.getcwd(), 'evaluation.log.0')
+
+        num = max(used_numbers) + 1
+        return os.path.join(os.getcwd(), 'evaluation.log.{}'.format(num))
+
     @cement.ex(
         help='generates a test suite coverage report for a given problem',
         arguments=[
@@ -241,7 +253,7 @@ class BaseController(cement.Controller):
         # setup logging to file
         if should_log_to_file:
             if not log_to_filename:
-                log_to_filename = self._default_log_filename
+                log_to_filename = self._default_eval_log_filename
             logger.info(f'logging to file: {log_to_filename}')
             logger.add(log_to_filename, level='TRACE')
 
@@ -339,12 +351,14 @@ class BaseController(cement.Controller):
         with open(filename, 'r') as f:
             yml = yaml.safe_load(f)
 
+        if not log_to_filename:
+            log_to_filename = self._default_log_filename
         logger.info(f'logging to file: {log_to_filename}')
         logger.add(log_to_filename, level='TRACE')
-        cfg = EvaluateConfig.from_yml(yml=yml, 
-                        dir_=cfg_dir,
-                        dir_patches=dir_patches,
-                        threads=threads)
+        cfg = EvaluateConfig.from_yml(yml=yml,
+                                      dir_=cfg_dir,
+                                      dir_patches=dir_patches,
+                                      threads=threads)
 
         with bugzoo.server.ephemeral(timeout_connection=120) as client_bugzoo:
             environment = Environment(bugzoo=client_bugzoo)
@@ -356,10 +370,6 @@ class BaseController(cement.Controller):
 
             session.run()
             session.close()
-
-
-
-
 
 
 class CLI(cement.App):

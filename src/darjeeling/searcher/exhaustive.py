@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __all__ = ('ExhaustiveSearcher',)
 
-from typing import Any, Dict, Iterable, Iterator, Optional
+from typing import Any, Dict, Iterable, Iterator, Optional, List
 import typing
 
 from loguru import logger
@@ -10,12 +10,12 @@ from .base import Searcher
 from .config import SearcherConfig
 from ..candidate import Candidate
 from ..resources import ResourceUsageTracker
-from ..transformation import Transformation
+from ..transformation import Transformation, ProgramTransformations
 from ..exceptions import SearchExhausted
 
 if typing.TYPE_CHECKING:
     from ..problem import Problem
-    from ..transformations import ProgramTransformations
+    from ..candidate import DiffPatch
 
 
 class ExhaustiveSearcherConfig(SearcherConfig):
@@ -38,16 +38,20 @@ class ExhaustiveSearcherConfig(SearcherConfig):
     def build(self,
               problem: 'Problem',
               resources: ResourceUsageTracker,
-              transformations: 'ProgramTransformations',
+              transformations: 'ProgramTransformations' = None,
               *,
+              candidates: 'List[DiffPatch]' = None,
               threads: int = 1,
               run_redundant_tests: bool = False
               ) -> Searcher:
+        if not transformations:
+            transformations = ProgramTransformations.build([], problem)
         return ExhaustiveSearcher(problem=problem,
                                   resources=resources,
                                   transformations=transformations,
                                   threads=threads,
-                                  run_redundant_tests=run_redundant_tests)
+                                  run_redundant_tests=run_redundant_tests
+                                  )
 
 
 class ExhaustiveSearcher(Searcher):

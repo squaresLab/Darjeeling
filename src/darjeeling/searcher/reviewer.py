@@ -9,11 +9,9 @@ from loguru import logger
 
 from .base import Searcher
 from .config import SearcherConfig
-from ..candidate import DiffCandidate
+from ..candidate import Candidate, DiffCandidate, DiffPatch
 from ..resources import ResourceUsageTracker
-from ..transformation import Transformation
 from ..exceptions import SearchExhausted
-from bugzoo.core.patch import Patch
 
 if typing.TYPE_CHECKING:
     from ..problem import Problem
@@ -39,22 +37,26 @@ class ReviewerConfig(SearcherConfig):
 
     def build(self,
               problem: 'Problem',
-              resources: ResourceUsageTracker,
-              candidates: List[Patch],
+              resources: 'ResourceUsageTracker',
+              candidates: 'List[DiffPatch]' = None,
               *,
-              threads: int = 1
+              transformations: 'Optional[ProgramTransformations]' = None,
+              threads: int = 1,
+              run_redundant_tests: bool = False
               ) -> Searcher:
+        if not candidates:
+            candidates = []
         return Reviewer(problem=problem,
-                                  resources=resources,
-                                  candidates=candidates,
-                                  threads=threads)
+                        resources=resources,
+                        candidates=candidates,
+                        threads=threads)
 
 
 class Reviewer(Searcher):
     def __init__(self,
                  problem: 'Problem',
                  resources: ResourceUsageTracker,
-                 candidates: List[Patch],
+                 candidates: List[DiffPatch],
                  *,
                  threads: int = 1
                  ) -> None:
@@ -67,16 +69,16 @@ class Reviewer(Searcher):
 
     @staticmethod
     def all_candidates(problem: 'Problem',
-                       candidates: Iterable[DiffCandidate]
-                       ) -> Iterator[DiffCandidate]:
+                       candidates: Iterable[DiffPatch]
+                       ) -> Iterator[Candidate]:
         logger.debug(f"Obtaining all patch candidates")
         for c in candidates:
             logger.trace(f"Processing {repr(c)}")
             print(f"Processing {repr(c)}")
-            yield DiffCandidate(problem,c)
+            yield DiffCandidate(problem, [], c)
         logger.debug(f"Obtained all patch candidates")
 
-    def _generate(self) -> DiffCandidate:
+    def _generate(self) -> Candidate:
         try:
             logger.debug('generating candidate patch...')
             candidate = next(self.__candidates)
@@ -86,7 +88,7 @@ class Reviewer(Searcher):
             logger.debug('exhausted all candidate patches')
             raise SearchExhausted
 
-    def run(self) -> Iterator[DiffCandidate]:
+    def run(self) -> Iterator[Candidate]:
         for _ in range(self.num_workers):
             candidate = self._generate()
             self.evaluate(candidate)

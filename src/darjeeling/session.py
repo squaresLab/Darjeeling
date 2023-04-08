@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-__all__ = ('Session','EvaluateSession',)
+__all__ = ('Session', 'EvaluateSession',)
 
-from typing import Iterator, List
+from typing import Iterator, List, Optional, Set
 import glob
 import os
 import random
@@ -85,18 +85,18 @@ class Session(DarjeelingEventProducer):
 
         # compute coverage
         logger.info("computing coverage information...")
-        coverage = cfg.coverage.build(environment, program)
+        coverage = cfg.coverage.build(environment, program) if cfg.coverage else None
         logger.info("computed coverage information")
         logger.debug(f"coverage: {coverage}")
 
         # compute localization
         logger.info("computing fault localization...")
         localization = \
-            Localization.from_config(coverage, cfg.localization)
+            Localization.from_config(coverage, cfg.localization) if coverage and cfg.localization else None
         logger.info(f"computed fault localization:\n{localization}")
 
         # determine implicated files
-        files = localization.files
+        files = localization.files if localization else None
 
         if program.language in (Language.CPP, Language.C):
             kaskara_project = kaskara.Project(dockerblade=environment.dockerblade,
@@ -132,7 +132,7 @@ class Session(DarjeelingEventProducer):
             snippets = LineSnippetDatabase.for_problem(problem)
         logger.info(f"constructed database of donor snippets: {len(snippets)} snippets")
 
-        transformations = cfg.transformations.build(problem, snippets)
+        transformations = cfg.transformations.build(problem, snippets) if cfg.transformations else None
         searcher = cfg.search.build(problem,
                                     resources=resources,
                                     transformations=transformations,
@@ -158,9 +158,12 @@ class Session(DarjeelingEventProducer):
         return self.searcher.problem
 
     @property
-    def coverage(self) -> TestCoverageMap:
+    def coverage(self) -> Optional[TestCoverageMap]:
         """The test suite coverage for the program under repair."""
-        return self.problem.coverage
+        if self.problem.coverage:
+            return self.problem.coverage
+        else:
+            return None
 
     def attach_handler(self, handler: DarjeelingEventHandler) -> None:
         super().attach_handler(handler)
@@ -239,7 +242,7 @@ class EvaluateSession(DarjeelingEventProducer):
     searcher: Searcher = attr.ib()
     resources: ResourceUsageTracker = attr.ib()
     candidates: List[DiffPatch] = attr.ib(factory=list)
-    _general_patches: List[DiffPatch] = attr.ib(factory=list)
+    _general_patches: List[Candidate] = attr.ib(factory=list)
 
     def __attrs_post_init__(self) -> None:
         DarjeelingEventProducer.__init__(self)
@@ -253,22 +256,27 @@ class EvaluateSession(DarjeelingEventProducer):
         if not os.path.exists(dir_patches):
             print(f"Patch directory does not exist: {dir_patches}")
             raise RuntimeError
-        
+
         logger.warning("checking existing patch directory")
-        candidates:List[DiffPatch] = []
+        candidates: List[DiffPatch] = []
+
+        logger.warning("clearing existing patch directory of previously identified general-patches")
+        for fn in glob.glob(f'{dir_patches}/general-*.diff'):
+            if os.path.isfile(fn):
+                os.remove(fn)
         for fn in glob.glob(f'{dir_patches}/*.diff'):
             if os.path.isfile(fn):
                 logger.debug(f"Reading in {fn}")
                 diff = open(fn, 'r').read()
-                fn_name=os.path.basename(fn)
-                candidates.append(DiffPatch(file=fn_name,patch=Patch.from_unidiff(diff)))
+                fn_name = os.path.basename(fn)
+                candidates.append(DiffPatch(file=fn_name, patch=Patch.from_unidiff(diff)))
 
-        patched_files = set()
+        patched_files: Set[str] = set()
         for p in candidates:
             patched_files.add(*p.files)
 
         logger.debug(f"These files were patched: {patched_files}")
-        if len(patched_files)==0:
+        if len(patched_files) == 0:
             print(f"Patch directory was effectively empty.")
             raise RuntimeError
         logger.debug('obtained content from patch directory')
@@ -284,11 +292,11 @@ class EvaluateSession(DarjeelingEventProducer):
 
         # build problem for solution evaluations
         problem = Problem.build_evaluation(environment=environment,
-                        config=cfg,
-                        language=program.language,
-                        program=program,
-                        patch_files=patched_files
-            )
+                                           config=cfg,
+                                           language=program.language,
+                                           program=program,
+                                           patch_files=patched_files
+                                           )
 
         logger.debug(f"built program: {program}")
         searcher = cfg.search.build(problem,
@@ -297,19 +305,18 @@ class EvaluateSession(DarjeelingEventProducer):
                                     threads=cfg.threads)
         # build basic structure to evaluate solutions
         evaluation = Problem.build_evaluation(environment=environment,
-                                config=cfg,
-                                language=program.language,
-                                program=program,
-                                patch_files=patched_files)
+                                              config=cfg,
+                                              language=program.language,
+                                              program=program,
+                                              patch_files=patched_files)
 
         # build session
-        return EvaluateSession(                       
-                       problem=evaluation,
-                       searcher=searcher,
-                       resources=resources,
-                       candidates=candidates,
-                       dir_patches=dir_patches
-                    )
+        return EvaluateSession(problem=evaluation,
+                               searcher=searcher,
+                               resources=resources,
+                               candidates=candidates,
+                               dir_patches=dir_patches
+                               )
 
     @property
     def snapshot(self) -> Snapshot:

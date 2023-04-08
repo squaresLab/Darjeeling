@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-__all__ = ('Candidate', 'DiffCandidate',)
+__all__ = ('Candidate', 'DiffCandidate')
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 import typing
 
 from bugzoo.core.patch import Patch
 import attr
 
-from .core import ( Replacement, FileLine )
+from .core import (Replacement, FileLine)
 from .transformation import Transformation
 from .util import tuple_from_iterable
 
@@ -19,13 +19,13 @@ if typing.TYPE_CHECKING:
 class Candidate:
     """Represents a repair as a set of atomic program transformations."""
     problem: 'Problem' = attr.ib(hash=False, eq=False)
-    transformations: Tuple[Transformation, ...] = \
+    transformations: Optional[Tuple[Transformation, ...]] = \
         attr.ib(converter=tuple_from_iterable)
 
     def to_diff(self) -> Patch:
         """Transforms this candidate patch into a concrete, unified diff."""
         replacements = \
-            map(lambda t: t.to_replacement(), self.transformations)
+            map(lambda t: t.to_replacement(), self.transformations) if self.transformations else {}
         replacements_by_file: Dict[str, List[Replacement]] = {}
         for rep in replacements:
             fn = rep.location.filename
@@ -40,7 +40,10 @@ class Candidate:
         Returns a list of source lines that are changed by this candidate
         patch.
         """
-        return [t.line for t in self.transformations]
+        if self.transformations:
+            return [t.line for t in self.transformations]
+        else:
+            return []
 
     @property
     def id(self) -> str:
@@ -51,11 +54,12 @@ class Candidate:
     def __repr__(self) -> str:
         return "Candidate<#{}>".format(self.id)
 
+
 @attr.s(frozen=True, repr=False, slots=True, auto_attribs=True)
 class DiffPatch:
     _file: str = attr.ib()
     _patch: Patch = attr.ib(factory=Patch)
-   
+
     def to_diff(self) -> Patch:
         return self._patch
 
@@ -66,26 +70,29 @@ class DiffPatch:
     @property
     def patch(self) -> Patch:
         return self._patch
-    
+
     @property
     def file_name(self) -> str:
         return self._file
-    
+
     def __repr__(self) -> str:
         return "DiffPatch<{}>".format(self.file_name)
 
+
 @attr.s(frozen=True, repr=False, slots=True, auto_attribs=True)
-class DiffCandidate:
+class DiffCandidate(Candidate):
     """Represents a repair as a set of atomic program transformations."""
-    problem: 'Problem' = attr.ib(hash=False, eq=False)
-    _diffpatch: DiffPatch = attr.ib(factory=DiffPatch)
+    _diffpatch: DiffPatch = attr.ib()
 
     def lines_changed(self) -> List[FileLine]:
         locs: List[FileLine] = []
         # no accessibility to bugzoo.core.patch subcontent
-        #lines = [(f.old_fn,l) for f in self.get_file_patches() for h in f.__hunks for l in range(h.__old_start_at,h.__old_start_at+len(h.__lines))]
-        #for f,l in lines:
-        #    locs.append(FileLine(f,l))
+        # lines = [(f.old_fn,l) for f in self.get_file_patches()\
+        #          for h in f.__hunks \
+        #          for l in range(h.__old_start_at,h.__old_start_at+len(h.__lines))\
+        #         ]
+        # for f,l in lines:
+        #     locs.append(FileLine(f,l))
         return locs
 
     def to_diff(self) -> Patch:
@@ -113,4 +120,4 @@ class DiffCandidate:
         return hex_hash[2:10]
 
     def __repr__(self) -> str:
-        return "DiffCandidate<{}#{}>".format(self.file,self.id)
+        return "DiffCandidate<{}#{}>".format(self.file, self.id)

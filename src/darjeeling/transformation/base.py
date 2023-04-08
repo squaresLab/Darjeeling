@@ -91,5 +91,6 @@ class TransformationSchema(Generic[T], abc.ABC):
 
     def find_all(self, problem: 'Problem') -> Iterator[Transformation]:
         """Finds all transformations using this schema for a given problem."""
-        implicated_lines = list(problem.localization)
-        yield from self.find_all_at_lines(implicated_lines)
+        if problem.localization:
+            implicated_lines = list(problem.localization)
+            yield from self.find_all_at_lines(implicated_lines)

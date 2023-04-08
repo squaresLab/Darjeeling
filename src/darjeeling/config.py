@@ -138,10 +138,10 @@ class Config:
     """
     dir_patches: str = attr.ib()
     program: ProgramDescriptionConfig
-    transformations: ProgramTransformationsConfig
-    localization: LocalizationConfig
+    transformations: Optional[ProgramTransformationsConfig]
+    localization: Optional[LocalizationConfig]
     search: SearcherConfig
-    coverage: CoverageConfig
+    coverage: Optional[CoverageConfig]
     resource_limits: ResourceLimits
     seed: int = attr.ib(default=0)
     optimizations: OptimizationsConfig = attr.ib(factory=OptimizationsConfig)
@@ -240,7 +240,7 @@ class Config:
         # coverage config
         if 'coverage' in yml:
             if plus:
-                yml['coverage']['method']['type']='plus'
+                yml['coverage']['method']['type'] = 'plus'
             coverage = CoverageConfig.from_dict(yml['coverage'], dir_)
         else:
             m = "'coverage' section is expected"
@@ -282,7 +282,7 @@ class Config:
 
 
 @attr.s(frozen=True, auto_attribs=True)
-class EvaluateConfig:
+class EvaluateConfig(Config):
     """A configuration for Darjeeling to evaluate patches with additional content.
 
     Attributes
@@ -299,29 +299,23 @@ class EvaluateConfig:
         Limits on the resources that may be consumed during the search.
 
     """
-    search: SearcherConfig
-    program: ProgramDescriptionConfig
-    resource_limits: ResourceLimits
-    dir_patches: str = attr.ib()
-    threads: int = attr.ib(default=1)
-
-    @dir_patches.validator
-    def validate_patches(self, attribute, value):
-        if not os.path.isabs(value):
-            m = "patch directory should be an absolute path."
-            raise BadConfigurationException(m)
-
-    @threads.validator
-    def validate_threads(self, attribute, value):
-        if value < 1:
-            m = "number of threads must be greater than or equal to 1."
-            raise BadConfigurationException(m)
+    # search: SearcherConfig
+    # program: ProgramDescriptionConfig
+    # resource_limits: ResourceLimits
+    # dir_patches: str = attr.ib()
+    # threads: int = attr.ib(default=1)
 
     @staticmethod
     def from_yml(yml: Dict[str, Any],
                  dir_: Optional[str] = None,
                  *,
+                 terminate_early: bool = True,
+                 plus: bool = False,
+                 seed: Optional[int] = None,
                  threads: Optional[int] = None,
+                 run_redundant_tests: bool = False,
+                 limit_candidates: Optional[int] = None,
+                 limit_time_minutes: Optional[int] = None,
                  dir_patches: Optional[str] = None
                  ) -> 'EvaluateConfig':
         """Loads a configuration from a YAML dictionary.
@@ -360,18 +354,18 @@ class EvaluateConfig:
         resource_limits = \
             ResourceLimits.from_dict(yml['resource-limits'], dir_)
 
-
-
         if 'program' not in yml:
             err("'program' section is missing")
         program = ProgramDescriptionConfig.from_dict(dict_=yml['program'], dir_=dir_, heldout=True)
-        
-        search = SearcherConfig.from_dict({'type':'reviewer'}, dir_)
 
-        return EvaluateConfig(
-                      threads=threads,
-                      program=program,
-                      search=search,
-                      dir_patches=dir_patches,
-                      resource_limits=resource_limits)
+        search = SearcherConfig.from_dict({'type': 'reviewer'}, dir_)
 
+        return EvaluateConfig(threads=threads,
+                              program=program,
+                              search=search,
+                              dir_patches=dir_patches,
+                              resource_limits=resource_limits,
+                              transformations=None,
+                              localization=None,
+                              coverage=None
+                              )
