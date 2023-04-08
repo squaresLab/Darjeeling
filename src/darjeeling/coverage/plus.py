@@ -3,21 +3,21 @@ __all__ = ('PlusCollector',)
 
 import os
 import typing as t
-import xml.etree.ElementTree as ET
+# import xml.etree.ElementTree as ET
 
 from loguru import logger
 import attr
 
 from .collector import CoverageCollector, CoverageCollectorConfig
 from ..core import FileLineSet
-from ..source import ProgramSourceFile
+# from ..source import ProgramSourceFile
 
 if t.TYPE_CHECKING:
     from ..container import ProgramContainer
     from ..environment import Environment
     from ..program import ProgramDescription
 
-#_INSTRUMENTATION = (
+# _INSTRUMENTATION = (
 #    "/* DARJEELING :: INSTRUMENTATION :: START */\n"
 #    "#include <stdio.h>\n"
 #    "#include <stdlib.h>\n"
@@ -51,9 +51,9 @@ if t.TYPE_CHECKING:
 #    "  signal(SIGUSR2, darjeeling_sighandler);\n"
 #    "}\n"
 #    "/* DARJEELING :: INSTRUMENTATION :: END */\n"
-#)
-#_NUM_INSTRUMENTATION_LINES = _INSTRUMENTATION.count('\n')
-#_LINES_TO_REMOVE = set(range(1, _NUM_INSTRUMENTATION_LINES))
+# )
+# _NUM_INSTRUMENTATION_LINES = _INSTRUMENTATION.count('\n')
+# _LINES_TO_REMOVE = set(range(1, _NUM_INSTRUMENTATION_LINES))
 #
 #
 @attr.s(auto_attribs=True, slots=True)
@@ -117,8 +117,8 @@ class PlusCollectorConfig(CoverageCollectorConfig):
         """Determines the set of all source files within a program."""
         with program.provision() as container:
             source_directory = program.source_directory
-            build_directory = program.build_directory
-            src_subdirectory = program.src_subdirectory
+            # build_directory = program.build_directory
+            # src_subdirectory = program.src_subdirectory
             endings = ('.cpp', '.cc', '.c', '.h', '.hh', '.hpp', '.cxx')
             command = ' -o '.join([f"-name \*{e}" for e in endings])
             command = f'find {source_directory} -type f \( {command} \)'
@@ -160,172 +160,172 @@ class PlusCollector(CoverageCollector):
     _source_filenames: t.FrozenSet[str]
     _environment: 'Environment' = attr.ib(repr=False)
 
-    #def _read_line_coverage_for_class(self, xml_class: ET.Element) -> t.Set[int]:
-    #    xml_lines = xml_class.find('lines')
-    #    assert xml_lines
-    #    lines = xml_lines.findall('line')
-    #    return set(int(line.attrib['number']) for line in lines
-    #               if int(line.attrib['hits']) > 0)
+    # def _read_line_coverage_for_class(self, xml_class: ET.Element) -> t.Set[int]:
+    #     xml_lines = xml_class.find('lines')
+    #     assert xml_lines
+    #     lines = xml_lines.findall('line')
+    #     return set(int(line.attrib['number']) for line in lines
+    #                if int(line.attrib['hits']) > 0)
 
-    #def _corrected_lines(self,
-    #                     relative_filename: str,
-    #                     lines: t.Set[int]
-    #                     ) -> t.Set[int]:
-    #    if os.path.isabs(relative_filename):
-    #        absolute_filename = relative_filename
-    #    else:
-    #        absolute_filename = os.path.join(self._source_directory, relative_filename)
+    # def _corrected_lines(self,
+    #                      relative_filename: str,
+    #                      lines: t.Set[int]
+    #                      ) -> t.Set[int]:
+    #     if os.path.isabs(relative_filename):
+    #         absolute_filename = relative_filename
+    #     else:
+    #         absolute_filename = os.path.join(self._source_directory, relative_filename)
     #
-    #    instrumented_filenames = set(f.filename for f in self._files_to_instrument)
-    #    if absolute_filename not in instrumented_filenames:
-    #        logger.trace(f"file was not instrumented: {absolute_filename}")
-    #        return lines
+    #     instrumented_filenames = set(f.filename for f in self._files_to_instrument)
+    #     if absolute_filename not in instrumented_filenames:
+    #         logger.trace(f"file was not instrumented: {absolute_filename}")
+    #         return lines
     #
-    #    lines = lines - _LINES_TO_REMOVE
-    #    return set(i - _NUM_INSTRUMENTATION_LINES for i in lines)
+    #     lines = lines - _LINES_TO_REMOVE
+    #     return set(i - _NUM_INSTRUMENTATION_LINES for i in lines)
 
-    #def _has_source_file(self, filename_relative: str) -> bool:
-    #    source_directory = self._source_directory
-    #    filename_absolute = os.path.join(source_directory, filename_relative)
-    #    return filename_absolute in self._source_filenames
-    
+    # def _has_source_file(self, filename_relative: str) -> bool:
+    #     source_directory = self._source_directory
+    #     filename_absolute = os.path.join(source_directory, filename_relative)
+    #     return filename_absolute in self._source_filenames
+
     def get_relative_filename(self, filename_absolute: str) -> str:
         from re import sub
-        relative_filename = sub(self._source_directory+"/", "", filename_absolute)
+        relative_filename = sub(self._source_directory + "/", "", filename_absolute)
         return relative_filename
 
     def _has_source_file(self, filename_absolute: str) -> bool:
         return filename_absolute in self._source_filenames
 
-    ## FIXME is this a general solution? nope, not a general solution
-    #def _resolve_filepath(self, filename_relative: str) -> str:
-    #    if not filename_relative:
-    #        raise ValueError('failed to resolve path')
-    #    if self._has_source_file(filename_relative):
-    #        return filename_relative
-    # 
-    #    filename_relative_child = '/'.join(filename_relative.split('/')[1:])
-    #    return self._resolve_filepath(filename_relative_child)
-
-    #def _resolve_filepath_pdr(self, base_filename: str) -> str:
-    #    src_file=os.path.join(self._src_subdirectory,base_filename)
-    #    return self._resolve_filepath(src_file)
-
-    #def _parse_xml_report(self, root: ET.Element) -> FileLineSet:
-    #    packages_node = root.find('packages')
-    #    assert packages_node
-    #    package_nodes = packages_node.findall('package')
-    #    class_nodes = [c for p in package_nodes for c in p.find('classes').findall('class')]  # type: ignore
+    # # FIXME is this a general solution? nope, not a general solution
+    # def _resolve_filepath(self, filename_relative: str) -> str:
+    #     if not filename_relative:
+    #         raise ValueError('failed to resolve path')
+    #     if self._has_source_file(filename_relative):
+    #         return filename_relative
     #
-    #    filename_to_lines: t.Dict[str, t.Set[int]] = {}
-    #    for node in class_nodes:
-    #        filename = node.attrib['filename']
-    #        try:
-    #            filename_original = filename
-    #            filename = self._resolve_filepath_pdr(filename)
-    #            logger.trace(f"resolving path '{filename_original}' "
-    #                         f"-> '{filename}'")
-    #        except ValueError:
-    #            logger.warning(f'failed to resolve file: {filename}')
-    #            continue
-    #
-    #        lines = self._read_line_coverage_for_class(node)
-    #        lines = self._corrected_lines(filename, lines)
-    #        if lines:
-    #            filename_to_lines[filename] = lines
-    #
-    #    return FileLineSet(filename_to_lines)
+    #     filename_relative_child = '/'.join(filename_relative.split('/')[1:])
+    #     return self._resolve_filepath(filename_relative_child)
 
-    def obtain_faults(self,fplus:dict) -> FileLineSet:
+    # def _resolve_filepath_pdr(self, base_filename: str) -> str:
+    #     src_file=os.path.join(self._src_subdirectory,base_filename)
+    #     return self._resolve_filepath(src_file)
+
+    # def _parse_xml_report(self, root: ET.Element) -> FileLineSet:
+    #     packages_node = root.find('packages')
+    #     assert packages_node
+    #     package_nodes = packages_node.findall('package')
+    #     class_nodes = [c for p in package_nodes for c in p.find('classes').findall('class')]  # type: ignore
+    #
+    #     filename_to_lines: t.Dict[str, t.Set[int]] = {}
+    #     for node in class_nodes:
+    #         filename = node.attrib['filename']
+    #         try:
+    #             filename_original = filename
+    #             filename = self._resolve_filepath_pdr(filename)
+    #             logger.trace(f"resolving path '{filename_original}' "
+    #                          f"-> '{filename}'")
+    #         except ValueError:
+    #             logger.warning(f'failed to resolve file: {filename}')
+    #             continue
+    #
+    #         lines = self._read_line_coverage_for_class(node)
+    #         lines = self._corrected_lines(filename, lines)
+    #         if lines:
+    #             filename_to_lines[filename] = lines
+    #
+    #     return FileLineSet(filename_to_lines)
+
+    def obtain_faults(self, fplus: dict) -> FileLineSet:
         ftl: t.Dict[str, t.Set[int]] = {}
         logger.info(f"self._source_directory: {self._source_directory}")
         if fplus:
-            for idx in ['addsans','ubsans']:
-                floc=fplus.get(idx,None)
+            for idx in ['addsans', 'ubsans']:
+                floc = fplus.get(idx, None)
                 if floc:
-                   for f in floc:
-                       traces=f.get('trace',None)
-                       if traces:
-                           for trace in traces:
-                               if trace:
-                                   fname=trace[0]
-                                   fdir =trace[1]
-                                   fline=trace[2]
-                                   fcol =trace[3]
-                                   ffun =trace[4]
-                                   if fname != "" and fdir != "":
-                                       try: 
-                                           fpath = os.path.join(fdir, fname)
-                                           absolute_filename = os.path.abspath(fpath)
-                                           rel_file=self.get_relative_filename(absolute_filename)
-                                           x=ftl.get(rel_file,None)
-                                           if not x:
-                                               ftl[rel_file]=set()
-                                           ftl[rel_file].add(fline)
-                                           logger.info(f"filename: {absolute_filename} => {rel_file} => {fline}")
-                                       except Exception as e:
-                                           raise(e)
-                       else:
-                           loc=f.get('loc',None)
-                           if loc:
-                               fname=loc[0]
-                               fdir =loc[1] if isinstance(loc[1],str) else loc[1][0]
-                               fline=loc[2]
-                               fcol =loc[3]
-                               ffun =loc[4]
-                               if fname != "" and fdir != "":
-                                   try: 
-                                       fpath = os.path.join(fdir, fname)
-                                       absolute_filename = os.path.abspath(fpath)
-                                       rel_file=self.get_relative_filename(absolute_filename)
-                                       x=ftl.get(rel_file,None)
-                                       if not x:
-                                           ftl[rel_file]=set()
-                                       ftl[rel_file].add(fline)
-                                       logger.info(f"filename: {absolute_filename} => {rel_file} => {fline}")
-                                   except Exception as e:
-                                       raise(e)
+                    for f in floc:
+                        traces = f.get('trace', None)
+                        if traces:
+                            for trace in traces:
+                                if trace:
+                                    fname = trace[0]
+                                    fdir = trace[1]
+                                    fline = trace[2]
+                                    fcol = trace[3]
+                                    ffun = trace[4]
+                                    if fname != "" and fdir != "":
+                                        try:
+                                            fpath = os.path.join(fdir, fname)
+                                            absolute_filename = os.path.abspath(fpath)
+                                            rel_file = self.get_relative_filename(absolute_filename)
+                                            x = ftl.get(rel_file, None)
+                                            if not x:
+                                                ftl[rel_file] = set()
+                                            ftl[rel_file].add(fline)
+                                            logger.info(f"filename: {absolute_filename} => {rel_file} => {fline}")
+                                        except Exception as e:
+                                            raise(e)
+                        else:
+                            loc = f.get('loc', None)
+                            if loc:
+                                fname = loc[0]
+                                fdir = loc[1] if isinstance(loc[1], str) else loc[1][0]
+                                fline = loc[2]
+                                fcol = loc[3]
+                                ffun = loc[4]
+                                if fname != "" and fdir != "":
+                                    try:
+                                        fpath = os.path.join(fdir, fname)
+                                        absolute_filename = os.path.abspath(fpath)
+                                        rel_file = self.get_relative_filename(absolute_filename)
+                                        x = ftl.get(rel_file, None)
+                                        if not x:
+                                            ftl[rel_file] = set()
+                                        ftl[rel_file].add(fline)
+                                        logger.info(f"filename: {absolute_filename} => {rel_file} => {fline}")
+                                    except Exception as e:
+                                        raise(e)
         return FileLineSet(ftl)
 
-    #def _parse_xml_file_contents(self, contents: str) -> FileLineSet:
+    # def _parse_xml_file_contents(self, contents: str) -> FileLineSet:
     #    logger.trace(f"Parsing gcovr report:\n{contents}")
     #    root = ET.fromstring(contents)
     #    return self._parse_xml_report(root)
 
     def _extract(self, container: 'ProgramContainer') -> FileLineSet:
         files = container.filesystem
-        fplus="/benchmarks/SanitizerResults/bothSan.json"
-        fplusd=None
+        fplus = "/benchmarks/SanitizerResults/bothSan.json"
+        fplusd = None
         try:
-            json_in=files.read(fplus)
+            json_in = files.read(fplus)
             import json
-            fplusd=json.loads(json_in)
+            fplusd = json.loads(json_in)
         except Exception as e:
             logger.error(f'Darjeeling Plus localization issue\nException:\n{e}')
             raise(e)
         return self.obtain_faults(fplusd)
-        #shell = container.shell
-        #temporary_filename = files.mktemp()
+        # shell = container.shell
+        # temporary_filename = files.mktemp()
         #
-        #command = f'gcovr -o "{temporary_filename}" -x --root {self._source_directory} '
-        #if self._src_subdirectory and self._src_subdirectory != "":
-        #    command+=f" {self._src_subdirectory} "
-        #logger.trace(f"executing gcovr command: {command}")
-        ##fpath=os.path.join(self._build_directory,self._src_subdirectory)
-        #fpath=self._build_directory
-        #logger.info(f"executing gcovr command: '{command}' in '{fpath}'")
-        #shell.check_call(command, cwd=fpath)
-        #xml_file_contents = files.read(temporary_filename)
-        #logger.info(f"XML Contents: \n>>>>\n{xml_file_contents}\n<<<<")
-        # 
-        #return self._parse_xml_file_contents(xml_file_contents)
+        # command = f'gcovr -o "{temporary_filename}" -x --root {self._source_directory} '
+        # if self._src_subdirectory and self._src_subdirectory != "":
+        #     command+=f" {self._src_subdirectory} "
+        # logger.trace(f"executing gcovr command: {command}")
+        # # fpath=os.path.join(self._build_directory,self._src_subdirectory)
+        # fpath=self._build_directory
+        # logger.info(f"executing gcovr command: '{command}' in '{fpath}'")
+        # shell.check_call(command, cwd=fpath)
+        # xml_file_contents = files.read(temporary_filename)
+        # logger.info(f"XML Contents: \n>>>>\n{xml_file_contents}\n<<<<")
+        #
+        # return self._parse_xml_file_contents(xml_file_contents)
 
-    #def _instrument(
+    # def _instrument(
     #    self,
     #    filename: str,
     #    contents: str,
     #    inject_at_line: int,
-    #) -> str:
+    # ) -> str:
     #    file_ = ProgramSourceFile(filename, contents)
     #    inject_at_location = file_.line_to_location_range(inject_at_line).start
     #    inject_at_offset = file_.location_to_offset(inject_at_location)
@@ -336,7 +336,7 @@ class PlusCollector(CoverageCollector):
         """
         """
         pass
-    #def _prepare(self, container: 'ProgramContainer') -> None:
+    # def _prepare(self, container: 'ProgramContainer') -> None:
     #    """
     #    Adds source code instrumentation and recompiles the program inside
     #    a container using the appropriate GCC options. Also ensures that
