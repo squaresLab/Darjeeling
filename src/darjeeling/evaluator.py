@@ -18,7 +18,7 @@ import random
 from loguru import logger
 
 from . import exceptions as exc
-from .candidate import Candidate
+from .candidate import Candidate, DiffCandidate
 from .container import ProgramContainer
 from .outcome import (BuildOutcome, CandidateOutcome, CandidateOutcomeStore,
                       TestOutcome, TestOutcomeSet)
@@ -118,22 +118,26 @@ class Evaluator(DarjeelingEventProducer):
                                 candidate: Candidate,
                                 tests: List[Test]
                                 ) -> Tuple[List[Test], Set[Test]]:
-        line_coverage_by_test = self.__problem.coverage
-        lines_changed = candidate.lines_changed()
+        if self.__problem.coverage:
+            line_coverage_by_test = self.__problem.coverage
+            lines_changed = candidate.lines_changed()
 
-        # if no lines are changed, retain all tests (fixes issue #128)
-        if not lines_changed:
+            # if no lines are changed, retain all tests (fixes issue #128)
+            if not lines_changed:
+                return (tests, set())
+
+            keep: List[Test] = []
+            drop: Set[Test] = set()
+            for test in tests:
+                test_line_coverage = line_coverage_by_test[test.name]
+                if not any(line in test_line_coverage for line in lines_changed):
+                    drop.add(test)
+                else:
+                    keep.append(test)
+            return (keep, drop)
+        else:
+            logger.warning("Attempting to run coverage-based evaluation on incompatible configuration")
             return (tests, set())
-
-        keep: List[Test] = []
-        drop: Set[Test] = set()
-        for test in tests:
-            test_line_coverage = line_coverage_by_test[test.name]
-            if not any(line in test_line_coverage for line in lines_changed):
-                drop.add(test)
-            else:
-                keep.append(test)
-        return (keep, drop)
 
     def _run_test(self,
                   container: ProgramContainer,
@@ -161,10 +165,12 @@ class Evaluator(DarjeelingEventProducer):
             outcome = TestOutcome(successful=False,
                                   time_taken=timer.duration)
 
+        id_ = " heldout" if isinstance(candidate, DiffCandidate) else ""
+
         if not outcome.successful:
-            logger.debug(f"* test failed: {test.name} ({candidate})")
+            logger.debug(f"*{id_} test failed: {test.name} ({candidate})")
         else:
-            logger.debug(f"* test passed: {test.name} ({candidate})")
+            logger.debug(f"*{id_} test passed: {test.name} ({candidate})")
         self.dispatch(TestExecutionFinished(candidate, test, outcome))
         return outcome
 

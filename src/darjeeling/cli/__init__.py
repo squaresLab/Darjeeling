@@ -16,11 +16,11 @@ import yaml
 from ..environment import Environment
 from ..problem import Problem
 from ..version import __version__ as VERSION
-from ..config import Config
+from ..config import Config, EvaluateConfig
 from ..events import CsvEventLogger, WebSocketEventHandler
 from ..plugins import LOADED_PLUGINS
 from ..resources import ResourceUsageTracker
-from ..session import Session
+from ..session import Session, EvaluateSession
 from ..exceptions import BadConfigurationException
 from ..util import duration_str
 
@@ -95,6 +95,18 @@ class BaseController(cement.Controller):
 
         num = max(used_numbers) + 1
         return os.path.join(os.getcwd(), 'darjeeling.log.{}'.format(num))
+
+    @property
+    def _default_eval_log_filename(self) -> str:
+        # find all log file numbers that have been used in this directory
+        used_numbers = [int(s.rpartition('.')[-1])
+                        for s in glob.glob('evaluation.log.[0-9]*')]
+
+        if not used_numbers:
+            return os.path.join(os.getcwd(), 'evaluation.log.0')
+
+        num = max(used_numbers) + 1
+        return os.path.join(os.getcwd(), 'evaluation.log.{}'.format(num))
 
     @cement.ex(
         help='generates a test suite coverage report for a given problem',
@@ -241,7 +253,7 @@ class BaseController(cement.Controller):
         # setup logging to file
         if should_log_to_file:
             if not log_to_filename:
-                log_to_filename = self._default_log_filename
+                log_to_filename = self._default_eval_log_filename
             logger.info(f'logging to file: {log_to_filename}')
             logger.add(log_to_filename, level='TRACE')
 
@@ -300,6 +312,63 @@ class BaseController(cement.Controller):
                 sys.exit(0)
             else:
                 sys.exit(1)
+
+    @cement.ex(
+        help='evaluate a repair specified by patch using additional criteria',
+        arguments=[
+            (['filename'],
+             {'help': ('a Darjeeling configuration file describing a faulty '
+                       'program and how it should be repaired.')}),
+            (['--patch-dir'],
+             {'help': 'path containing patches to restore and evaluate.',
+              'dest': 'dir_patches',
+              'type': str}),
+            (['--log-to-file'],
+             {'help': 'path to store the log file.',
+              'type': str}),
+            (['--threads'],
+             {'dest': 'threads',
+              'type': int,
+              'help': ('number of threads over which the repair workload '
+                       'should be distributed')})
+        ]
+    )
+    def evaluate(self) -> None:
+        """Evaluates a given program."""
+        # load the configuration file
+        filename = self.app.pargs.filename
+        filename = os.path.abspath(filename)
+        cfg_dir = os.path.dirname(filename)
+        dir_patches: Optional[str] = self.app.pargs.dir_patches
+        threads: Optional[int] = self.app.pargs.threads
+        log_to_filename: Optional[str] = self.app.pargs.log_to_file
+
+        logger.remove()
+        logger.enable('darjeeling')
+        for plugin_name in LOADED_PLUGINS:
+            logger.enable(plugin_name)
+
+        with open(filename, 'r') as f:
+            yml = yaml.safe_load(f)
+
+        if not log_to_filename:
+            log_to_filename = self._default_log_filename
+        logger.info(f'logging to file: {log_to_filename}')
+        logger.add(log_to_filename, level='TRACE')
+        cfg = EvaluateConfig.from_yml(yml=yml,
+                                      dir_=cfg_dir,
+                                      dir_patches=dir_patches,
+                                      threads=threads)
+
+        with Environment() as environment:
+            try:
+                session = EvaluateSession.from_config(environment, cfg)
+            except BadConfigurationException:
+                print("ERROR: bad configuration file")
+                sys.exit(1)
+
+            session.run()
+            session.close()
 
 
 class CLI(cement.App):

@@ -46,7 +46,8 @@ class ResourceUsageTracker:
         ResourceLimitReached
             If a resource limit has been reached.
         """
-        self.limits.check(self)
+        if self.limits:
+            self.limits.check(self)
 
 
 class ResourceLimit(abc.ABC):

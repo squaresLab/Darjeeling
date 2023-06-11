@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __all__ = ('SearcherConfig',)
 
-from typing import Dict, Optional, Any, Type, Iterator
+from typing import Dict, Optional, Any, Type, Iterator, List
 import abc
 import typing
 
@@ -12,6 +12,7 @@ if typing.TYPE_CHECKING:
     from ..problem import Problem
     from ..resources import ResourceUsageTracker
     from ..transformation import ProgramTransformations
+    from ..candidate import DiffPatch
 
 
 @dynamically_registered(lookup='lookup')
@@ -43,8 +44,9 @@ class SearcherConfig(abc.ABC):
     def build(self,
               problem: 'Problem',
               resources: 'ResourceUsageTracker',
-              transformations: 'ProgramTransformations',
               *,
+              transformations: 'Optional[ProgramTransformations]' = None,
+              candidates: 'Optional[List[DiffPatch]]' = None,
               threads: int = 1,
               run_redundant_tests: bool = False
               ) -> 'Searcher':

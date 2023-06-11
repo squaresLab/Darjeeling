@@ -10,7 +10,8 @@ import attr
 
 from .base import Searcher
 from .config import SearcherConfig
-from ..candidate import Candidate
+from ..candidate import Candidate, DiffPatch
+
 from ..resources import ResourceUsageTracker
 from ..transformation import Transformation, ProgramTransformations
 from ..outcome import CandidateOutcome
@@ -53,12 +54,15 @@ class GeneticSearcherConfig(SearcherConfig):
 
     def build(self,
               problem: 'Problem',
-              resources: ResourceUsageTracker,
-              transformations: ProgramTransformations,
+              resources: 'ResourceUsageTracker',
+              transformations: 'ProgramTransformations' = None,
               *,
+              candidates: 'Optional[List[DiffPatch]]' = None,
               threads: int = 1,
-              run_redundant_tests: bool = False
+              run_redundant_tests: bool = False,
               ) -> Searcher:
+        if not transformations:
+            transformations = ProgramTransformations.build([], problem)
         return GeneticSearcher(problem=problem,
                                resources=resources,
                                transformations=transformations,
@@ -130,7 +134,7 @@ class GeneticSearcher(Searcher):
 
     def initial(self) -> Population:
         """Generates an initial population according to this strategy."""
-        pop = []
+        pop: Population = []
         for _ in range(self.population_size):
             pop.append(Candidate(self.problem, []))
         return self.mutate(pop)
@@ -175,12 +179,14 @@ class GeneticSearcher(Searcher):
 
     def mutate(self, pop: Population) -> Population:
         problem = self.problem
-        offspring = []
+        offspring: Population = []
         for ind in pop:
             child = ind
             if random.random() <= self.rate_mutation:
                 mutation = self.choose_transformation()
-                transformations = child.transformations + (mutation,)
+                transformations = None
+                if child.transformations:
+                    transformations = child.transformations + (mutation,)
                 child = Candidate(problem, transformations)  # type: ignore
             offspring.append(child)
         return offspring
@@ -190,8 +196,8 @@ class GeneticSearcher(Searcher):
                                 py: Candidate
                                 ) -> List[Candidate]:
             problem = self.problem
-            tx = list(px.transformations)
-            ty = list(py.transformations)
+            tx = list(px.transformations) if px.transformations else list()
+            ty = list(py.transformations) if py.transformations else list()
 
             lx = random.randint(0, len(tx))
             ly = random.randint(0, len(ty))

@@ -111,10 +111,10 @@ class ShellTestSuite(TestSuite[ShellTest]):
             cwd=self._workdir,
             time_limit=self._time_limit_seconds,
             environment=environment,
-            # 12/7 note from pdr - not all runs seem to return str compatible 
+            # 12/7 note from pdr - not all runs seem to return str compatible
             # with default decoding in dockerblade
             # outcome.output does not look like it's used at all
-            #text=True,
+            # text=True,
             text=False,
         )
         logger.trace(f"shell test outcome: {outcome}")

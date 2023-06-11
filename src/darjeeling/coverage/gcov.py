@@ -34,7 +34,7 @@ _INSTRUMENTATION = (
     "    exit(sig);\n"
     "}\n"
     "void __attribute__ ((constructor)) darjeeling_ctor (void) {\n"
-    #"void darjeeling_ctor (void) {\n"
+    # "void darjeeling_ctor (void) {\n"
     "  struct sigaction new_action;\n"
     "  new_action.sa_handler = darjeeling_sighandler;\n"
     "  sigemptyset(&new_action.sa_mask);\n"
@@ -132,8 +132,6 @@ class GCovCollectorConfig(CoverageCollectorConfig):
         """Determines the set of all source files within a program."""
         with program.provision() as container:
             source_directory = program.source_directory
-            build_directory = program.build_directory
-            src_subdirectory = program.src_subdirectory
             endings = ('.cpp', '.cc', '.c', '.h', '.hh', '.hpp', '.cxx')
             command = ' -o '.join([f"-name \*{e}" for e in endings])
             command = f'find {source_directory} -type f \( {command} \)'
@@ -228,7 +226,7 @@ class GCovCollector(CoverageCollector):
     def _resolve_filepath_pdr(self, base_filename: str) -> str:
         base = os.path.basename(base_filename)
         # may make sense to check for duplicate basenames, but TBD
-        source_lut = { os.path.basename(fn): fn for fn in self._source_filenames }
+        source_lut = {os.path.basename(fn): fn for fn in self._source_filenames}
         return os.path.relpath(source_lut.get(base, base), self._source_directory)
 
     def _parse_xml_report(self, root: ET.Element) -> FileLineSet:
@@ -268,12 +266,12 @@ class GCovCollector(CoverageCollector):
 
         command = f'gcovr -o "{temporary_filename}" -x --root {self._source_directory} '
         if self._src_subdirectory and self._src_subdirectory != "":
-            command+=f" {self._src_subdirectory} "
+            command += f" {self._src_subdirectory} "
         logger.trace(f"executing gcovr command: {command}")
-        fpath=self._build_directory
+        fpath = self._build_directory
         logger.info(f"executing gcovr command: '{command}' in '{fpath}'")
-        #gcda=shell.check_output("find . -type f -name \"*.gcda\"", cwd=fpath)
-        #logger.info(f"GCDA: \n>>>{gcda}\n<<<")
+        # gcda=shell.check_output("find . -type f -name \"*.gcda\"", cwd=fpath)
+        # logger.info(f"GCDA: \n>>>{gcda}\n<<<")
         shell.check_call(command, cwd=fpath)
         xml_file_contents = files.read(temporary_filename)
         logger.info(f"XML Contents: \n>>>>\n{xml_file_contents}\n<<<<")
