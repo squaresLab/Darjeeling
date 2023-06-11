@@ -360,8 +360,7 @@ class BaseController(cement.Controller):
                                       dir_patches=dir_patches,
                                       threads=threads)
 
-        with bugzoo.server.ephemeral(timeout_connection=120) as client_bugzoo:
-            environment = Environment(bugzoo=client_bugzoo)
+        with Environment() as environment:
             try:
                 session = EvaluateSession.from_config(environment, cfg)
             except BadConfigurationException:
