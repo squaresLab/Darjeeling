@@ -66,11 +66,23 @@ To install Darjeeling from source via pipenv, execute the following from the roo
 
 .. code::
 
-   (venv) $ pipenv install
+  $ pipenv install
 
 
 Usage
 -----
+
+After installing Darjeeling via pipenv as shown above, you can drop into the newly created virtual environment by executing the following command from the root of the repository:
+
+.. code::
+
+  $ pipenv shell
+
+To exit from the virtual environment, you can execute the following command:
+
+.. code::
+
+  (Darjeeling) $ exit
 
 Darjeeling exposes a command-line interface (CLI) for performing program
 repair, as demonstrated below. The CLI provides a single command, `repair`,
