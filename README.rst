@@ -48,62 +48,25 @@ To use Darjeeling,
 installed on your machine, and your user account must be a member of the
 :code:`docker` group in order `to avoid problems related to insufficient privileges <https://docs.docker.com/install/linux/linux-postinstall>`_
 .
-Python 3.5 or greater and `pip3 <https://pip.pypa.io/en/stable/installing>`_
-must also be installed; Darjeeling will not work with older versions of Python
-3 nor will it work with any versions of Python 2.
+Python 3.9 or greater and `pip3 <https://pip.pypa.io/en/stable/installing>`_ must also be installed; Darjeeling will not work with older versions of Python 3 nor will it work with any versions of Python 2.
 
 Optional Extras
 ...............
 
-We strongly recommend that you install either
-`virtualenv <https://virtualenv.pypa.io/en/stable>`_ or
-`pipenv <https://pipenv.readthedocs.io/en/latest>`_ to contain your installation
-of Darjeeling and to avoid conflicting with system packages. Both of packages
-can be installed via :code:`pip` as follows:
+We strongly recommend that you use `pipenv <https://pipenv.readthedocs.io/en/latest>`_ to contain your installation of Darjeeling and avoid conflicting with system packages. To install pipenv, execute the following command:
 
 .. code::
 
-   $ pip install virtualenv
    $ pip install pipenv
-
-Using :code:`virtualenv`, you should create a virtual environment for Darjeeling
-either in a new directory or at the root of your clone of this repository:
-
-.. code::
-
-   $ virtualenv name_of_directory
-
-To enter the virtual environment:
-
-.. code::
-
-   $ cd name_of_directory
-   $ source activate
-   (venv) $ ...
-
-To exit the virtual environment:
-
-.. code::
-
-   (venv) $ deactivate
-
 
 Darjeeling
 ..........
 
-To install the latest stable release of Darjeeling from PyPI from inside the
-virtual environment:
+To install Darjeeling from source via pipenv, execute the following from the root of the repository:
 
 .. code::
 
-   (venv) $ pip install darjeeling
-
-Alternatively, to install from source, execute the following inside the virtual
-environment:
-
-.. code::
-
-   (venv) $ pip install .
+   (venv) $ pipenv install
 
 
 Usage
