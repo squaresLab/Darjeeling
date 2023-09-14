@@ -4,6 +4,8 @@ threads: 1
 localization:
   type: spectrum
   metric: weighted
+  restrict-to-lines:
+    src/flask/config.py: [290]
 algorithm:
   type: exhaustive
 coverage:
@@ -55,4 +57,4 @@ optimizations:
   ignore-decls: false
   only-insert-executed-code: false
 resource-limits:
-  candidates: 100
+  candidates: 5000
