@@ -1,4 +1,6 @@
 *
+!Pipfile
+!Pipfile.lock
 !src
 !setup.py
 !test
