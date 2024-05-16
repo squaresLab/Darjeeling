@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 darjeeling = {path = ".", editable = true}
+lcovparser = "*"
 
 [requires]
 python_version = "3.9"
