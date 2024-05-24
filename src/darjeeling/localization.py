@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+from __future__ import annotations
+
 __all__ = (
     'SuspiciousnessMetric',
     'Localization',
@@ -9,8 +10,18 @@ __all__ = (
     'jaccard'
 )
 
-from typing import (Any, Callable, Dict, Iterable, Iterator, List, Mapping,
-                    MutableMapping, Set, Sequence)
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Mapping,
+    MutableMapping,
+    Set,
+    Sequence,
+)
 import bisect
 import functools
 import json
@@ -27,11 +38,15 @@ from .exceptions import NoImplicatedLines, BadConfigurationException
 if typing.TYPE_CHECKING:
     from .config import LocalizationConfig
 
-SuspiciousnessMetric = Callable[[Spectra], MutableMapping[FileLine, float]]
+SuspiciousnessMetric = Callable[
+    [Spectra],
+    MutableMapping[FileLine, float],
+]
 
 
-def absolute_suspiciousness_metric(f: Callable[[int, int, int, int], float]
-                                   ) -> SuspiciousnessMetric:
+def absolute_suspiciousness_metric(
+    f: Callable[[int, int, int, int], float],
+) -> SuspiciousnessMetric:
     @functools.wraps(f)
     def wrapper(spectra: Spectra) -> MutableMapping[FileLine, float]:
         line_to_score: FileLineMap[float] = FileLineMap({})
@@ -117,22 +132,26 @@ def tarantula(ep: int, np: int, ef: int, nf: int) -> float:
 
 class Localization:
     @staticmethod
-    def from_coverage(coverage: TestCoverageMap,
-                      metric: SuspiciousnessMetric
-                      ) -> 'Localization':
+    def from_coverage(
+        coverage: TestCoverageMap,
+        metric: SuspiciousnessMetric,
+    ) -> Localization:
         spectra = Spectra.from_coverage(coverage)
         return Localization.from_spectra(spectra, metric)
 
     @staticmethod
-    def from_spectra(spectra: Spectra,
-                     metric: SuspiciousnessMetric
-                     ) -> 'Localization':
-        return Localization(metric(spectra))
+    def from_spectra(
+        spectra: Spectra,
+        metric: SuspiciousnessMetric,
+    ) -> Localization:
+        scores = metric(spectra)
+        return Localization(scores)
 
     @staticmethod
-    def from_config(coverage: TestCoverageMap,
-                    cfg: 'LocalizationConfig'
-                    ) -> 'Localization':
+    def from_config(
+        coverage: TestCoverageMap,
+        cfg: 'LocalizationConfig'
+    ) -> Localization:
         # find the suspiciousness metric
         try:
             supported_metrics: Mapping[str, SuspiciousnessMetric] = {
@@ -163,12 +182,14 @@ class Localization:
         return loc
 
     @staticmethod
-    def from_dict(d: Dict[str, float]) -> 'Localization':
-        scores = {FileLine.from_string(l): v for (l, v) in d.items()}
+    def from_dict(d: Dict[str, float]) -> Localization:
+        scores = {
+            FileLine.from_string(l): v for (l, v) in d.items()
+        }
         return Localization(scores)
 
     @staticmethod
-    def from_file(fn: str) -> 'Localization':
+    def from_file(fn: str) -> Localization:
         logger.debug(f"loading localization from file: {fn}")
         with open(fn, 'r') as f:
             jsn = json.load(f)
@@ -192,7 +213,7 @@ class Localization:
             self.__line_to_score[line] = score
 
         self._lines: Sequence[FileLine] = tuple(self.__line_to_score)
-        self._files: Set[str] = set(line.filename for line in self._lines)
+        self._files: set[str] = set(line.filename for line in self._lines)
 
         num_implicated: int = len(self.__line_to_score)
         if num_implicated == 0:

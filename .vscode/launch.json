@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Repair: Zune",
+      "args": ["repair", "-v", "./example/zune/repair.yml", "--threads", "1"],
+      "type": "debugpy",
+      "request": "launch",
+      "module": "darjeeling",
+      "justMyCode": false,
+      "console": "integratedTerminal"
+    }
+  ]
+}

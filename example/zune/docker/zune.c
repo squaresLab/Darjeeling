@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <stdlib.h>
+
 int isLeapYear(int y) {
   return y % 4 == 0;
 }

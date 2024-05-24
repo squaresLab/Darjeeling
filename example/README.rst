@@ -11,10 +11,6 @@ directory for that scenario:
 
 .. code::
 
-   (pipenv) $ darjeeling repair repair.yml
+   (poetry) $ darjeeling repair repair.yml
 
-I strongly recommend that you run Darjeeling within
-either a `virtualenv <https://virtualenv.pypa.io/en/stable>`_ or
-`pipenv <https://pipenv.readthedocs.io/en/latest>`_ to avoid conflicting with your
-system's Python installation.
-
+I strongly recommend that you run Darjeeling within a Poetry environment to avoid conflicting with your system's Python installation.

@@ -17,19 +17,20 @@ if t.TYPE_CHECKING:
     from ..environment import Environment
     from ..program import ProgramDescription
 
+# NOTE __gcov_dump has replaced __gcov_flush in newer versions of GCC
 _INSTRUMENTATION = (
     "/* DARJEELING :: INSTRUMENTATION :: START */\n"
     "#include <stdio.h>\n"
     "#include <stdlib.h>\n"
     "#include <signal.h>\n"
     "#ifdef __cplusplus\n"
-    "  extern \"C\" void __gcov_flush(void);\n"
+    "  extern \"C\" void __gcov_dump(void);\n"
     "#else\n"
-    "  void __gcov_flush(void);\n"
+    "  void __gcov_dump(void);\n"
     "#endif\n"
     "#define SEGV_STACK_SIZE 100\n"
     "void darjeeling_sighandler(int sig){\n"
-    "  __gcov_flush();\n"
+    "  __gcov_dump();\n"
     "  if(sig != SIGUSR1 && sig != SIGUSR2)\n"
     "    exit(1);\n"
     "}\n"

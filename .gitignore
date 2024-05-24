@@ -1,3 +1,5 @@
+.python-version
+
 .tox
 darjeeling.log.*
 bugzood.log*

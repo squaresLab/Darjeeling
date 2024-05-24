@@ -1,15 +1,20 @@
-# -*- coding: utf-8 -*-
+from __future__ import annotations
+
 __all__ = ('Session',)
 
+from dataclasses import dataclass, field
 from typing import Iterator, List
 import glob
 import os
+import typing as t
 import random
 
-import attr
 import kaskara
-from bugzoo.core import Patch
 from bugzoo import Bug as Snapshot
+from bugzoo.core import Patch
+from kaskara.clang.analyser import ClangAnalyser as KaskaraClang
+from kaskara.project import Project
+from kaskara.python.analyser import PythonAnalyser as KaskaraPython
 from loguru import logger
 
 from .core import Language, TestCoverageMap
@@ -19,27 +24,62 @@ from .resources import ResourceUsageTracker
 from .searcher import Searcher
 from .problem import Problem
 from .config import Config
-from .snippet import (SnippetDatabase, StatementSnippetDatabase,
-                      LineSnippetDatabase)
+from .snippet import (
+    SnippetDatabase,
+    StatementSnippetDatabase,
+    LineSnippetDatabase
+)
 from .localization import Localization
 from .events import DarjeelingEventHandler, DarjeelingEventProducer
 
+if t.TYPE_CHECKING:
+    from kaskara.analyser import Analyser as KaskaraAnalyser
+    from kaskara.analysis import Analysis as KaskaraAnalysis
 
-@attr.s
+    from .program import ProgramDescription
+
+
+@dataclass
 class Session(DarjeelingEventProducer):
     """Used to manage and inspect an interactive repair session."""
-    dir_patches: str = attr.ib()
-    searcher: Searcher = attr.ib()
-    resources: ResourceUsageTracker = attr.ib()
-    _problem: Problem = attr.ib()
-    terminate_early: bool = attr.ib(default=True)
-    _patches: List[Candidate] = attr.ib(factory=list)
+    dir_patches: str
+    searcher: Searcher
+    resources: ResourceUsageTracker
+    _problem: Problem
+    terminate_early: bool = field(default=True)
+    _patches: list[Candidate] = field(default_factory=list)
 
-    def __attrs_post_init__(self) -> None:
+    def __post_init__(self) -> None:
         DarjeelingEventProducer.__init__(self)
 
-    @staticmethod
-    def from_config(environment: Environment, cfg: Config) -> 'Session':
+    @classmethod
+    def _index(
+        cls,
+        program: ProgramDescription,
+        environment: Environment,
+        files: list[str],
+    ) -> KaskaraAnalysis:
+        kaskara_project = kaskara.Project(
+            dockerblade=environment.dockerblade,
+            image=program.image,
+            directory=program.source_directory,
+            files=files
+        )
+
+        if program.language in (Language.CPP, Language.C):
+            with KaskaraClang.for_project(kaskara_project) as analyser:
+                return analyser.run()
+        if program.language == Language.PYTHON:
+            with KaskaraPython.for_project(kaskara_project) as analyser:
+                return analyser.run()
+        return None
+
+    @classmethod
+    def from_config(
+        cls,
+        environment: Environment,
+        cfg: Config,
+    ) -> Session:
         """Creates a new repair session according to a given configuration."""
         logger.debug('preparing patch directory')
         dir_patches = cfg.dir_patches
@@ -53,7 +93,7 @@ class Session(DarjeelingEventProducer):
         # ensure that Kaskara is installed
         logger.info('ensuring that kaskara installation is complete '
                     '(this may take 20 minutes if Kaskara is not up-to-date)')
-        kaskara.post_install()
+        # kaskara.post_install()
         logger.info('ensured that kaskara installation is complete')
 
         # seed the RNG
@@ -96,31 +136,17 @@ class Session(DarjeelingEventProducer):
         # determine implicated files
         files = localization.files
 
-        if program.language in (Language.CPP, Language.C):
-            kaskara_project = kaskara.Project(dockerblade=environment.dockerblade,
-                                              image=program.image,
-                                              directory=program.source_directory,
-                                              files=files)
-            analyser = kaskara.clang.ClangAnalyser()
-            analysis = analyser.analyse(kaskara_project)
-        elif program.language == Language.PYTHON:
-            kaskara_project = kaskara.Project(dockerblade=environment.dockerblade,
-                                              image=program.image,
-                                              directory=program.source_directory,
-                                              files=files)
-            analyser = kaskara.python.PythonAnalyser()
-            analysis = analyser.analyse(kaskara_project)
-        else:
-            analysis = None
+        analysis = cls._index(program, environment, files)
 
-        # build problem
-        problem = Problem.build(environment=environment,
-                                config=cfg,
-                                language=program.language,
-                                program=program,
-                                coverage=coverage,
-                                analysis=analysis,
-                                localization=localization)
+        problem = Problem.build(
+            environment=environment,
+            config=cfg,
+            language=program.language,
+            program=program,
+            coverage=coverage,
+            analysis=analysis,
+            localization=localization,
+        )
 
         logger.info("constructing database of donor snippets...")
         snippets: SnippetDatabase
@@ -137,12 +163,13 @@ class Session(DarjeelingEventProducer):
                                     threads=cfg.threads,
                                     run_redundant_tests=cfg.run_redundant_tests)
 
-        # build session
-        return Session(dir_patches=dir_patches,
-                       resources=resources,
-                       problem=problem,
-                       searcher=searcher,
-                       terminate_early=cfg.terminate_early)
+        return Session(
+            dir_patches=dir_patches,
+            resources=resources,
+            _problem=problem,
+            searcher=searcher,
+            terminate_early=cfg.terminate_early,
+        )
 
     @property
     def snapshot(self) -> Snapshot:
