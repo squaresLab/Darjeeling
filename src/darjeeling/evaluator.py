@@ -1,54 +1,63 @@
-# -*- coding: utf-8 -*-
-"""
-This module provides the Evaluator: a class for intelligently evaluating
-candidate patches, and for performing individual test executions.
-"""
-__all__ = ('Evaluator',)
+"""Efficiently evaluates candidate patches and performs individual test executions."""
+from __future__ import annotations
 
-from typing import (Tuple, List, Optional, Iterator, Set, Sequence, Union,
-                    FrozenSet)
-from concurrent.futures import Future
+__all__ = ("Evaluator",)
+
 import concurrent.futures
 import math
 import queue
+import random
 import threading
 import typing
-import random
+from collections.abc import Iterator, Sequence
+from concurrent.futures import Future
+from typing import Optional, Union
 
 from loguru import logger
 
-from . import exceptions as exc
-from .candidate import Candidate
-from .container import ProgramContainer
-from .outcome import (BuildOutcome, CandidateOutcome, CandidateOutcomeStore,
-                      TestOutcome, TestOutcomeSet)
-from .events import DarjeelingEventProducer
-from .events import (BuildStarted, BuildFinished,
-                     CandidateEvaluationStarted, CandidateEvaluationFinished,
-                     CandidateEvaluationError,
-                     TestExecutionStarted, TestExecutionFinished,
-                     TestExecutionError)
+import darjeeling.exceptions as exc
+from darjeeling.candidate import Candidate
+from darjeeling.container import ProgramContainer
+from darjeeling.core import Test
+from darjeeling.events.event import (
+    BuildFinished,
+    BuildStarted,
+    CandidateEvaluationError,
+    CandidateEvaluationFinished,
+    CandidateEvaluationStarted,
+    TestExecutionError,
+    TestExecutionFinished,
+    TestExecutionStarted,
+)
+from darjeeling.events.producer import DarjeelingEventProducer
+
 from .exceptions import BuildFailure
-from .core import Test
+from .outcome import (
+    BuildOutcome,
+    CandidateOutcome,
+    CandidateOutcomeStore,
+    TestOutcome,
+    TestOutcomeSet,
+)
 from .resources import ResourceUsageTracker
 from .util import Stopwatch
 
 if typing.TYPE_CHECKING:
     from .problem import Problem
 
-Evaluation = Tuple[Candidate, CandidateOutcome]
+Evaluation = tuple[Candidate, CandidateOutcome]
 
 
 class Evaluator(DarjeelingEventProducer):
     def __init__(self,
-                 problem: 'Problem',
+                 problem: Problem,
                  resources: ResourceUsageTracker,
                  *,
                  num_workers: int = 1,
                  terminate_early: bool = True,
                  sample_size: Optional[Union[float, int]] = None,
                  outcomes: Optional[CandidateOutcomeStore] = None,
-                 run_redundant_tests: bool = False
+                 run_redundant_tests: bool = False,
                  ) -> None:
         super().__init__()
         self.__problem = problem
@@ -62,9 +71,9 @@ class Evaluator(DarjeelingEventProducer):
         self.__outcomes = outcomes or CandidateOutcomeStore()
         self.__run_redundant_tests = run_redundant_tests
 
-        self.__tests_failing: FrozenSet[Test] = \
+        self.__tests_failing: frozenset[Test] = \
             frozenset(self.__problem.failing_tests)
-        self.__tests_passing: FrozenSet[Test] = \
+        self.__tests_passing: frozenset[Test] = \
             frozenset(self.__problem.passing_tests)
 
         # FIXME used the precomputed test ordering for now
@@ -80,44 +89,44 @@ class Evaluator(DarjeelingEventProducer):
             self.__sample_size = sample_size
 
         self.__lock = threading.Lock()
-        self.__queue_evaluated: queue.Queue = queue.Queue()
+        self.__queue_evaluated: queue.Queue[tuple[Candidate, CandidateOutcome]] = queue.Queue()
         self.__num_running = 0
 
     @property
     def num_workers(self) -> int:
         return self.__num_workers
 
-    def _order_tests(self, tests: Set[Test]) -> List[Test]:
+    def _order_tests(self, tests: set[Test]) -> list[Test]:
         """Prioritizes a given set of tests into a sequence."""
         # FIXME implement ordering strategies
-        ordered: List[Test] = []
+        ordered: list[Test] = []
         for test in self.__test_ordering:
             if test in tests:
                 ordered.append(test)
         return ordered
 
-    def _select_tests(self) -> Tuple[List[Test], List[Test]]:
+    def _select_tests(self) -> tuple[list[Test], list[Test]]:
         """Computes a test sequence for a candidate evaluation."""
         # sample passing tests
-        sample: Set[Test] = set()
+        sample: set[Test] = set()
         if self.__sample_size:
             sample = \
-                set(random.sample(self.__tests_passing, self.__sample_size))
+                set(random.sample(self.__tests_passing, self.__sample_size))  # type: ignore[arg-type]
         else:
             sample = set(self.__tests_passing)
 
-        selected: Set[Test] = sample | self.__tests_failing
-        remainder: Set[Test] = set(self.__tests_passing - sample)
+        selected: set[Test] = sample | self.__tests_failing
+        remainder: set[Test] = set(self.__tests_passing - sample)
 
         # order tests
-        ordered_selected: List[Test] = self._order_tests(selected)
-        ordered_remainder: List[Test] = self._order_tests(remainder)
+        ordered_selected: list[Test] = self._order_tests(selected)
+        ordered_remainder: list[Test] = self._order_tests(remainder)
         return ordered_selected, ordered_remainder
 
     def _filter_redundant_tests(self,
                                 candidate: Candidate,
-                                tests: List[Test]
-                                ) -> Tuple[List[Test], Set[Test]]:
+                                tests: list[Test],
+                                ) -> tuple[list[Test], set[Test]]:
         line_coverage_by_test = self.__problem.coverage
         lines_changed = candidate.lines_changed()
 
@@ -125,8 +134,8 @@ class Evaluator(DarjeelingEventProducer):
         if not lines_changed:
             return (tests, set())
 
-        keep: List[Test] = []
-        drop: Set[Test] = set()
+        keep: list[Test] = []
+        drop: set[Test] = set()
         for test in tests:
             test_line_coverage = line_coverage_by_test[test.name]
             if not any(line in test_line_coverage for line in lines_changed):
@@ -138,7 +147,7 @@ class Evaluator(DarjeelingEventProducer):
     def _run_test(self,
                   container: ProgramContainer,
                   candidate: Candidate,
-                  test: Test
+                  test: Test,
                   ) -> TestOutcome:
         """Runs a test for a given patch using a provided container."""
         logger.debug(f"executing test: {test.name} [{candidate}]")
@@ -199,7 +208,7 @@ class Evaluator(DarjeelingEventProducer):
                 return cached_outcome
 
             # don't bother executing tests for which we already have results
-            filtered_tests = []  # type: List[Test]
+            filtered_tests: list[Test] = []
             for test in tests:
                 if test.name in cached_outcome.tests:
                     test_outcome = cached_outcome.tests[test.name]
@@ -288,7 +297,7 @@ class Evaluator(DarjeelingEventProducer):
             self.__num_running -= 1
         return (candidate, outcome)
 
-    def submit(self, candidate: Candidate) -> 'Future[Evaluation]':
+    def submit(self, candidate: Candidate) -> Future[Evaluation]:
         """Schedules a candidate patch evaluation."""
         with self.__lock:
             self.__num_running += 1
@@ -296,7 +305,7 @@ class Evaluator(DarjeelingEventProducer):
         return future
 
     def as_completed(self) -> Iterator[Evaluation]:
-        q = self.__queue_evaluated  # type: queue.Queue
+        q: queue.Queue[tuple[Candidate, CandidateOutcome]] = self.__queue_evaluated
         while True:
             with self.__lock:
                 if q.empty() and self.__num_running == 0:

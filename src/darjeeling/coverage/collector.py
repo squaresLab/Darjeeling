@@ -1,46 +1,47 @@
-# -*- coding: utf-8 -*-
-__all__ = ('CoverageCollector',)
+from __future__ import annotations
 
-from typing import Any, Dict, Mapping, Optional, Type
-from typing_extensions import final
+__all__ = ("CoverageCollector",)
+
 import abc
+from collections.abc import Mapping
+from typing import Any, Optional, final
 
 from loguru import logger
 
 from .. import exceptions as exc
-from ..core import FileLineSet, TestCoverage, TestCoverageMap
 from ..container import ProgramContainer
+from ..core import FileLineSet, TestCoverage, TestCoverageMap
 from ..environment import Environment
 from ..program import ProgramDescription
 from ..util import dynamically_registered
 
 
-@dynamically_registered(lookup='lookup', length=None, iterator=None)
+@dynamically_registered(lookup="lookup", length=None, iterator=None)
 class CoverageCollectorConfig(abc.ABC):
     """Describes a means of collecting test suite coverage."""
-    @staticmethod
-    def lookup(name: str) -> Type['CoverageCollectorConfig']:
-        ...
+    @classmethod
+    def lookup(cls, name: str) -> type[CoverageCollectorConfig]:
+        raise NotImplementedError
 
     @classmethod
-    @abc.abstractmethod
     def from_dict(cls,
                   dict_: Mapping[str, Any],
-                  dir_: Optional[str] = None
-                  ) -> 'CoverageCollectorConfig':
-        if 'type' not in dict_:
+                  dir_: Optional[str] = None,
+                  ) -> CoverageCollectorConfig:
+        if "type" not in dict_:
             m = 'missing expected property: "type"'
             raise exc.BadConfigurationException(m)
-        type_name: str = dict_['type']
-        type_: Type[CoverageCollectorConfig] = \
+        type_name: str = dict_["type"]
+        type_: type[CoverageCollectorConfig] = \
             CoverageCollectorConfig.lookup(type_name)
         return type_.from_dict(dict_, dir_)
 
     @abc.abstractmethod
-    def build(self,
-              environment: Environment,
-              program: ProgramDescription
-              ) -> 'CoverageCollector':
+    def build(
+        self,
+        environment: Environment,
+        program: ProgramDescription,
+    ) -> CoverageCollector:
         ...
 
 
@@ -64,7 +65,7 @@ class CoverageCollector(abc.ABC):
     @final
     def collect(self) -> TestCoverageMap:
         """Computes coverage for a given program."""
-        test_to_coverage: Dict[str, TestCoverage] = {}
+        test_to_coverage: dict[str, TestCoverage] = {}
         logger.trace("collecting coverage")
         with self.program.provision() as container:
             logger.trace("provisioned container for coverage")

@@ -21,7 +21,7 @@ darjeeling = 'darjeeling.cli:main'
 
 [tool.poetry.dependencies]
 python = ">=3.11,<4"
-kaskara = { git = "https://github.com/ChrisTimperley/Kaskara.git", rev = "dacfab4" }
+kaskara = { git = "https://github.com/ChrisTimperley/Kaskara.git", rev = "f8f49db12f04e5c4f482a1ea94b767b701710afe" }
 attrs = ">=19.3.0"
 bugzoo = ">=2.1"
 comby = "^0.0.2"
@@ -30,8 +30,9 @@ cement = "^3.0"
 loguru = "^0.5"
 requests = "2.31.0"
 sourcelocation = ">=1.0.6,^1.0"
-dockerblade = "^0.6"
+dockerblade = "^0.6,>=0.6.2"
 websockets = "^10.0"
+overrides = "^7.7.0"
 
 [tool.poetry.group.dev]
 optional = true
@@ -56,6 +57,22 @@ types-pyyaml = "*"
 [tool.mypy]
 ignore_missing_imports = false
 strict = true
+
+[[tool.mypy.overrides]]
+module = "bugzoo.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "cement.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pyroglyph.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "comby.*"
+ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 120
@@ -97,6 +114,9 @@ extend-ignore = [
     "ARG001",   # unused function argument
     "PLR0913",  # too many arguments in function definition
     "PLR0911",  # too many return statements
+    "PYI041",   # use `float` instead of `int | float`
+    "D106",     # missing docstring in public nested class
+    "S311",     # standard pseudo-random generators are not suitable for security/cryptographic purposes
 ]
 
 [build-system]

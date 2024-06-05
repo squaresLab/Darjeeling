@@ -1,11 +1,15 @@
-# -*- coding: utf-8 -*-
-"""
-This module is responsible for describing concrete transformations to source
-code files.
-"""
-from . import classic
-from . import line
-from . import template
-from .base import Transformation, TransformationSchema
-from .transformations import ProgramTransformations
-from .config import TransformationSchemaConfig, ProgramTransformationsConfig
+"""Responsible for describing concrete transformations to source code files."""
+__all__ = (
+    "ProgramTransformations",
+    "ProgramTransformationsConfig",
+    "Transformation",
+    "TransformationSchema",
+    "TransformationSchemaConfig",
+)
+
+from darjeeling.transformation.base import Transformation, TransformationSchema
+from darjeeling.transformation.transformations import ProgramTransformations
+from darjeeling.transformation.config import (
+    ProgramTransformationsConfig,
+    TransformationSchemaConfig,
+)

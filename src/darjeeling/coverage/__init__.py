@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from .config import CoverageConfig
+from . import coveragepy, gcov
 from .collector import CoverageCollector, CoverageCollectorConfig
-
-from . import gcov
-from . import coveragepy
+from .config import CoverageConfig

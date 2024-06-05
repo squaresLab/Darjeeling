@@ -1,42 +1,37 @@
 from __future__ import annotations
 
-__all__ = ('Session',)
+__all__ = ("Session",)
 
-from dataclasses import dataclass, field
-from typing import Iterator, List
 import glob
 import os
-import typing as t
 import random
+import typing as t
+from collections.abc import Iterator
+from dataclasses import dataclass, field
 
 import kaskara
 from bugzoo import Bug as Snapshot
 from bugzoo.core import Patch
 from kaskara.clang.analyser import ClangAnalyser as KaskaraClang
-from kaskara.project import Project
 from kaskara.python.analyser import PythonAnalyser as KaskaraPython
 from loguru import logger
 
-from .core import Language, TestCoverageMap
-from .environment import Environment
-from .candidate import Candidate
-from .resources import ResourceUsageTracker
-from .searcher import Searcher
-from .problem import Problem
-from .config import Config
-from .snippet import (
-    SnippetDatabase,
-    StatementSnippetDatabase,
-    LineSnippetDatabase
-)
-from .localization import Localization
-from .events import DarjeelingEventHandler, DarjeelingEventProducer
+from darjeeling.candidate import Candidate
+from darjeeling.config import Config
+from darjeeling.core import Language, TestCoverageMap
+from darjeeling.environment import Environment
+from darjeeling.events.handler import DarjeelingEventHandler
+from darjeeling.events.producer import DarjeelingEventProducer
+from darjeeling.localization import Localization
+from darjeeling.problem import Problem
+from darjeeling.resources import ResourceUsageTracker
+from darjeeling.searcher import Searcher
+from darjeeling.snippet import LineSnippetDatabase, StatementSnippetDatabase
 
 if t.TYPE_CHECKING:
-    from kaskara.analyser import Analyser as KaskaraAnalyser
     from kaskara.analysis import Analysis as KaskaraAnalysis
 
-    from .program import ProgramDescription
+    from darjeeling.program import ProgramDescription
 
 
 @dataclass
@@ -58,12 +53,12 @@ class Session(DarjeelingEventProducer):
         program: ProgramDescription,
         environment: Environment,
         files: list[str],
-    ) -> KaskaraAnalysis:
+    ) -> KaskaraAnalysis | None:
         kaskara_project = kaskara.Project(
             dockerblade=environment.dockerblade,
             image=program.image,
             directory=program.source_directory,
-            files=files
+            files=frozenset(files),
         )
 
         if program.language in (Language.CPP, Language.C):
@@ -81,20 +76,20 @@ class Session(DarjeelingEventProducer):
         cfg: Config,
     ) -> Session:
         """Creates a new repair session according to a given configuration."""
-        logger.debug('preparing patch directory')
+        logger.debug("preparing patch directory")
         dir_patches = cfg.dir_patches
         if os.path.exists(dir_patches):
             logger.warning("clearing existing patch directory")
-            for fn in glob.glob(f'{dir_patches}/*.diff'):
+            for fn in glob.glob(f"{dir_patches}/*.diff"):
                 if os.path.isfile(fn):
                     os.remove(fn)
-        logger.debug('prepared patch directory')
+        logger.debug("prepared patch directory")
 
         # ensure that Kaskara is installed
-        logger.info('ensuring that kaskara installation is complete '
-                    '(this may take 20 minutes if Kaskara is not up-to-date)')
+        logger.info("ensuring that kaskara installation is complete "
+                    "(this may take 20 minutes if Kaskara is not up-to-date)")
         # kaskara.post_install()
-        logger.info('ensured that kaskara installation is complete')
+        logger.info("ensured that kaskara installation is complete")
 
         # seed the RNG
         # FIXME use separate RNG for each session
@@ -149,7 +144,7 @@ class Session(DarjeelingEventProducer):
         )
 
         logger.info("constructing database of donor snippets...")
-        snippets: SnippetDatabase
+        snippets: StatementSnippetDatabase | LineSnippetDatabase
         if analysis is not None:
             snippets = StatementSnippetDatabase.from_kaskara(analysis, cfg)
         else:
@@ -239,10 +234,10 @@ class Session(DarjeelingEventProducer):
         os.makedirs(self.dir_patches, exist_ok=True)
         for i, patch in enumerate(self._patches):
             diff = str(patch.to_diff())
-            fn_patch = os.path.join(self.dir_patches, f'{i}.diff')
+            fn_patch = os.path.join(self.dir_patches, f"{i}.diff")
             logger.debug(f"writing patch to {fn_patch}")
             try:
-                with open(fn_patch, 'w') as f:
+                with open(fn_patch, "w") as f:
                     f.write(diff)
             except OSError:
                 logger.exception(f"failed to write patch: {fn_patch}")
@@ -250,6 +245,6 @@ class Session(DarjeelingEventProducer):
             logger.debug(f"wrote patch to {fn_patch}")
         logger.debug("saved patches to disk")
 
-    def __enter__(self) -> 'Session':
+    def __enter__(self) -> Session:
         self.run()
         return self

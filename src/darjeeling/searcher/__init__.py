@@ -1,5 +1,11 @@
-# -*- coding: utf-8 -*-
-from .config import SearcherConfig
-from .base import Searcher
-from .exhaustive import ExhaustiveSearcher
-from .genetic import GeneticSearcher
+__all__ = (
+    "ExhaustiveSearcher",
+    "GeneticSearcher",
+    "Searcher",
+    "SearcherConfig",
+)
+
+from darjeeling.searcher.base import Searcher
+from darjeeling.searcher.config import SearcherConfig
+from darjeeling.searcher.exhaustive import ExhaustiveSearcher
+from darjeeling.searcher.genetic import GeneticSearcher

@@ -1,34 +1,39 @@
-# -*- coding: utf-8 -*-
-__all__ = ('Searcher',)
+__all__ = ("Searcher",)
 
-from typing import Dict, Iterator, List, Optional, Union
 import abc
 import typing
+from collections.abc import Iterator
+from typing import Optional, Union
 
 from loguru import logger
 
-from ..candidate import Candidate
-from ..events import DarjeelingEventProducer, DarjeelingEventHandler
-from ..environment import Environment
-from ..outcome import CandidateOutcome
-from ..resources import ResourceUsageTracker
-from ..evaluator import Evaluator, Evaluation
-from ..exceptions import (SearchAlreadyStarted, SearchExhausted,
-                          TimeLimitReached, CandidateLimitReached)
+from darjeeling.candidate import Candidate
+from darjeeling.environment import Environment
+from darjeeling.evaluator import Evaluation, Evaluator
+from darjeeling.events.handler import DarjeelingEventHandler
+from darjeeling.events.producer import DarjeelingEventProducer
+from darjeeling.exceptions import (
+    CandidateLimitReached,
+    SearchAlreadyStarted,
+    SearchExhausted,
+    TimeLimitReached,
+)
+from darjeeling.outcome import CandidateOutcome
+from darjeeling.resources import ResourceUsageTracker
 
 if typing.TYPE_CHECKING:
-    from ..problem import Problem
+    from darjeeling.problem import Problem
 
 
 class Searcher(DarjeelingEventProducer, abc.ABC):
     def __init__(self,
-                 problem: 'Problem',
+                 problem: "Problem",
                  resources: ResourceUsageTracker,
                  *,
                  threads: int = 1,
                  terminate_early: bool = True,
                  test_sample_size: Optional[Union[int, float]] = None,
-                 run_redundant_tests: bool = True
+                 run_redundant_tests: bool = True,
                  ) -> None:
         """Constructs a new searcher.
 
@@ -75,7 +80,7 @@ class Searcher(DarjeelingEventProducer, abc.ABC):
         return self.__evaluator.num_workers
 
     @property
-    def problem(self) -> 'Problem':
+    def problem(self) -> "Problem":
         """A description of the problem being solved."""
         return self.__problem
 
@@ -97,19 +102,20 @@ class Searcher(DarjeelingEventProducer, abc.ABC):
         self.__evaluator.submit(candidate)
 
     def evaluate_all(self,
-                     candidates: List[Candidate],
-                     results: Optional[Dict[Candidate, CandidateOutcome]] = None
+                     candidates: list[Candidate],
+                     results: Optional[dict[Candidate, CandidateOutcome]] = None,
                      ) -> Iterator[Candidate]:
-        """
-        Evaluates all given candidate patches and blocks until all have been
+        """Evaluates all given candidate patches and blocks until all have been
         evaluated (or the search has been terminated).
 
-        Parameters:
+        Parameters
+        ----------
             candidates: a list of candidate patches that should be evaluated.
             results: a dictionary to which the results of each candidate
                 patch evaluation should be written.
 
-        Returns:
+        Returns
+        -------
             an iterator over the subset of candidates that are acceptable
             repairs.
         """
@@ -136,10 +142,10 @@ class Searcher(DarjeelingEventProducer, abc.ABC):
         yield from self.__evaluator.as_completed()
 
     def __iter__(self) -> Iterator[Candidate]:
-        """
-        Returns a lazy stream of acceptable patches.
+        """Returns a lazy stream of acceptable patches.
 
-        Raises:
+        Raises
+        ------
             SearchAlreadyStarted: if the search has already been initiated.
             StopIteration: if the search space or available resources have
                 been exhausted.

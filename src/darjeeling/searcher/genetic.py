@@ -1,30 +1,30 @@
-# -*- coding: utf-8 -*-
-__all__ = ('GeneticSearcher',)
+__all__ = ("GeneticSearcher",)
 
-from typing import Iterator, List, Optional, Dict, Any, Union
 import random
 import typing
+from collections.abc import Iterator
+from typing import Any, Optional, Union
 
-from loguru import logger
 import attr
+from loguru import logger
 
+from ..candidate import Candidate
+from ..outcome import CandidateOutcome
+from ..resources import ResourceUsageTracker
+from ..transformation import ProgramTransformations, Transformation
 from .base import Searcher
 from .config import SearcherConfig
-from ..candidate import Candidate
-from ..resources import ResourceUsageTracker
-from ..transformation import Transformation, ProgramTransformations
-from ..outcome import CandidateOutcome
 
 if typing.TYPE_CHECKING:
     from ..problem import Problem
 
-Population = List[Candidate]
+Population = list[Candidate]
 
 
 @attr.s(frozen=True, slots=True)
 class GeneticSearcherConfig(SearcherConfig):
     """A configuration for a genetic search."""
-    NAME = 'genetic'
+    NAME = "genetic"
 
     num_generations: int = attr.ib(default=10)
     population_size: int = attr.ib(default=40)
@@ -35,15 +35,15 @@ class GeneticSearcherConfig(SearcherConfig):
 
     @classmethod
     def from_dict(cls,
-                  d: Dict[str, Any],
-                  dir_: Optional[str] = None
-                  ) -> 'SearcherConfig':
-        num_generations: int = d.get('generations', 10)
-        population_size: int = d.get('population', 40)
-        rate_mutation: float = d.get('mutation-rate', 1.0)
-        rate_crossover: float = d.get('crossover-rate', 1.0)
-        tournament_size: int = d.get('tournament-size', 2)
-        sample_size: Optional[Union[int, float]] = d.get('test-sample-size')
+                  d: dict[str, Any],
+                  dir_: Optional[str] = None,
+                  ) -> "SearcherConfig":
+        num_generations: int = d.get("generations", 10)
+        population_size: int = d.get("population", 40)
+        rate_mutation: float = d.get("mutation-rate", 1.0)
+        rate_crossover: float = d.get("crossover-rate", 1.0)
+        tournament_size: int = d.get("tournament-size", 2)
+        sample_size: Optional[Union[int, float]] = d.get("test-sample-size")
         return GeneticSearcherConfig(num_generations=num_generations,
                                      population_size=population_size,
                                      rate_mutation=rate_mutation,
@@ -52,12 +52,12 @@ class GeneticSearcherConfig(SearcherConfig):
                                      sample_size=sample_size)
 
     def build(self,
-              problem: 'Problem',
+              problem: "Problem",
               resources: ResourceUsageTracker,
               transformations: ProgramTransformations,
               *,
               threads: int = 1,
-              run_redundant_tests: bool = False
+              run_redundant_tests: bool = False,
               ) -> Searcher:
         return GeneticSearcher(problem=problem,
                                resources=resources,
@@ -74,7 +74,7 @@ class GeneticSearcherConfig(SearcherConfig):
 
 class GeneticSearcher(Searcher):
     def __init__(self,
-                 problem: 'Problem',
+                 problem: "Problem",
                  resources: ResourceUsageTracker,
                  transformations: ProgramTransformations,
                  *,
@@ -85,7 +85,7 @@ class GeneticSearcher(Searcher):
                  tournament_size: int = 2,
                  threads: int = 1,
                  run_redundant_tests: bool = True,
-                 test_sample_size: Optional[Union[int, float]] = None
+                 test_sample_size: Optional[Union[int, float]] = None,
                  ) -> None:
         self.__population_size = population_size
         self.__num_generations = num_generations
@@ -139,13 +139,14 @@ class GeneticSearcher(Searcher):
         # FIXME for now, just pick one at random
         return self.__transformations.choice()
 
-    def fitness(self,
-                population: Population,
-                outcomes: Dict[Candidate, CandidateOutcome]
-                ) -> Dict[Candidate, float]:
+    def fitness(
+        self,
+        population: Population,
+        outcomes: dict[Candidate, CandidateOutcome],
+    ) -> dict[Candidate, float]:
         """Computes the fitness of each individual within a population."""
         logger.debug("computing population fitness...")
-        f = {}  # type: Dict[Candidate, float]
+        f: dict[Candidate, float] = {}
         for ind in population:
             outcome = outcomes[ind]
             if not outcome.build.successful:
@@ -154,15 +155,14 @@ class GeneticSearcher(Searcher):
                 # FIXME maybe we don't need to execute the test?
                 f[ind] = sum(1.0 for n in outcome.tests if outcome.tests[n].successful)
         logger.info("computed fitness:\n{}",
-                    '\n'.join(f'  {ind}: {f[ind]}' for ind in f))
+                    "\n".join(f"  {ind}: {f[ind]}" for ind in f))
         return f
 
     def select(self,
                pop: Population,
-               outcomes: Dict[Candidate, CandidateOutcome]
+               outcomes: dict[Candidate, CandidateOutcome],
                ) -> Population:
-        """
-        Selects N individuals from the population to survive into the
+        """Selects N individuals from the population to survive into the
         next generation.
         """
         survivors = []  # type: Population
@@ -181,14 +181,14 @@ class GeneticSearcher(Searcher):
             if random.random() <= self.rate_mutation:
                 mutation = self.choose_transformation()
                 transformations = child.transformations + (mutation,)
-                child = Candidate(problem, transformations)  # type: ignore
+                child = Candidate(problem, transformations)
             offspring.append(child)
         return offspring
 
     def crossover(self, pop: Population) -> Population:
         def one_point_crossover(px: Candidate,
-                                py: Candidate
-                                ) -> List[Candidate]:
+                                py: Candidate,
+                                ) -> list[Candidate]:
             problem = self.problem
             tx = list(px.transformations)
             ty = list(py.transformations)
@@ -199,10 +199,10 @@ class GeneticSearcher(Searcher):
             a, b = tx[:lx], tx[lx:]
             c, d = ty[:ly], ty[ly:]
 
-            children = [Candidate(problem, a + d), Candidate(problem, c + b)]  # type: ignore  # noqa
+            children = [Candidate(problem, a + d), Candidate(problem, c + b)]
             return children
 
-        offspring: List[Candidate] = []
+        offspring: list[Candidate] = []
         random.shuffle(pop)
         k = 2
         for i in range(0, len(pop), k):
@@ -213,7 +213,7 @@ class GeneticSearcher(Searcher):
         return offspring
 
     def run(self) -> Iterator[Candidate]:
-        outcomes: Dict[Candidate, CandidateOutcome] = {}
+        outcomes: dict[Candidate, CandidateOutcome] = {}
         logger.info("generating initial population...")
         pop = self.initial()
         logger.info("generated initial population")
@@ -226,7 +226,7 @@ class GeneticSearcher(Searcher):
         pop = self.select(pop, outcomes)  # should this happen at the start?
         logger.info("selected survivors")
 
-        for g in range(0, self.num_generations + 1):
+        for g in range(self.num_generations + 1):
             logger.info(f"starting generation {g}...")
             pop = self.crossover(pop)
             pop = self.mutate(pop)

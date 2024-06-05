@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
-__all__ = ('DarjeelingEventProducer',)
+__all__ = ("DarjeelingEventProducer",)
 
-from typing import Iterator, List, Any
+from collections.abc import Iterator
+from typing import Any
 
 from loguru import logger
 
@@ -12,8 +12,8 @@ from .handler import DarjeelingEventHandler
 class DarjeelingEventProducer:
     """Objects that implement this interface may produce Darjeeling events."""
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)  # type: ignore # mypy issue 4335
-        self.__handlers: List[DarjeelingEventHandler] = []
+        super().__init__(*args, **kwargs)
+        self.__handlers: list[DarjeelingEventHandler] = []
 
     def dispatch(self, event: DarjeelingEvent) -> None:
         """Dispatches an event to all handlers attached to this producer."""

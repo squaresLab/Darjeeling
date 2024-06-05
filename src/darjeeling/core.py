@@ -1,31 +1,47 @@
-# -*- coding: utf-8 -*-
-__all__ = ('Replacement', 'FileLine', 'FileLocationRange', 'Location',
-           'LocationRange', 'FileLocation', 'TestCoverage', 'TestCoverageMap')
+from __future__ import annotations
 
-from typing import (Any, Dict, Iterable, Iterator, List, Mapping, Optional,
-                    Set, Sequence)
-from collections import OrderedDict
-from enum import Enum
+__all__ = (
+    "FileLine",
+    "FileLineMap",
+    "FileLineSet",
+    "FileLocation",
+    "FileLocationRange",
+    "Location",
+    "LocationRange",
+    "Replacement",
+    "TestCoverage",
+    "TestCoverageMap",
+)
+
 import abc
 import fnmatch
 import functools
+import typing as t
+from collections import OrderedDict
+from collections.abc import Iterable, Iterator, Mapping, Sequence
+from enum import Enum
 
 import attr
 import yaml
-from bugzoo.core import TestSuiteCoverage as BugZooTestSuiteCoverage
 from bugzoo.core import TestCoverage as BugZooTestCoverage
 from bugzoo.core import TestOutcome as BugZooTestOutcome
-from sourcelocation import (Location, LocationRange,  # noqa: F401
-                            FileLocation, FileLocationRange,
-                            FileLine, FileLineSet, FileLineMap)
+from bugzoo.core import TestSuiteCoverage as BugZooTestSuiteCoverage
+from sourcelocation import (
+    FileLine,
+    FileLineMap,
+    FileLineSet,
+    FileLocation,
+    FileLocationRange,
+    Location,
+    LocationRange,
+)
 
-from .exceptions import LanguageNotSupported
+from darjeeling.exceptions import LanguageNotSupported
 
 
 @attr.s(frozen=True, str=False, auto_attribs=True)
 class Replacement:
-    """
-    Describes the replacement of a contiguous body of text in a single source
+    """Describes the replacement of a contiguous body of text in a single source
     code file with a provided text.
 
     Attributes
@@ -39,16 +55,17 @@ class Replacement:
     text: str
 
     @staticmethod
-    def from_dict(d: Dict[str, str]) -> 'Replacement':
-        location = FileLocationRange.from_string(d['location'])
-        return Replacement(location, d['text'])
+    def from_dict(d: dict[str, str]) -> Replacement:
+        location = FileLocationRange.from_string(d["location"])
+        return Replacement(location, d["text"])
 
-    @staticmethod
-    def resolve(replacements: Sequence['Replacement']
-                ) -> List['Replacement']:
+    @classmethod
+    def resolve(
+        cls,
+        replacements: Sequence[Replacement],
+    ) -> list[Replacement]:
         """Resolves all conflicts in a sequence of replacements."""
-        # group by file
-        file_to_reps = {}  # type: Dict[str, List[Replacement]]
+        file_to_reps: dict[str, list[Replacement]] = {}
         for rep in replacements:
             if rep.filename not in file_to_reps:
                 file_to_reps[rep.filename] = []
@@ -58,10 +75,10 @@ class Replacement:
         for fn in file_to_reps:
             reps = file_to_reps[fn]
 
-            def cmp(x, y) -> int:
+            def cmp(x: Location, y: Location) -> int:
                 return -1 if x < y else 0 if x == y else 0
 
-            def compare(x, y) -> int:
+            def compare(x: Replacement, y: Replacement) -> int:
                 start_x, stop_x = x.location.start, x.location.stop
                 start_y, stop_y = y.location.start, y.location.stop
                 if start_x != start_y:
@@ -71,7 +88,7 @@ class Replacement:
 
             reps.sort(key=functools.cmp_to_key(compare))
 
-            filtered: List[Replacement] = [reps[0]]
+            filtered: list[Replacement] = [reps[0]]
             i, j = 0, 1
             while j < len(reps):
                 x, y = reps[i], reps[j]
@@ -85,7 +102,7 @@ class Replacement:
             file_to_reps[fn] = filtered
 
         # collapse into a flat sequence of transformations
-        resolved: List[Replacement] = []
+        resolved: list[Replacement] = []
         for reps in file_to_reps.values():
             resolved += reps
         return resolved
@@ -95,23 +112,23 @@ class Replacement:
         """The name of the file in which the replacement should be made."""
         return self.location.filename
 
-    def to_dict(self) -> Dict[str, str]:
-        return {'location': str(self.location),
-                'text': self.text}
+    def to_dict(self) -> dict[str, str]:
+        return {"location": str(self.location),
+                "text": self.text}
 
 
 class Language(Enum):
     @classmethod
-    def find(cls, name: str) -> 'Language':
+    def find(cls, name: str) -> Language:
         try:
             return next(line for line in cls if line.value == name)
         except StopIteration:
             raise LanguageNotSupported(name)
 
-    C = 'c'
-    CPP = 'cpp'
-    PYTHON = 'python'
-    TEXT = 'text'
+    C = "c"
+    CPP = "cpp"
+    PYTHON = "python"
+    TEXT = "text"
 
 
 class Test:
@@ -130,17 +147,17 @@ class TestOutcome:
     time_taken: float
 
     @staticmethod
-    def from_bugzoo(outcome: BugZooTestOutcome) -> 'TestOutcome':
+    def from_bugzoo(outcome: BugZooTestOutcome) -> TestOutcome:
         return TestOutcome(successful=outcome.passed,
                            time_taken=outcome.duration)
 
     @staticmethod
-    def from_dict(d: Dict[str, Any]) -> 'TestOutcome':
-        return TestOutcome(d['successful'], d['time-taken'])
+    def from_dict(d: dict[str, t.Any]) -> TestOutcome:
+        return TestOutcome(d["successful"], d["time-taken"])
 
-    def to_dict(self) -> Dict[str, Any]:
-        return {'successful': self.successful,
-                'time-taken': self.time_taken}
+    def to_dict(self) -> dict[str, t.Any]:
+        return {"successful": self.successful,
+                "time-taken": self.time_taken}
 
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
@@ -149,19 +166,20 @@ class BuildOutcome:
     successful: bool
     time_taken: float
 
-    def to_dict(self) -> Dict[str, Any]:
-        return {'successful': self.successful,
-                'time-taken': self.time_taken}
+    def to_dict(self) -> dict[str, t.Any]:
+        return {"successful": self.successful,
+                "time-taken": self.time_taken}
 
 
 class TestOutcomeSet:
     """Records the outcome of different test executions for a single patch."""
-    def __init__(self,
-                 outcomes: Optional[Dict[str, TestOutcome]] = None
-                 ) -> None:
+    def __init__(
+        self,
+        outcomes: dict[str, TestOutcome] | None = None,
+    ) -> None:
         if outcomes is None:
             outcomes = {}
-        self.__outcomes: Dict[str, TestOutcome] = outcomes
+        self.__outcomes: dict[str, TestOutcome] = outcomes
 
     def __iter__(self) -> Iterator[str]:
         return self.__outcomes.keys().__iter__()
@@ -169,18 +187,18 @@ class TestOutcomeSet:
     def __getitem__(self, test: str) -> TestOutcome:
         return self.__outcomes[test]
 
-    def with_outcome(self, test: str, outcome: TestOutcome) -> 'TestOutcomeSet':
+    def with_outcome(self, test: str, outcome: TestOutcome) -> TestOutcomeSet:
         outcomes = self.__outcomes.copy()
         outcomes[test] = outcome
         return TestOutcomeSet(outcomes)
 
-    def merge(self, other: 'TestOutcomeSet') -> 'TestOutcomeSet':
+    def merge(self, other: TestOutcomeSet) -> TestOutcomeSet:
         outcomes = self.__outcomes.copy()
         for test_name in other:
             outcomes[test_name] = other[test_name]
         return TestOutcomeSet(outcomes)
 
-    def to_dict(self) -> List[Dict[str, Any]]:
+    def to_dict(self) -> list[dict[str, t.Any]]:
         return [outcome.to_dict() for outcome in self.__outcomes.values()]
 
 
@@ -192,23 +210,23 @@ class TestCoverage:
     lines: FileLineSet
 
     @staticmethod
-    def from_bugzoo(coverage: BugZooTestCoverage) -> 'TestCoverage':
+    def from_bugzoo(coverage: BugZooTestCoverage) -> TestCoverage:
         return TestCoverage(
             test=coverage.test,
             outcome=TestOutcome.from_bugzoo(coverage.outcome),
             lines=coverage.lines)
 
     @staticmethod
-    def from_dict(d: Dict[str, Any]) -> 'TestCoverage':
-        name = d['name']
-        outcome = TestOutcome.from_dict(d['outcome'])
-        lines = FileLineSet.from_dict(d['lines'])
+    def from_dict(d: dict[str, t.Any]) -> TestCoverage:
+        name = d["name"]
+        outcome = TestOutcome.from_dict(d["outcome"])
+        lines = FileLineSet.from_dict(d["lines"])
         return TestCoverage(name, outcome, lines)
 
-    def to_dict(self) -> Dict[str, Any]:
-        return {'name': self.test,
-                'outcome': self.outcome.to_dict(),
-                'lines': self.lines.to_dict()}
+    def to_dict(self) -> dict[str, t.Any]:
+        return {"name": self.test,
+                "outcome": self.outcome.to_dict(),
+                "lines": self.lines.to_dict()}
 
     def __contains__(self, elem: object) -> bool:
         return elem in self.lines
@@ -219,7 +237,7 @@ class TestCoverage:
     def __len__(self) -> int:
         return len(self.lines)
 
-    def restrict_to_files(self, files: Iterable[str]) -> 'TestCoverage':
+    def restrict_to_files(self, files: Iterable[str]) -> TestCoverage:
         """Returns a variant of this coverage, restricted to given files.
 
         Parameters
@@ -227,7 +245,7 @@ class TestCoverage:
         files: Iterable[str]
             A list of filenames (that may or may not contain Unix wildcards)
         """
-        lines: List[FileLine] = []
+        lines: list[FileLine] = []
         # NOTE this could be _much_ more efficient, but for now, performance
         # isnt really a concern
         for line in self:
@@ -237,10 +255,9 @@ class TestCoverage:
         return TestCoverage(self.test, self.outcome, FileLineSet.from_iter(lines))
 
     def restrict_to_locations(self,
-                              locations: Iterable[FileLine]
-                              ) -> 'TestCoverage':
-        """
-        Returns a variant of this coverage, restricted to given locations.
+                              locations: Iterable[FileLine],
+                              ) -> TestCoverage:
+        """Returns a variant of this coverage, restricted to given locations.
         """
         lines = self.lines.intersection(locations)
         return TestCoverage(self.test, self.outcome, lines)
@@ -249,7 +266,7 @@ class TestCoverage:
 class TestCoverageMap(Mapping[str, TestCoverage]):
     """Contains coverage information for each test within a test suite."""
     @staticmethod
-    def from_bugzoo(coverage: BugZooTestSuiteCoverage) -> 'TestCoverageMap':
+    def from_bugzoo(coverage: BugZooTestSuiteCoverage) -> TestCoverageMap:
         return TestCoverageMap({test_name: TestCoverage.from_bugzoo(test_cov)
                                 for (test_name, test_cov) in coverage.items()})
 
@@ -259,26 +276,26 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
             self.__mapping[test_name] = mapping[test_name]
 
     @classmethod
-    def from_file(cls, fn: str) -> 'TestCoverageMap':
-        with open(fn, 'r') as fh:
+    def from_file(cls, fn: str) -> TestCoverageMap:
+        with open(fn) as fh:
             dict_ = yaml.safe_load(fh)
         return cls.from_dict(dict_)
 
     def to_file(self, fn: str) -> None:
         dict_ = self.to_dict()
-        with open(fn, 'w') as fh:
+        with open(fn, "w") as fh:
             yaml.dump(dict_, fh, indent=2, default_flow_style=False)
 
     @classmethod
-    def from_dict(cls, d: List[Dict[str, Any]]) -> 'TestCoverageMap':
-        name_to_coverage: Dict[str, TestCoverage] = {}
+    def from_dict(cls, d: list[dict[str, t.Any]]) -> TestCoverageMap:
+        name_to_coverage: dict[str, TestCoverage] = {}
         for d_test in d:
-            name = d_test['name']
+            name = d_test["name"]
             coverage = TestCoverage.from_dict(d_test)
             name_to_coverage[name] = coverage
         return TestCoverageMap(name_to_coverage)
 
-    def to_dict(self) -> List[Dict[str, Any]]:
+    def to_dict(self) -> list[dict[str, t.Any]]:
         return [coverage.to_dict() for coverage in self.values()]
 
     def __len__(self) -> int:
@@ -294,20 +311,20 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
         yield from self.__mapping
 
     def __str__(self) -> str:
-        out_lines: List[str] = []
+        out_lines: list[str] = []
         for name_test in self:
             coverage_test = self[name_test]
-            result = 'PASS' if coverage_test.outcome.successful else 'FAIL'
+            result = "PASS" if coverage_test.outcome.successful else "FAIL"
             lines_covered = coverage_test.lines
-            out_lines.append(f'{name_test} [{result}]: {{')
-            out_lines.extend('  ' + s for s in str(lines_covered).split('\n'))
-            out_lines.append('}')
-        out = '\n'.join(f'  {line}' for line in out_lines)
-        out = f'{{\n{out}\n}}'
+            out_lines.append(f"{name_test} [{result}]: {{")
+            out_lines.extend("  " + s for s in str(lines_covered).split("\n"))
+            out_lines.append("}")
+        out = "\n".join(f"  {line}" for line in out_lines)
+        out = f"{{\n{out}\n}}"
         return out
 
     @property
-    def passing(self) -> 'TestCoverageMap':
+    def passing(self) -> TestCoverageMap:
         """Returns a variant of this mapping restricted to passing tests."""
         contents = {name: coverage for (name, coverage)
                     in self.__mapping.items()
@@ -315,7 +332,7 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
         return TestCoverageMap(contents)
 
     @property
-    def failing(self) -> 'TestCoverageMap':
+    def failing(self) -> TestCoverageMap:
         """Returns a variant of this mapping restricted to failing tests."""
         contents = {name: coverage for (name, coverage)
                     in self.__mapping.items()
@@ -323,31 +340,29 @@ class TestCoverageMap(Mapping[str, TestCoverage]):
         return TestCoverageMap(contents)
 
     @property
-    def locations(self) -> Set[FileLine]:
+    def locations(self) -> t.AbstractSet[FileLine]:
         """Returns the set of all locations that are covered in this map."""
-        locs: Set[FileLine] = FileLineSet()
+        locs = FileLineSet()
         if not self.__mapping:
             return locs
         return locs.union(*self.values())
 
-    def covering_tests(self, location: FileLine) -> Set[str]:
+    def covering_tests(self, location: FileLine) -> set[str]:
         """Returns the names of the tests that cover a given location."""
         return set(name for (name, cov) in self.__mapping.items()
                    if location in cov)
 
-    def restrict_to_files(self, files: Iterable[str]) -> 'TestCoverageMap':
-        """
-        Returns a variant of this map that only contains coverage for a given
+    def restrict_to_files(self, files: Iterable[str]) -> TestCoverageMap:
+        """Returns a variant of this map that only contains coverage for a given
         set of files.
         """
         return TestCoverageMap({test: cov.restrict_to_files(files)
                                 for (test, cov) in self.items()})
 
     def restrict_to_locations(self,
-                              locations: Iterable[FileLine]
-                              ) -> 'TestCoverageMap':
-        """
-        Returns a variant of this map with its coverage restricted to a given
+                              locations: Iterable[FileLine],
+                              ) -> TestCoverageMap:
+        """Returns a variant of this map with its coverage restricted to a given
         set of locations.
         """
         return TestCoverageMap({test: cov.restrict_to_locations(locations)

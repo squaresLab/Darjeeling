@@ -1,12 +1,9 @@
-# -*- coding: utf-8 -*-
-import os
-import tempfile
 
 import pytest
 
-from darjeeling.source import ProgramSource, ProgramSourceFile
+from darjeeling.source import ProgramSourceFile
 
-SIMPLE_FILE_NAME = 'simple.py'
+SIMPLE_FILE_NAME = "simple.py"
 SIMPLE_FILE_CONTENTS = \
 """
 @attr.s(frozen=True, slots=True)
@@ -30,7 +27,7 @@ class TestOutcome:
 """.strip()
 
 
-@pytest.fixture
+@pytest.fixture()
 def simple_file():
     return ProgramSourceFile(SIMPLE_FILE_NAME, SIMPLE_FILE_CONTENTS)
 

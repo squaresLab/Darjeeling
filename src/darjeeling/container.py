@@ -1,6 +1,8 @@
-# -*- coding: utf-8 -*-
-__all__ = ('ProgramContainer',)
+from __future__ import annotations
 
+__all__ = ("ProgramContainer",)
+
+import types
 import typing
 from typing import Optional
 
@@ -8,18 +10,18 @@ import attr
 import dockerblade
 from bugzoo.core.patch import Patch as BugZooPatch
 
-from . import exceptions as exc
-from .environment import Environment
+import darjeeling.exceptions as exc
+from darjeeling.environment import Environment
 
 if typing.TYPE_CHECKING:
-    from .program import ProgramDescription
+    from darjeeling.program import ProgramDescription
 
 
 @attr.s(frozen=True, slots=True, auto_attribs=True, repr=False)
 class ProgramContainer:
     """Provides access to a container for a program variant."""
     id: str
-    program: 'ProgramDescription'
+    program: ProgramDescription
     _environment: Environment
     _dockerblade: dockerblade.Container
 
@@ -27,8 +29,8 @@ class ProgramContainer:
     def for_program(
         cls,
         environment: Environment,
-        program: 'ProgramDescription'
-    ) -> 'ProgramContainer':
+        program: ProgramDescription,
+    ) -> ProgramContainer:
         dockerblade_container = \
             environment.dockerblade.provision(program.image)
         return cls.for_dockerblade(
@@ -41,9 +43,9 @@ class ProgramContainer:
     def for_dockerblade(
         cls,
         environment: Environment,
-        program: "ProgramDescription",
+        program: ProgramDescription,
         container: dockerblade.Container,
-    ) -> "ProgramContainer":
+    ) -> ProgramContainer:
         return ProgramContainer(
             id=container.id,
             program=program,
@@ -52,12 +54,17 @@ class ProgramContainer:
         )
 
     def __repr__(self) -> str:
-        return f'ProgramContainer(id={self.id})'
+        return f"ProgramContainer(id={self.id})"
 
-    def __enter__(self) -> 'ProgramContainer':
+    def __enter__(self) -> ProgramContainer:
         return self
 
-    def __exit__(self, exception_type, exception_value, traceback) -> None:
+    def __exit__(
+        self,
+        exception_type: type[BaseException] | None,
+        exception_value: BaseException | None,
+        traceback: types.TracebackType | None,
+    ) -> None:
         self.close()
 
     def close(self) -> None:
@@ -80,7 +87,7 @@ class ProgramContainer:
 
     @property
     def shell(self) -> dockerblade.Shell:
-        return self._dockerblade.shell('/bin/bash')
+        return self._dockerblade.shell("/bin/bash")
 
     @property
     def filesystem(self) -> dockerblade.FileSystem:

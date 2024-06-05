@@ -1,10 +1,11 @@
-# -*- coding: utf-8 -*-
-__all__ = ('Environment',)
 
+from __future__ import annotations
+
+__all__ = ("Environment",)
+
+import os
 from contextlib import ExitStack
 from types import TracebackType
-from typing import Optional, Type
-import os
 
 import attr
 import dockerblade
@@ -19,7 +20,7 @@ _DEFAULT_URL = os.environ.get("DOCKER_HOST", "unix://var/run/docker.sock")
 
 @attr.s(auto_attribs=True, slots=True)
 class Environment:
-    _bugzoo: Optional[BugZooClient] = attr.ib(default=None)
+    _bugzoo: BugZooClient | None = attr.ib(default=None)
     _contexts: ExitStack = attr.ib(factory=ExitStack)
     comby: Comby = attr.ib(factory=Comby)
     docker_url: str = attr.ib(default=_DEFAULT_URL)
@@ -41,13 +42,13 @@ class Environment:
         self.dockerblade.close()
         self._contexts.close()
 
-    def __enter__(self) -> 'Environment':
+    def __enter__(self) -> Environment:
         return self
 
     def __exit__(
         self,
-        ex_type: Optional[Type[BaseException]],
-        ex_val: Optional[BaseException],
-        ex_tb: Optional[TracebackType],
+        ex_type: type[BaseException] | None,
+        ex_val: BaseException | None,
+        ex_tb: TracebackType | None,
     ) -> None:
         self.close()

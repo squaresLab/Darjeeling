@@ -1,26 +1,28 @@
-# -*- coding: utf-8 -*-
-__all__ = ('StatementTransformation', 'StatementTransformationSchema')
+from __future__ import annotations
 
-from typing import Collection, Iterator, FrozenSet
+__all__ = ("StatementTransformation", "StatementTransformationSchema")
+
 import abc
-import typing
+import typing as t
+from collections.abc import Collection, Iterator
 
-from loguru import logger
 import attr
 import kaskara
+from loguru import logger
 
-from ..base import Transformation, TransformationSchema
-from ...snippet import StatementSnippet, StatementSnippetDatabase
+from darjeeling.snippet import StatementSnippet, StatementSnippetDatabase
+from darjeeling.transformation.base import Transformation, TransformationSchema
+
 from ...core import (
     FileLine,
-    FileLocationRange,
     FileLocation,
+    FileLocationRange,
     Location,
     LocationRange,
 )
 
-if typing.TYPE_CHECKING:
-    from ..problem import Problem
+if t.TYPE_CHECKING:
+    from darjeeling.problem import Problem
 
 
 class StatementTransformation(Transformation):
@@ -28,29 +30,29 @@ class StatementTransformation(Transformation):
 
 
 @attr.s(frozen=True, auto_attribs=True)
-class StatementTransformationSchema(TransformationSchema):
-    _problem: 'Problem' = attr.ib(hash=False)
+class StatementTransformationSchema(TransformationSchema[StatementTransformation]):
+    _problem: Problem = attr.ib(hash=False)
     _snippets: StatementSnippetDatabase = attr.ib(hash=False)
 
     @staticmethod
     def _source_with_indentation(source: str,
                                  indentation: str,
                                  *,
-                                 indent_first_line: bool = False
+                                 indent_first_line: bool = False,
                                  ) -> str:
         """Applies indentation to a given source."""
-        lines = source.split('\n')
+        lines = source.split("\n")
         for i in range(0 if indent_first_line else 1, len(lines)):
             if lines[i]:  # don't indent blank lines
                 lines[i] = indentation + lines[i]
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
     def _indentation(self, statement: kaskara.Statement) -> str:
         """Retrieves the indentation string for a given statement."""
         location = statement.location
 
         if location.start.column == 0:
-            return ''
+            return ""
 
         line = location.start.line
         start = Location(line, 0)
@@ -66,15 +68,14 @@ class StatementTransformationSchema(TransformationSchema):
 
     def find_all_at_lines_in_file(self,
                                   filename: str,
-                                  lines: Collection[int]
+                                  lines: Collection[int],
                                   ) -> Iterator[Transformation]:
         for line_number in lines:
             file_line = FileLine(filename, line_number)
             yield from self.find_all_at_line(file_line)
 
     def find_all_at_line(self, line: FileLine) -> Iterator[Transformation]:
-        """
-        Returns an iterator over all of the possible transformations of this
+        """Returns an iterator over all of the possible transformations of this
         kind that can be performed at a given line.
         """
         problem = self._problem
@@ -83,25 +84,23 @@ class StatementTransformationSchema(TransformationSchema):
             logger.warning("cannot determine statement transformations: "
                            "no Kaskara analysis found")
             return
-        statements: Iterator[kaskara.Statement] = analysis.statements.at_line(line)  # noqa
+        statements: Iterator[kaskara.Statement] = analysis.statements.at_line(line)
         for statement in statements:
             yield from self.find_all_at_statement(statement)
 
     @abc.abstractmethod
     def find_all_at_statement(self,
-                              statement: kaskara.Statement
+                              statement: kaskara.Statement,
                               ) -> Iterator[Transformation]:
-        """
-        Returns an iterator over all of the possible transformations of this
+        """Returns an iterator over all of the possible transformations of this
         kind that can be performed at a given statement.
         """
         ...
 
     def viable_snippets(self,
-                        statement: kaskara.Statement
+                        statement: kaskara.Statement,
                         ) -> Iterator[StatementSnippet]:
-        """
-        Returns an iterator over the set of snippets that can be inserted
+        """Returns an iterator over the set of snippets that can be inserted
         immediately before a given statement.
         """
         snippets: StatementSnippetDatabase = self._snippets
@@ -119,7 +118,7 @@ class StatementTransformationSchema(TransformationSchema):
         # do not insert declaration statements
         if problem.settings.ignore_decls:
             assert problem.analysis
-            viable = filter(lambda s: s.kind != 'DeclStmt', viable)
+            viable = filter(lambda s: s.kind != "DeclStmt", viable)
 
         if problem.settings.use_syntax_scope_checking:
             assert problem.analysis
@@ -127,16 +126,18 @@ class StatementTransformationSchema(TransformationSchema):
             in_switch = False  # FIXME
             viable = filter(lambda s: in_loop or not s.requires_continue,
                             viable)
-            viable = filter(lambda s: in_switch or in_loop or not s.requires_break,  # noqa
+            viable = filter(lambda s: in_switch or in_loop or not s.requires_break,
                             viable)
 
         if problem.settings.use_scope_checking:
-            in_scope: FrozenSet[str] = statement.visible
+            assert statement.visible is not None
+            in_scope: frozenset[str] = statement.visible
             viable = filter(lambda s: all(v in in_scope for v in s.uses), viable)
 
         # do not insert code that (only) writes to a dead variable
-        if problem.settings.ignore_dead_code:
-            live_vars: FrozenSet[str] = statement.live_before
+        if problem.settings.ignore_dead_code and hasattr(statement, "live_before"):
+            assert statement.live_before is not None
+            live_vars: frozenset[str] = statement.live_before
             viable = filter(
                 lambda s: not any(w not in live_vars for w in s.writes),
                 viable)

@@ -1,39 +1,37 @@
-# -*- coding: utf-8 -*-
-__all__ = ('SimpleTransformationDatabase',)
+from __future__ import annotations
 
-from typing import Iterator, Iterable, Sequence
+__all__ = ("SimpleTransformationDatabase",)
+
 import random
-import typing
+import typing as t
 
 import attr
 
-from .base import TransformationDatabase
+from darjeeling.transformation.database.base import TransformationDatabase
 
-if typing.TYPE_CHECKING:
-    from ..base import Transformation
+if t.TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator, Sequence
+
+    from darjeeling.transformation.base import Transformation
 
 
 @attr.s(repr=False, slots=True, frozen=True)
 class SimpleTransformationDatabase(TransformationDatabase):
-    """
-    Uses a simple, inefficient Python tuple to store all possible
-    transformations within memory without any form of indexing to
-    support faster querying.
-    """
-    _contents: Sequence['Transformation'] = attr.ib(factory=tuple)
+    """Uses a simple, inefficient tuple to store all transformations in memory without indexing."""
+    _contents: Sequence[Transformation] = attr.ib(factory=tuple)
 
     @classmethod
     def build(cls,
-              transformations: Iterable['Transformation']
+              transformations: Iterable[Transformation],
               ) -> TransformationDatabase:
-        contents: Sequence['Transformation'] = tuple(transformations)
+        contents: Sequence[Transformation] = tuple(transformations)
         return SimpleTransformationDatabase(contents)
 
     def __contains__(self, transformation: object) -> bool:
         """Determines if a given transformation belongs to this index."""
         return transformation in self._contents
 
-    def __iter__(self) -> Iterator['Transformation']:
+    def __iter__(self) -> Iterator[Transformation]:
         """Returns an iterator over the transformations in this index."""
         yield from self._contents
 
@@ -41,6 +39,6 @@ class SimpleTransformationDatabase(TransformationDatabase):
         """Returns a count of the number of transformations in this index."""
         return len(self._contents)
 
-    def choice(self) -> 'Transformation':
-        """Selects a single transformation at random"""
+    def choice(self) -> Transformation:
+        """Selects a single transformation at random."""
         return random.choice(self._contents)

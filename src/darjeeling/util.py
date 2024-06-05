@@ -1,32 +1,24 @@
-# -*- coding: utf-8 -*-
-import warnings
+from __future__ import annotations
+
 import inspect
-from types import TracebackType
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Type,
-    Union,
-)
+import typing as t
+import warnings
+from pathlib import Path
 from timeit import default_timer as timer
 
 from loguru import logger
 
+if t.TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator
+    from types import TracebackType
 
-def tuple_from_iterable(val: Iterable[Any]) -> Tuple[Any, ...]:
-    """Builds a tuple from an iterable.
-    Workaround for https://github.com/python-attrs/attrs/issues/519
-    """
+
+def tuple_from_iterable(val: Iterable[t.Any]) -> tuple[t.Any, ...]:
+    """Builds a tuple from an iterable."""
     return tuple(val)
 
 
-def duration_tuple(secs: Union[int, float]) -> Tuple[int, int, int, int]:
+def duration_tuple(secs: int | float) -> tuple[int, int, int, int]:
     """Converts seconds into a tuple of days, hours, minutes, secs."""
     secs = int(secs)
     days, secs = divmod(secs, 86400)
@@ -35,52 +27,58 @@ def duration_tuple(secs: Union[int, float]) -> Tuple[int, int, int, int]:
     return (secs, mins, hours, days)
 
 
-def duration_str(secs: Union[int, float]) -> str:
+def duration_str(secs: int | float) -> str:
     """Creates a duration string from a number of seconds.
 
-    Example
+    Example:
     -------
     14 d 18 h 39 m 29 s
     """
     secs, mins, hours, days = duration_tuple(secs)
-    return f'{days:2d} d {hours:2d} h {mins:2d} m {secs:2d} s'
+    return f"{days:2d} d {hours:2d} h {mins:2d} m {secs:2d} s"
 
 
-def get_file_contents(fn: str) -> str:
+def get_file_contents(filename_or_path: str | Path) -> str:
+    if isinstance(filename_or_path, str):
+        filename_or_path = Path(filename_or_path)
     try:
-        with open(fn, 'r') as f:
+        with filename_or_path.open() as f:
             return f.read()
     except UnicodeDecodeError:
         pass
 
     # let's try to decode the using latin-1 encoding
-    with open(fn, 'r', encoding='latin-1') as f:
+    with filename_or_path.open(encoding="latin-1") as f:
         return f.read()
 
 
-def get_lines(fn: str) -> List[str]:
-    """
-    Attempts to return a list of all the lines in a given source code file.
-    """
+def get_lines(fn: str) -> list[str]:
+    """Attempts to return a list of all the lines in a given source code file."""
     return [
-        line.rstrip('\n') for line in get_file_contents(fn).splitlines()
+        line.rstrip("\n") for line in get_file_contents(fn).splitlines()
     ]
 
 
-def _dynamically_registered(cls,
-                            *,
-                            length: Optional[str] = '__len__',
-                            iterator: Optional[str] = '__iter__',
-                            lookup: Optional[str] = 'lookup',
-                            register_on: str = 'NAME'
-                            ):
+def _dynamically_registered(
+    cls: type,
+    *,
+    length: str | None = "__len__",
+    iterator: str | None = "__iter__",
+    lookup: str | None = "lookup",
+    register_on: str = "NAME",
+) -> type:
     logger.debug(f"Adding dynamic registration to class: {cls}")
     logger.debug(f"Registered via attribute: {register_on}")
 
-    registry: Dict[str, Any] = {}
-    registered_class_names: Set[str] = set()
+    registry: dict[str, type] = {}
+    registered_class_names: set[str] = set()
 
-    def method_hook_subclass(subcls, *args, **kwargs) -> None:
+    def method_hook_subclass(
+        subcls: type,
+        /,
+        *args: t.Any,  # noqa: ANN401
+        **kwargs: t.Any,  # noqa: ANN401
+    ) -> None:
         has_name = hasattr(subcls, register_on)
         is_abstract = inspect.isabstract(subcls)
         if has_name and is_abstract:
@@ -121,7 +119,7 @@ def _dynamically_registered(cls,
     def method_iterator() -> Iterator[str]:
         yield from registry
 
-    def method_lookup(name: str):
+    def method_lookup(name: str) -> type:
         return registry[name]
 
     if length:
@@ -134,24 +132,27 @@ def _dynamically_registered(cls,
         logger.debug(f"Adding lookup method [{lookup}] to class [{cls}]")
         setattr(cls, lookup, staticmethod(method_lookup))
 
-    setattr(cls, '__init_subclass__', classmethod(method_hook_subclass))
+    cls.__init_subclass__ = classmethod(method_hook_subclass)  # type: ignore
 
     logger.debug(f"Added dynamic registration to class: {cls}")
     return cls
 
 
-def dynamically_registered(register_on: str = 'NAME',
-                           *,
-                           length: Optional[str] = '__len__',
-                           iterator: Optional[str] = '__iter__',
-                           lookup: Optional[str] = 'lookup',
-                           ):
-    def decorator(cls):
-        return _dynamically_registered(cls,
-                                       register_on=register_on,
-                                       length=length,
-                                       iterator=iterator,
-                                       lookup=lookup)
+def dynamically_registered(
+    register_on: str = "NAME",
+    *,
+    length: str | None = "__len__",
+    iterator: str | None = "__iter__",
+    lookup: str | None = "lookup",
+) -> t.Callable[[type], type]:
+    def decorator(cls: type) -> type:
+        return _dynamically_registered(
+            cls,
+            register_on=register_on,
+            length=length,
+            iterator=iterator,
+            lookup=lookup,
+        )
 
     return decorator
 
@@ -163,15 +164,15 @@ class Stopwatch:
         self.__paused: bool = True
         self.__time_start: float = 0.0
 
-    def __enter__(self) -> 'Stopwatch':
+    def __enter__(self) -> t.Self:
         self.start()
         return self
 
     def __exit__(
         self,
-        ex_type: Optional[Type[BaseException]],
-        ex_val: Optional[BaseException],
-        ex_tb: Optional[TracebackType],
+        ex_type: type[BaseException] | None,
+        ex_val: BaseException | None,
+        ex_tb: TracebackType | None,
     ) -> None:
         self.stop()
 
@@ -187,7 +188,7 @@ class Stopwatch:
             self.__time_start = timer()
             self.__paused = False
         else:
-            warnings.warn("timer is already running")
+            warnings.warn("timer is already running", stacklevel=2)
 
     def reset(self) -> None:
         """Resets and freezes the timer."""

@@ -1,18 +1,20 @@
-# -*- coding: utf-8 -*-
-__all__ = ('PyTestCase', 'PyTestSuite', 'PyTestSuiteConfig')
+from __future__ import annotations
 
-from typing import Optional, Sequence, Dict, Any
+__all__ = ("PyTestCase", "PyTestSuite", "PyTestSuiteConfig")
+
 import typing as t
+from collections.abc import Sequence
+from typing import Any, Optional
 
 import attr
 
-from .base import TestSuite
-from .config import TestSuiteConfig
-from ..core import TestOutcome, Test
+from darjeeling.core import Test, TestOutcome
+from darjeeling.test.base import TestSuite
+from darjeeling.test.config import TestSuiteConfig
 
 if t.TYPE_CHECKING:
-    from ..container import ProgramContainer
-    from ..environment import Environment
+    from darjeeling.container import ProgramContainer
+    from darjeeling.environment import Environment
 
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
@@ -22,41 +24,43 @@ class PyTestCase(Test):
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
 class PyTestSuiteConfig(TestSuiteConfig):
-    NAME = 'pytest'
+    NAME = "pytest"
     workdir: str
     test_names: Sequence[str]
     time_limit_seconds: int
 
     @classmethod
     def from_dict(cls,
-                  d: Dict[str, Any],
-                  dir_: Optional[str] = None
+                  d: dict[str, Any],
+                  dir_: Optional[str] = None,
                   ) -> TestSuiteConfig:
-        workdir = d['workdir']
-        test_names = tuple(d['tests'])
+        workdir = d["workdir"]
+        test_names = tuple(d["tests"])
 
-        if 'time-limit' not in d:
+        if "time-limit" not in d:
             time_limit_seconds = 300
         else:
-            time_limit_seconds = d['time-limit']
+            time_limit_seconds = d["time-limit"]
 
         return PyTestSuiteConfig(workdir, test_names, time_limit_seconds)
 
-    def build(self, environment: 'Environment') -> 'TestSuite':
+    def build(self, environment: Environment) -> TestSuite:  # type: ignore[type-arg]
         # TODO automatically discover tests via pytest --setup-only
         tests = tuple(PyTestCase(t) for t in self.test_names)
-        return PyTestSuite(environment=environment,
-                           tests=tests,
-                           workdir=self.workdir,
-                           time_limit_seconds=self.time_limit_seconds)
+        return PyTestSuite(
+            environment=environment,
+            tests=tests,
+            workdir=self.workdir,
+            time_limit_seconds=self.time_limit_seconds,
+        )
 
 
 class PyTestSuite(TestSuite[PyTestCase]):
     def __init__(self,
-                 environment: 'Environment',
+                 environment: Environment,
                  tests: Sequence[PyTestCase],
                  workdir: str,
-                 time_limit_seconds: int
+                 time_limit_seconds: int,
                  ) -> None:
         super().__init__(environment, tests)
         self._workdir = workdir
@@ -64,19 +68,19 @@ class PyTestSuite(TestSuite[PyTestCase]):
 
     def execute(
         self,
-        container: 'ProgramContainer',
+        container: ProgramContainer,
         test: PyTestCase,
         *,
         coverage: bool = False,
         environment: t.Optional[t.Mapping[str, str]] = None,
     ) -> TestOutcome:
         if coverage:
-            command = f'coverage run -m pytest {test.name}'
+            command = f"coverage run -m pytest {test.name}"
         else:
-            command = f'pytest {test.name}'
+            command = f"pytest {test.name}"
 
         outcome = container.shell.run(command,
                                       cwd=self._workdir,
-                                      time_limit=self._time_limit_seconds)  # noqa
+                                      time_limit=self._time_limit_seconds)
         successful = outcome.returncode == 0
         return TestOutcome(successful=successful, time_taken=outcome.duration)

@@ -1,6 +1,11 @@
-# -*- coding: utf-8 -*-
-from .config import TestSuiteConfig
-from .base import TestSuite
-from . import pytest
-from . import genprog
-from . import shell
+__all__ = (
+    "TestSuite",
+    "TestSuiteConfig",
+    "genprog",
+    "pytest",
+    "shell",
+)
+
+from darjeeling.test import genprog, pytest, shell
+from darjeeling.test.base import TestSuite
+from darjeeling.test.config import TestSuiteConfig

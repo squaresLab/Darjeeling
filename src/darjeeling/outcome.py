@@ -1,22 +1,21 @@
-# -*- coding: utf-8 -*-
-"""
-This module implements data structures and containers for describing the
+"""This module implements data structures and containers for describing the
 outcome of test and build attempts.
 """
 __all__ = (
-    'TestOutcome',
-    'TestOutcomeSet',
-    'BuildOutcome',
-    'CandidateOutcome',
-    'CandidateOutcomeStore'
+    "TestOutcome",
+    "TestOutcomeSet",
+    "BuildOutcome",
+    "CandidateOutcome",
+    "CandidateOutcomeStore",
 )
 
-from typing import Any, Dict, Iterator, Mapping
+from collections.abc import Iterator, Mapping
+from typing import Any
 
 import attr
 
-from .core import BuildOutcome, TestOutcome, TestOutcomeSet
 from .candidate import Candidate
+from .core import BuildOutcome, TestOutcome, TestOutcomeSet
 
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
@@ -29,30 +28,30 @@ class CandidateOutcome:
     def with_test_outcome(self,
                           test: str,
                           successful: bool,
-                          time_taken: float
-                          ) -> 'CandidateOutcome':
+                          time_taken: float,
+                          ) -> "CandidateOutcome":
         outcome = TestOutcome(successful, time_taken)
         test_outcomes = self.tests.with_outcome(test, outcome)
         return CandidateOutcome(self.build, test_outcomes, self.is_repair)
 
     def merge(self,
-              other: 'CandidateOutcome'
-              ) -> 'CandidateOutcome':
+              other: "CandidateOutcome",
+              ) -> "CandidateOutcome":
         other_is_repair = all(other.tests[t].successful for t in other.tests)
         return CandidateOutcome(self.build,
                                 self.tests.merge(other.tests),
                                 self.is_repair and other_is_repair)
 
-    def to_dict(self) -> Dict[str, Any]:
-        return {'build': self.build.to_dict(),
-                'tests': self.tests.to_dict(),
-                'is-repair': self.is_repair}
+    def to_dict(self) -> dict[str, Any]:
+        return {"build": self.build.to_dict(),
+                "tests": self.tests.to_dict(),
+                "is-repair": self.is_repair}
 
 
 class CandidateOutcomeStore(Mapping[Candidate, CandidateOutcome]):
     """Maintains a record of candidate patch evaluation outcomes."""
     def __init__(self) -> None:
-        self.__outcomes: Dict[Candidate, CandidateOutcome] = {}
+        self.__outcomes: dict[Candidate, CandidateOutcome] = {}
 
     def __repr__(self) -> str:
         return self.__class__.__name__
@@ -74,7 +73,7 @@ class CandidateOutcomeStore(Mapping[Candidate, CandidateOutcome]):
 
     def record(self,
                candidate: Candidate,
-               outcome: CandidateOutcome
+               outcome: CandidateOutcome,
                ) -> None:
         if candidate not in self.__outcomes:
             self.__outcomes[candidate] = outcome

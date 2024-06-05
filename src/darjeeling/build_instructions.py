@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-__all__ = ('BuildStep', 'BuildInstructions')
+__all__ = ("BuildStep", "BuildInstructions")
 
 import typing as t
 
@@ -21,26 +20,26 @@ class BuildStep:
 
     @staticmethod
     def from_dict(dict_: t.Union[str, t.Mapping[str, t.Any]],
-                  source_directory: str
-                  ) -> 'BuildStep':
+                  source_directory: str,
+                  ) -> "BuildStep":
         def err(message: str) -> t.NoReturn:
             raise exc.BadConfigurationException(message)
 
         if isinstance(dict_, str):
             return BuildStep(dict_, source_directory)
 
-        if 'command' not in dict_:
+        if "command" not in dict_:
             err("build step is missing 'command' property")
-        if not isinstance(dict_['command'], str):
+        if not isinstance(dict_["command"], str):
             err("'command' property must be a string")
-        command = dict_['command']
+        command = dict_["command"]
 
-        if 'directory' not in dict_:
+        if "directory" not in dict_:
             directory = source_directory
-        elif not isinstance(dict_['directory'], str):
+        elif not isinstance(dict_["directory"], str):
             err("'directory' property must be a string")
         else:
-            directory = dict_['directory']
+            directory = dict_["directory"]
 
         return BuildStep(command, directory)
 
@@ -74,7 +73,7 @@ class BuildStep:
             elif isinstance(err.output, str):
                 output = err.output
             else:
-                output = err.output.decode('utf-8')
+                output = err.output.decode("utf-8")
             logger.trace(f"build output: {output}")
             raise exc.BuildStepFailed(step=self,
                                       returncode=err.returncode,
@@ -91,33 +90,33 @@ class BuildInstructions(t.Sequence[BuildStep]):
     @staticmethod
     def from_dict(
         dict_: t.Mapping[str, t.Any],
-        source_directory: str
-    ) -> t.Tuple['BuildInstructions', 'BuildInstructions']:
+        source_directory: str,
+    ) -> tuple["BuildInstructions", "BuildInstructions"]:
         def err(message: str) -> t.NoReturn:
             raise exc.BadConfigurationException(message)
 
         if not isinstance(dict_, dict):
             err("'build-instructions' section should be an object")
-        if 'steps' not in dict_:
+        if "steps" not in dict_:
             err("'steps' property is missing from 'build-instructions' section")
-        if 'time-limit' not in dict_:
+        if "time-limit" not in dict_:
             err("'time-limit' property is missing from 'build-instructions' section")
 
-        if not isinstance(dict_['time-limit'], int):
+        if not isinstance(dict_["time-limit"], int):
             err("'time-limit' property should be an int")
-        time_limit: int = dict_['time-limit']
+        time_limit: int = dict_["time-limit"]
 
-        if not isinstance(dict_['steps'], list):
+        if not isinstance(dict_["steps"], list):
             err("'steps' property should be an array")
         steps = tuple(BuildStep.from_dict(dict_step, source_directory)
-                      for dict_step in dict_['steps'])
+                      for dict_step in dict_["steps"])
 
-        if 'steps-for-coverage' in dict_:
-            if not isinstance(dict_['steps-for-coverage'], list):
+        if "steps-for-coverage" in dict_:
+            if not isinstance(dict_["steps-for-coverage"], list):
                 err("'steps-for-coverage' property should be an array")
 
             steps_for_coverage = tuple(BuildStep.from_dict(dict_step, source_directory)
-                                       for dict_step in dict_['steps-for-coverage'])
+                                       for dict_step in dict_["steps-for-coverage"])
         else:
             steps_for_coverage = steps
 
@@ -127,8 +126,8 @@ class BuildInstructions(t.Sequence[BuildStep]):
 
     @staticmethod
     def from_bugzoo(
-        snapshot: bugzoo.Bug
-    ) -> t.Tuple['BuildInstructions', 'BuildInstructions']:
+        snapshot: bugzoo.Bug,
+    ) -> tuple["BuildInstructions", "BuildInstructions"]:
         """Extracts build instructions from a BugZoo object.
 
         Parameters
@@ -171,7 +170,15 @@ class BuildInstructions(t.Sequence[BuildStep]):
         """Returns an iterator over the build steps."""
         yield from self.steps
 
-    def __getitem__(self, index):
+    @t.overload
+    def __getitem__(self, index: int) -> BuildStep:
+        ...
+
+    @t.overload
+    def __getitem__(self, index: slice) -> t.Sequence[BuildStep]:
+        ...
+
+    def __getitem__(self, index: int | slice) -> BuildStep | t.Sequence[BuildStep]:
         """Returns the n-th build step from these instructions."""
         return self.steps[index]
 

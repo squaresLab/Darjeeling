@@ -1,10 +1,8 @@
-# -*- coding: utf-8 -*-
-__all__ = ('ProgramSource', 'ProgramSourceFile', 'ProgramSourceLoader')
+__all__ = ("ProgramSource", "ProgramSourceFile", "ProgramSourceLoader")
 
-from typing import (Collection, Dict, Iterable, Iterator, List, Mapping,
-                    Sequence, Tuple)
-from difflib import unified_diff
 import os
+from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
+from difflib import unified_diff
 
 import attr
 import dockerblade
@@ -12,11 +10,10 @@ from bugzoo.core.patch import Patch
 from loguru import logger
 
 from . import exceptions
-from .core import (Replacement, FileLine, FileLocationRange, Location,
-                   LocationRange)
+from .container import ProgramContainer
+from .core import FileLine, FileLocationRange, Location, LocationRange, Replacement
 from .environment import Environment
 from .program import ProgramDescription
-from .container import ProgramContainer
 
 
 @attr.s(slots=True, frozen=True)
@@ -24,18 +21,18 @@ class ProgramSourceFile:
     filename: str = attr.ib()
     contents: str = attr.ib()
     num_lines: int = attr.ib(init=False, repr=False)
-    _line_to_start_and_end_offset: Sequence[Tuple[int, int]] = \
+    _line_to_start_and_end_offset: Sequence[tuple[int, int]] = \
         attr.ib(init=False, repr=False)
 
     def __attrs_post_init__(self) -> None:
         line_offsets = self._compute_line_start_and_end_offsets(self.contents)
         num_lines = len(line_offsets)
-        object.__setattr__(self, '_line_to_start_and_end_offset', line_offsets)
-        object.__setattr__(self, 'num_lines', num_lines)
+        object.__setattr__(self, "_line_to_start_and_end_offset", line_offsets)
+        object.__setattr__(self, "num_lines", num_lines)
 
     @staticmethod
-    def _compute_line_start_and_end_offsets(contents: str
-                                            ) -> Sequence[Tuple[int, int]]:
+    def _compute_line_start_and_end_offsets(contents: str,
+                                            ) -> Sequence[tuple[int, int]]:
         """Computes the offsets for each line within a given file.
 
         Parameters
@@ -43,11 +40,11 @@ class ProgramSourceFile:
         contents: str
             The contents of the given file.
         """
-        line_to_start_end: List[Tuple[int, int]] = []
+        line_to_start_end: list[tuple[int, int]] = []
         offset_file_end = len(contents)
         offset_line_start = 0
         while True:
-            offset_line_break = contents.find('\n', offset_line_start)
+            offset_line_break = contents.find("\n", offset_line_start)
             if offset_line_break == -1:
                 start_end = (offset_line_start, offset_file_end)
                 line_to_start_end.append(start_end)
@@ -87,7 +84,7 @@ class ProgramSourceFile:
     def read_line(self, num: int, *, keep_newline: bool = False) -> str:
         range_ = self.line_to_location_range(num)
         contents = self.read_chars(range_)
-        return contents + '\n' if keep_newline else contents
+        return contents + "\n" if keep_newline else contents
 
     def with_replacements(self, replacements: Sequence[Replacement]) -> str:
         """Returns the result of applying replacements to this file."""
@@ -149,25 +146,25 @@ class ProgramSource(Mapping[str, ProgramSourceFile]):
         """
         range_ = self.line_to_location_range(at)
         contents = self.read_chars(range_)
-        return contents + '\n' if keep_newline else contents
+        return contents + "\n" if keep_newline else contents
 
     def read_chars(self, at: FileLocationRange) -> str:
         return self.__files[at.filename].read_chars(at.location_range)
 
     def replacements_to_diff(self,
-                             file_to_replacements: Mapping[str, Sequence[Replacement]]
+                             file_to_replacements: Mapping[str, Sequence[Replacement]],
                              ) -> Patch:
-        file_diffs: List[str] = []
+        file_diffs: list[str] = []
         for filename, replacements in file_to_replacements.items():
             file_ = self.__files[filename]
             original = file_.contents
             mutated = file_.with_replacements(replacements)
-            diff = ''.join(unified_diff(original.splitlines(True),
+            diff = "".join(unified_diff(original.splitlines(True),
                                         mutated.splitlines(True),
                                         filename,
                                         filename))
             file_diffs.append(diff)
-        return Patch.from_unidiff('\n'.join(file_diffs))
+        return Patch.from_unidiff("\n".join(file_diffs))
 
 
 @attr.s(frozen=True, auto_attribs=True)
@@ -177,8 +174,8 @@ class ProgramSourceLoader:
 
     def for_program(self,
                     program: ProgramDescription,
-                    files: Iterable[str]
-                    ) -> 'ProgramSource':
+                    files: Iterable[str],
+                    ) -> "ProgramSource":
         """Loads the sources for a program."""
         with program.provision() as container:
             return self.for_container(program, container, files)
@@ -186,11 +183,11 @@ class ProgramSourceLoader:
     def for_container(self,
                       program: ProgramDescription,
                       container: ProgramContainer,
-                      files: Iterable[str]
-                      ) -> 'ProgramSource':
+                      files: Iterable[str],
+                      ) -> "ProgramSource":
         """Loads the sources for a program given its container."""
         filesystem = container.filesystem
-        file_to_content: Dict[str, str] = {}
+        file_to_content: dict[str, str] = {}
 
         for relative_filename in files:
             absolute_filename = os.path.join(program.source_directory,
@@ -212,10 +209,11 @@ class ProgramSourceLoader:
         return self.from_file_contents(file_to_content)
 
     def from_file_contents(self,
-                           file_to_contents: Mapping[str, str]
-                           ) -> 'ProgramSource':
+                           file_to_contents: Mapping[str, str],
+                           ) -> "ProgramSource":
         """Constructs a set of program sources from a mapping of filenames
-        to file contents."""
+        to file contents.
+        """
         files = [ProgramSourceFile(fn, contents)
                  for fn, contents in file_to_contents.items()]
         return ProgramSource(files)

@@ -1,33 +1,36 @@
-# -*- coding: utf-8 -*-
-__all__ = ('ReplaceStatement',)
+from __future__ import annotations
 
-from typing import Any, ClassVar, Iterator, Mapping, Optional
+__all__ = ("ReplaceStatement",)
+
 import typing
+from typing import Any, ClassVar
 
-from loguru import logger
 import attr
-import kaskara
+from loguru import logger
 
-from .base import StatementTransformation, StatementTransformationSchema
-from ..base import Transformation, TransformationSchema
-from ..config import TransformationSchemaConfig
-from ... import exceptions as exc
-from ...snippet import (StatementSnippet, SnippetDatabase,
-                        StatementSnippetDatabase)
-from ...core import Replacement, FileLine, FileLocationRange
+import darjeeling.exceptions as exc
+from darjeeling.core import FileLine, FileLocationRange, Replacement
+from darjeeling.snippet import SnippetDatabase, StatementSnippet, StatementSnippetDatabase
+from darjeeling.transformation.classic.base import StatementTransformation, StatementTransformationSchema
+from darjeeling.transformation.config import TransformationSchemaConfig
 
 if typing.TYPE_CHECKING:
-    from ..problem import Problem
+    from collections.abc import Iterator, Mapping
+
+    import kaskara
+
+    from darjeeling.problem import Problem
+    from darjeeling.transformation.base import Transformation, TransformationSchema
 
 
 @attr.s(frozen=True, repr=False, auto_attribs=True)
 class ReplaceStatement(StatementTransformation):
-    _schema: 'ReplaceStatementSchema'
-    at: FileLocationRange
+    _schema: ReplaceStatementSchema
+    at: kaskara.Statement
     replacement: StatementSnippet
 
     @property
-    def schema(self) -> TransformationSchema:
+    def schema(self) -> TransformationSchema:  # type: ignore[type-arg]
         return self._schema
 
     def __repr__(self) -> str:
@@ -48,18 +51,21 @@ class ReplaceStatement(StatementTransformation):
 
     @property
     def line(self) -> FileLine:
-        return FileLine(self.location.filename,
-                        self.location.start.line)
+        return FileLine(
+            self.location.filename,
+            self.location.start.line,
+        )
 
 
 class ReplaceStatementSchema(StatementTransformationSchema):
-    def find_all_at_statement(self,
-                              statement: kaskara.Statement
-                              ) -> Iterator[Transformation]:
+    def find_all_at_statement(
+        self,
+        statement: kaskara.Statement,
+    ) -> Iterator[Transformation]:
         problem = self._problem
 
         # do not replace declaration statements
-        if problem.settings.ignore_decls and statement.kind == 'DeclStmt':
+        if problem.settings.ignore_decls and statement.kind == "DeclStmt":
             return
 
         check_equiv = problem.settings.ignore_string_equivalent_snippets
@@ -79,19 +85,20 @@ class ReplaceStatementSchema(StatementTransformationSchema):
 
 @attr.s(frozen=True)
 class ReplaceStatementSchemaConfig(TransformationSchemaConfig):
-    NAME: ClassVar[str] = 'replace-statement'
+    NAME: ClassVar[str] = "replace-statement"
 
     preserve_indentation: bool = attr.ib()
 
     @classmethod
-    def from_dict(cls,
-                  d: Mapping[str, Any],
-                  dir_: Optional[str] = None
-                  ) -> 'TransformationSchemaConfig':
-        if 'preserve_indentation' not in d:
+    def from_dict(
+        cls,
+        d: Mapping[str, Any],
+        dir_: str | None = None,
+    ) -> TransformationSchemaConfig:
+        if "preserve_indentation" not in d:
             preserve_indentation = True
         else:
-            preserve_indentation = d['preserve-indentation']
+            preserve_indentation = d["preserve-indentation"]
             if not isinstance(preserve_indentation, bool):
                 m = "illegal value for 'preserve-indentation': expected bool"
                 raise exc.BadConfigurationException(m)
@@ -99,9 +106,10 @@ class ReplaceStatementSchemaConfig(TransformationSchemaConfig):
         return ReplaceStatementSchemaConfig(
             preserve_indentation=preserve_indentation)
 
-    def build(self,
-              problem: 'Problem',
-              snippets: SnippetDatabase
-              ) -> 'TransformationSchema':
+    def build(
+        self,
+        problem: Problem,
+        snippets: SnippetDatabase,  # type: ignore[type-arg]
+    ) -> TransformationSchema:  # type: ignore[type-arg]
         assert isinstance(snippets, StatementSnippetDatabase)
         return ReplaceStatementSchema(problem=problem, snippets=snippets)

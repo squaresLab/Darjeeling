@@ -1,39 +1,28 @@
 from __future__ import annotations
 
 __all__ = (
-    'SuspiciousnessMetric',
-    'Localization',
-    'genprog',
-    'ochiai',
-    'ample',
-    'tarantula',
-    'jaccard'
+    "SuspiciousnessMetric",
+    "Localization",
+    "genprog",
+    "ochiai",
+    "ample",
+    "tarantula",
+    "jaccard",
 )
 
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Mapping,
-    MutableMapping,
-    Set,
-    Sequence,
-)
 import bisect
 import functools
 import json
 import math
 import random
 import typing
+from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMapping, Sequence
 
 from loguru import logger
 
 from .core import FileLine, FileLineMap, TestCoverageMap
+from .exceptions import BadConfigurationException, NoImplicatedLines
 from .spectra import Spectra
-from .exceptions import NoImplicatedLines, BadConfigurationException
 
 if typing.TYPE_CHECKING:
     from .config import LocalizationConfig
@@ -150,20 +139,20 @@ class Localization:
     @staticmethod
     def from_config(
         coverage: TestCoverageMap,
-        cfg: 'LocalizationConfig'
+        cfg: LocalizationConfig,
     ) -> Localization:
         # find the suspiciousness metric
         try:
             supported_metrics: Mapping[str, SuspiciousnessMetric] = {
-                'genprog': genprog,
-                'weighted': weighted,
-                'tarantula': tarantula,
-                'ochiai': ochiai,
-                'jaccard': jaccard,
-                'ample': ample
+                "genprog": genprog,
+                "weighted": weighted,
+                "tarantula": tarantula,
+                "ochiai": ochiai,
+                "jaccard": jaccard,
+                "ample": ample,
             }
             logger.info("supported suspiciousness metrics: {}",
-                        ', '.join(supported_metrics.keys()))
+                        ", ".join(supported_metrics.keys()))
             metric: SuspiciousnessMetric = supported_metrics[cfg.metric]
         except KeyError:
             m = f"suspiciousness metric not supported: {cfg.metric}"
@@ -182,7 +171,7 @@ class Localization:
         return loc
 
     @staticmethod
-    def from_dict(d: Dict[str, float]) -> Localization:
+    def from_dict(d: dict[str, float]) -> Localization:
         scores = {
             FileLine.from_string(l): v for (l, v) in d.items()
         }
@@ -191,17 +180,16 @@ class Localization:
     @staticmethod
     def from_file(fn: str) -> Localization:
         logger.debug(f"loading localization from file: {fn}")
-        with open(fn, 'r') as f:
+        with open(fn) as f:
             jsn = json.load(f)
         localization = Localization.from_dict(jsn)
         logger.debug(f"loaded localization from file: {fn}")
         return localization
 
     def __init__(self, scores: Mapping[FileLine, float]) -> None:
-        """
-        Raises:
-            NoImplicatedLines: if no lines are determined to be suspicious.
-            ValueError: if a line is assigned a negative suspiciousness.
+        """Raises
+        NoImplicatedLines: if no lines are determined to be suspicious.
+        ValueError: if a line is assigned a negative suspiciousness.
         """
         self.__line_to_score: FileLineMap[float] = FileLineMap({})
         for line in sorted(scores):
@@ -222,25 +210,24 @@ class Localization:
         # FIXME use np.array
         # compute cumulative distribution function
         sm = sum(self.__line_to_score.values())
-        pdf: List[float] = [s / sm for s in self.__line_to_score.values()]
-        self.__cdf: List[float] = [0.0] + pdf[:-1]
+        pdf: list[float] = [s / sm for s in self.__line_to_score.values()]
+        self.__cdf: list[float] = [0.0] + pdf[:-1]
         cum = 0.0
         for i in range(1, num_implicated):
             cum = self.__cdf[i] + cum
             self.__cdf[i] = cum
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, Localization):
             return False
-        lines_self: Set[FileLine] = set(self._lines)
-        lines_other: Set[FileLine] = set(other._lines)
+        lines_self: set[FileLine] = set(self._lines)
+        lines_other: set[FileLine] = set(other._lines)
         if lines_self != lines_other:
             return False
         return all(self[line] == other[line] for line in lines_self)
 
-    def to_dict(self) -> Dict[str, float]:
-        """
-        Transforms this fault localization to a dictionary, ready to be
+    def to_dict(self) -> dict[str, float]:
+        """Transforms this fault localization to a dictionary, ready to be
         serialized into JSON or YAML.
         """
         return {str(line): val
@@ -251,48 +238,44 @@ class Localization:
         """Dumps this fault localization to a given file."""
         logger.debug("writing localization to file: {fn}")
         jsn = self.to_dict()
-        with open(fn, 'w') as f:
+        with open(fn, "w") as f:
             json.dump(jsn, f)
         logger.debug(f"wrote localization to file: {fn}")
 
     def __iter__(self) -> Iterator[FileLine]:
-        """
-        Returns an iterator over the suspicious lines contained within this
+        """Returns an iterator over the suspicious lines contained within this
         fault localization.
         """
         yield from self.__line_to_score
 
     def __getitem__(self, line: FileLine) -> float:
-        """
-        Returns the suspiciousness score for a given line. If the line is not
+        """Returns the suspiciousness score for a given line. If the line is not
         contained within the fault localization, a score of zero will be
         returned.
         """
         return self.__line_to_score.get(line, 0.0)
 
     def __contains__(self, line: FileLine) -> bool:
-        """
-        Determines whether a given line is deemed suspicious by this fault
+        """Determines whether a given line is deemed suspicious by this fault
         localization.
         """
         return line in self.__line_to_score
 
     def exclude_files(self,
-                      files_to_exclude: Iterable[str]
-                      ) -> 'Localization':
-        """
-        Returns a variant of this fault localization that does not contain
+                      files_to_exclude: Iterable[str],
+                      ) -> Localization:
+        """Returns a variant of this fault localization that does not contain
         lines from any of the specified files.
         """
         lines = [line for line in self if line.filename not in files_to_exclude]
         return self.restrict_to_lines(lines)
 
-    def exclude_lines(self, lines: Iterable[FileLine]) -> 'Localization':
-        """
-        Returns a variant of this fault localization that does not contain any
+    def exclude_lines(self, lines: Iterable[FileLine]) -> Localization:
+        """Returns a variant of this fault localization that does not contain any
         of the specified lines.
 
-        Raises:
+        Raises
+        ------
             NoImplicatedLines: if no lines are determined to be suspicious
                 within the resulting localization.
         """
@@ -302,19 +285,17 @@ class Localization:
         }
         return Localization(scores)
 
-    def without(self, line: FileLine) -> 'Localization':
-        """
-        Returns a variant of this fault localization that does not contain a
+    def without(self, line: FileLine) -> Localization:
+        """Returns a variant of this fault localization that does not contain a
         given line.
         """
         return self.exclude_lines([line])
 
     def restrict_to_files(
         self,
-        restricted_files: Iterable[str]
-    ) -> 'Localization':
-        """
-        Returns a variant of this fault localization that is restricted to
+        restricted_files: Iterable[str],
+    ) -> Localization:
+        """Returns a variant of this fault localization that is restricted to
         lines that belong to a given set of files.
         """
         lines = [line for line in self if line.filename in restricted_files]
@@ -322,13 +303,13 @@ class Localization:
 
     def restrict_to_lines(
         self,
-        lines: Iterable[FileLine]
-    ) -> 'Localization':
-        """
-        Returns a variant of this fault localization that is restricted to a
+        lines: Iterable[FileLine],
+    ) -> Localization:
+        """Returns a variant of this fault localization that is restricted to a
         given set of lines.
 
-        Raises:
+        Raises
+        ------
             NoImplicatedLines: if no lines are determined to be suspicious
                 within the resulting localization.
         """
@@ -339,8 +320,7 @@ class Localization:
         return Localization(scores)
 
     def sample(self) -> FileLine:
-        """
-        Samples a line from this fault localization according to the implicit
+        """Samples a line from this fault localization according to the implicit
         probability distribution given by the suspiciousness values of the
         lines contained within this fault localization.
         """
@@ -355,14 +335,14 @@ class Localization:
         return len(self._lines)
 
     @property
-    def files(self) -> List[str]:
+    def files(self) -> list[str]:
         """A list of files that contain suspicious lines."""
         return list(self._files)
 
     def __repr__(self) -> str:
         # FIXME order!
         repr_scores = [
-            "  {}: {:.2f}".format(str(line), self[line])
+            f"  {line!s}: {self[line]:.2f}"
             for line in sorted(self._lines)
         ]
-        return 'Localization(\n{})'.format(';\n'.join(repr_scores))
+        return "Localization(\n{})".format(";\n".join(repr_scores))

@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-__all__ = ('EventEchoer',)
+__all__ = ("EventEchoer",)
 
 from .event import DarjeelingEvent
 from .handler import DarjeelingEventHandler

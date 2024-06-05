@@ -1,25 +1,31 @@
-# -*- coding: utf-8 -*-
-__all__ = ('Snippet', 'SnippetDatabase',
-           'LineSnippet', 'LineSnippetDatabase',
-           'StatementSnippet', 'StatementSnippetDatabase')
+from __future__ import annotations
 
-from typing import (Any, Collection, Dict, Generic, Iterator, MutableSet, Optional,
-                    FrozenSet, TypeVar)
-from collections import OrderedDict
+__all__ = (
+    "Snippet",
+    "SnippetDatabase",
+    "LineSnippet",
+    "LineSnippetDatabase",
+    "StatementSnippet",
+    "StatementSnippetDatabase",
+)
+
 import abc
 import typing
+from collections import OrderedDict
+from collections.abc import Collection, Iterator, MutableSet
+from typing import Any, Generic, Optional, TypeVar
 
 import attr
 from kaskara.analysis import Analysis as KaskaraAnalysis
 from loguru import logger
 
-from .core import FileLocationRange, FileLine
+from .core import FileLine, FileLocationRange
 
 if typing.TYPE_CHECKING:
     from .config import Config
     from .problem import Problem
 
-T = TypeVar('T', bound='Snippet')
+T = TypeVar("T", bound="Snippet")
 
 
 class Snippet(abc.ABC):
@@ -37,7 +43,7 @@ class Snippet(abc.ABC):
     def __str__(self) -> str:
         return self.content
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         return isinstance(other, Snippet) and self.content == other.content
 
     def __hash__(self) -> int:
@@ -54,21 +60,21 @@ class StatementSnippet(Snippet):
     """A snippet of code that may be inserted into a program."""
     content: str
     kind: Optional[str]
-    reads: FrozenSet[str]
-    writes: FrozenSet[str]
-    declares: FrozenSet[str]
-    requires_syntax: FrozenSet[str]
+    reads: frozenset[str]
+    writes: frozenset[str]
+    declares: frozenset[str]
+    requires_syntax: frozenset[str]
 
     @property
     def requires_break(self) -> bool:
-        return 'break' in self.requires_syntax
+        return "break" in self.requires_syntax
 
     @property
     def requires_continue(self) -> bool:
-        return 'continue' in self.requires_syntax
+        return "continue" in self.requires_syntax
 
     @property
-    def uses(self) -> FrozenSet[str]:
+    def uses(self) -> frozenset[str]:
         """The names of the variables used by this snippet."""
         return self.reads | self.writes
 
@@ -77,8 +83,8 @@ class SnippetDatabase(Generic[T], Collection[T], abc.ABC):
     def __init__(self) -> None:
         """Constructs an empty snippet database."""
         self.__content_to_snippet: OrderedDict[str, T] = OrderedDict()
-        self.__filename_to_snippets: Dict[str, MutableSet[T]] = {}
-        self.__content_to_lines: Dict[str, MutableSet[FileLine]] = \
+        self.__filename_to_snippets: dict[str, MutableSet[T]] = {}
+        self.__content_to_lines: dict[str, MutableSet[FileLine]] = \
             OrderedDict()
 
     def __iter__(self) -> Iterator[T]:
@@ -103,7 +109,7 @@ class SnippetDatabase(Generic[T], Collection[T], abc.ABC):
 
     def __index_snippet_by_file(self,
                                 snippet: T,
-                                filename: str
+                                filename: str,
                                 ) -> None:
         if filename not in self.__filename_to_snippets:
             self.__filename_to_snippets[filename] = set()
@@ -111,7 +117,7 @@ class SnippetDatabase(Generic[T], Collection[T], abc.ABC):
 
     def __record_snippet_location(self,
                                   snippet: T,
-                                  location: FileLocationRange
+                                  location: FileLocationRange,
                                   ) -> None:
         content = snippet.content
         line = FileLine(location.filename, location.start.line)
@@ -121,7 +127,7 @@ class SnippetDatabase(Generic[T], Collection[T], abc.ABC):
 
     def add(self,
             snippet: T,
-            location: Optional[FileLocationRange] = None
+            location: Optional[FileLocationRange] = None,
             ) -> None:
         """Adds a snippet to this database.
 
@@ -145,9 +151,10 @@ class SnippetDatabase(Generic[T], Collection[T], abc.ABC):
 
 class StatementSnippetDatabase(SnippetDatabase[StatementSnippet]):
     @staticmethod
-    def from_kaskara(analysis: KaskaraAnalysis,
-                     config: 'Config'
-                     ) -> 'StatementSnippetDatabase':
+    def from_kaskara(
+        analysis: KaskaraAnalysis,
+        config: Config,
+    ) -> StatementSnippetDatabase:
         logger.debug("constructing snippet database from statements")
         use_canonical_form = \
             config.optimizations.ignore_string_equivalent_snippets
@@ -155,11 +162,11 @@ class StatementSnippetDatabase(SnippetDatabase[StatementSnippet]):
         for stmt in analysis.statements:
             content = stmt.canonical if use_canonical_form else stmt.content
 
-            reads = frozenset(stmt.reads if hasattr(stmt, 'reads') else [])
-            writes = frozenset(stmt.writes if hasattr(stmt, 'writes') else [])
+            reads = frozenset(stmt.reads if hasattr(stmt, "reads") else [])
+            writes = frozenset(stmt.writes if hasattr(stmt, "writes") else [])
             declares = \
-                frozenset(stmt.reads if hasattr(stmt, 'declares') else [])
-            if hasattr(stmt, 'requires_syntax') and stmt.requires_syntax:
+                frozenset(stmt.declares if hasattr(stmt, "declares") else [])
+            if hasattr(stmt, "requires_syntax") and stmt.requires_syntax:
                 requires_syntax = frozenset(stmt.requires_syntax)
             else:
                 requires_syntax = frozenset()
@@ -175,14 +182,14 @@ class StatementSnippetDatabase(SnippetDatabase[StatementSnippet]):
 
         logger.debug("constructed snippet database from snippets")
         logger.debug("snippets:\n{}",
-                     '\n'.join([f' * {s.content}' for s in db]))
+                     "\n".join([f" * {s.content}" for s in db]))
         return db
 
 
 class LineSnippetDatabase(SnippetDatabase[LineSnippet]):
     @staticmethod
-    def for_problem(problem: 'Problem') -> 'LineSnippetDatabase':
-        logger.debug('constructing line snippet database')
+    def for_problem(problem: Problem) -> LineSnippetDatabase:
+        logger.debug("constructing line snippet database")
         db = LineSnippetDatabase()
-        logger.debug(f'constructed database of {len(db)} line snippets')
+        logger.debug(f"constructed database of {len(db)} line snippets")
         return db

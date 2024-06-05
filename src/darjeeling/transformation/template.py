@@ -1,25 +1,33 @@
-# -*- coding: utf-8 -*-
-__all__ = ('TemplateTransformationSchema', 'TemplateTransformationSchemaConfig')
+from __future__ import annotations
+
+__all__ = (
+    "TemplateTransformationSchema",
+    "TemplateTransformationSchemaConfig",
+)
 
 import typing
-from typing import Any, ClassVar, Iterator, Mapping, NoReturn, Optional
+from typing import Any, ClassVar, NoReturn
 
 import attr
-from comby import Comby
+from overrides import overrides
 
-from .base import Transformation, TransformationSchema
-from .config import TransformationSchemaConfig
-from .. import exceptions as exc
+import darjeeling.exceptions as exc
+from darjeeling.transformation.base import Transformation, TransformationSchema
+from darjeeling.transformation.config import TransformationSchemaConfig
 
 if typing.TYPE_CHECKING:
-    from ..problem import Problem
-    from ..snippet import SnippetDatabase
+    from collections.abc import Iterator, Mapping
+
+    from comby import Comby
+
+    from darjeeling.problem import Problem
+    from darjeeling.snippet import SnippetDatabase
 
 
 @attr.s(auto_attribs=True)
-class TemplateTransformationSchema(TransformationSchema):
-    _problem: 'Problem' = attr.ib(repr=False, eq=False, hash=False)
-    _comby: 'Comby' = attr.ib(repr=False, eq=False, hash=False)
+class TemplateTransformationSchema(TransformationSchema):  # type: ignore[type-arg]
+    _problem: Problem = attr.ib(repr=False, eq=False, hash=False)
+    _comby: Comby = attr.ib(repr=False, eq=False, hash=False)
     match: str
     rewrite: str
 
@@ -31,16 +39,18 @@ class TemplateTransformationSchema(TransformationSchema):
 
 @attr.s(frozen=True, auto_attribs=True)
 class TemplateTransformationSchemaConfig(TransformationSchemaConfig):
-    NAME: ClassVar[str] = 'template'
+    NAME: ClassVar[str] = "template"
 
     match: str
     rewrite: str
 
     @classmethod
-    def from_dict(cls,
-                  dict_: Mapping[str, Any],
-                  dir_: Optional[str] = None
-                  ) -> TransformationSchemaConfig:
+    @overrides
+    def from_dict(
+        cls,
+        dict_: Mapping[str, Any],
+        dir_: str | None = None,
+    ) -> TransformationSchemaConfig:
         def err(message: str) -> NoReturn:
             raise exc.BadConfigurationException(message)
 
@@ -56,18 +66,19 @@ class TemplateTransformationSchemaConfig(TransformationSchemaConfig):
 
             return value
 
-        match = read_string_property('match')
-        rewrite = read_string_property('rewrite')
+        match = read_string_property("match")
+        rewrite = read_string_property("rewrite")
 
         return TemplateTransformationSchemaConfig(
             match=match,
             rewrite=rewrite,
         )
 
-    def build(self,
-              problem: 'Problem',
-              snippets: 'SnippetDatabase'
-              ) -> 'TransformationSchema':
+    def build(
+        self,
+        problem: Problem,
+        snippets: SnippetDatabase,  # type: ignore[type-arg]
+    ) -> TransformationSchema:  # type: ignore[type-arg]
         return TemplateTransformationSchema(
             problem=problem,
             comby=problem.environment.comby,

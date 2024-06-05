@@ -1,32 +1,33 @@
-# -*- coding: utf-8 -*-
-__all__ = ('Problem',)
+from __future__ import annotations
 
-from typing import Iterable, Iterator, Optional, Sequence
-import typing
+__all__ = ("Problem",)
+
 import functools
+import typing
+from collections.abc import Iterable, Iterator, Sequence
+from typing import Optional
 
 import attr
 from bugzoo.core.bug import Bug
 from kaskara.analysis import Analysis
 from loguru import logger
 
-from .core import Test, FileLine, FileLineSet
-from .source import ProgramSource, ProgramSourceLoader
-from .exceptions import NoFailingTests, NoImplicatedLines
+from darjeeling.core import FileLine, FileLineSet, Test
+from darjeeling.exceptions import NoFailingTests, NoImplicatedLines
+from darjeeling.source import ProgramSource, ProgramSourceLoader
 
 if typing.TYPE_CHECKING:
-    from .config import Config, OptimizationsConfig
-    from .core import Language, TestCoverageMap
-    from .environment import Environment
-    from .localization import Localization
-    from .program import ProgramDescription
-    from .test import TestSuite
+    from darjeeling.config import Config, OptimizationsConfig
+    from darjeeling.core import Language, TestCoverageMap
+    from darjeeling.environment import Environment
+    from darjeeling.localization import Localization
+    from darjeeling.program import ProgramDescription
+    from darjeeling.test import TestSuite
 
 
 @attr.s(auto_attribs=True, frozen=True)
 class Problem:
-    """
-    Used to provide a description of a problem (i.e., a bug), and to hold
+    """Used to provide a description of a problem (i.e., a bug), and to hold
     information pertinent to its solution (e.g., coverage).
 
     Attributes
@@ -49,39 +50,39 @@ class Problem:
     localization: Localization
         Fault localization based on the associated test suite.
     """
-    environment: 'Environment'
-    config: 'Config'
-    language: 'Language'
-    coverage: 'TestCoverageMap'
+    environment: Environment
+    config: Config
+    language: Language
+    coverage: TestCoverageMap
     sources: ProgramSource
-    program: 'ProgramDescription'
+    program: ProgramDescription
     failing_tests: Sequence[Test]
     passing_tests: Sequence[Test]
     test_ordering: Iterable[Test]
     analysis: Optional[Analysis]
-    localization: 'Localization'
+    localization: Localization
 
     @staticmethod
-    def build(environment: 'Environment',
-              config: 'Config',
-              language: 'Language',
-              coverage: 'TestCoverageMap',
-              program: 'ProgramDescription',
-              localization: 'Localization',
+    def build(environment: Environment,
+              config: Config,
+              language: Language,
+              coverage: TestCoverageMap,
+              program: ProgramDescription,
+              localization: Localization,
               *,
               analysis: Optional[Analysis] = None,
-              ) -> 'Problem':
+              ) -> Problem:
         """Constructs a problem description.
 
         Raises
-        -------
+        ------
         NoFailingTests
             If the program under repair has no failing tests.
         NoImplicatedLines
             If no lines are implicated by the coverage information and the
             provided suspiciousness metric.
         """
-        logger.debug('using coverage to determine passing and failing tests')
+        logger.debug("using coverage to determine passing and failing tests")
         failing_tests: Sequence[Test] = \
             tuple(program.tests[name] for name in sorted(coverage)
                   if not coverage[name].outcome.successful)
@@ -89,11 +90,11 @@ class Problem:
             tuple(program.tests[name] for name in sorted(coverage)
                   if coverage[name].outcome.successful)
 
-        logger.info('determined passing and failing tests')
-        logger.info('* passing tests: {}',
-                    ', '.join([t.name for t in passing_tests]))
-        logger.info('* failing tests: {}',
-                    ', '.join([t.name for t in failing_tests]))
+        logger.info("determined passing and failing tests")
+        logger.info("* passing tests: {}",
+                    ", ".join([t.name for t in passing_tests]))
+        logger.info("* failing tests: {}",
+                    ", ".join([t.name for t in failing_tests]))
         if not failing_tests:
             raise NoFailingTests
 
@@ -123,7 +124,7 @@ class Problem:
         logger.info("ordering test cases")
         test_ordering: Sequence[Test] = \
             tuple(sorted(program.tests, key=functools.cmp_to_key(ordering)))
-        logger.info('test order: {}', ', '.join(t.name for t in test_ordering))
+        logger.info("test order: {}", ", ".join(t.name for t in test_ordering))
 
         logger.debug("storing contents of source code files")
         source_files = set(location.filename for location in coverage.failing.locations)
@@ -146,8 +147,7 @@ class Problem:
         return problem
 
     def validate(self) -> None:
-        """
-        Ensures that this repair problem is valid. To be considered valid, a
+        """Ensures that this repair problem is valid. To be considered valid, a
         repair problem must have at least one failing test case and one
         implicated line.
         """
@@ -155,12 +155,12 @@ class Problem:
         lines = FileLineSet.from_iter(self.lines)
         logger.info("implicated lines [{}]:\n{}", len(lines), lines)
         logger.info("implicated files [{}]:\n* {}", len(files),
-                    '\n* '.join(files))
+                    "\n* ".join(files))
         if len(lines) == 0:
             raise NoImplicatedLines
 
     @property
-    def settings(self) -> 'OptimizationsConfig':
+    def settings(self) -> OptimizationsConfig:
         return self.config.optimizations
 
     @property
@@ -174,13 +174,12 @@ class Problem:
         yield from self.test_ordering
 
     @property
-    def test_suite(self) -> 'TestSuite':
+    def test_suite(self) -> TestSuite:  # type: ignore[type-arg]
         return self.program.tests
 
     @property
     def lines(self) -> Iterator[FileLine]:
-        """
-        Returns an iterator over the lines that are implicated by the
+        """Returns an iterator over the lines that are implicated by the
         description of this problem.
         """
         yield from self.coverage.failing.locations

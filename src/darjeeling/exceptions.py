@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import typing as _typing
 
 import attr as _attr
@@ -19,7 +18,7 @@ class UnableToObtainIpAddress(DarjeelingError):
 class LanguageNotSupported(DarjeelingError):
     """Darjeeling does not support the given language."""
     def __init__(self, name: str) -> None:
-        msg = "language not supported: {}".format(name)
+        msg = f"language not supported: {name}"
         super().__init__(msg)
 
 
@@ -36,7 +35,7 @@ class FileNotFound(DarjeelingError):
 @_attr.s(auto_exc=True, auto_attribs=True)
 class BuildStepFailed(DarjeelingError):
     """A step in the build process failed."""
-    step: 'BuildStep'
+    step: "BuildStep"
     returncode: int
     duration: float
     output: _typing.Optional[str]
@@ -61,7 +60,7 @@ class CandidateLimitReached(DarjeelingError):
 @_attr.s(auto_exc=True, auto_attribs=True)
 class UnexpectedCandidateEvaluationError(DarjeelingError):
     """An unexpected error occurred when evaluating a candidate patch."""
-    candidate: 'Candidate'
+    candidate: "Candidate"
     error: Exception
 
 
@@ -70,15 +69,13 @@ class SearchExhausted(DarjeelingError):
 
 
 class NoFailingTests(DarjeelingError):
-    """
-    The program under repair has no failing tests and therefore does not
+    """The program under repair has no failing tests and therefore does not
     constitute a valid test-based repair problem.
     """
 
 
 class NoImplicatedLines(DarjeelingError):
-    """
-    The program under repair has no lines that have been marked as suspicious
+    """The program under repair has no lines that have been marked as suspicious
     by its fault localisation and coverage information.
     """
 
@@ -92,17 +89,16 @@ class NameInUseException(DarjeelingError):
 
 
 class UnknownTransformationSchemaException(DarjeelingError):
-    """
-    A given transformation uses a schema that does not exist or has not been
+    """A given transformation uses a schema that does not exist or has not been
     registered.
     """
     def __init__(self, name: str) -> None:
-        msg = "unknown transformation schema: {}".format(name)
+        msg = f"unknown transformation schema: {name}"
         super().__init__(msg)
 
 
 class BadConfigurationException(DarjeelingError):
     """An illegal configuration file was provided to Darjeeling."""
     def __init__(self, reason: str) -> None:
-        msg = "bad configuration file: {}".format(reason)
+        msg = f"bad configuration file: {reason}"
         super().__init__(msg)

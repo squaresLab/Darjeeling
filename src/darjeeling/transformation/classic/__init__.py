@@ -1,9 +1,12 @@
-# -*- coding: utf-8 -*-
-"""
-This module provides transformation schemas for each of the classical
-GenProg-style statement operators.
-"""
-from .append import AppendStatement
-from .delete import DeleteStatement
-from .prepend import PrependStatement
-from .replace import ReplaceStatement
+"""Provides transformation schemas for classic GenProg-style statement operators."""
+__all__ = (
+    "AppendStatement",
+    "DeleteStatement",
+    "PrependStatement",
+    "ReplaceStatement",
+)
+
+from darjeeling.transformation.classic.append import AppendStatement
+from darjeeling.transformation.classic.delete import DeleteStatement
+from darjeeling.transformation.classic.prepend import PrependStatement
+from darjeeling.transformation.classic.replace import ReplaceStatement

@@ -1,51 +1,55 @@
-# -*- coding: utf-8 -*-
-__all__ = ('SearcherConfig',)
+from __future__ import annotations
 
-from typing import Dict, Optional, Any, Type, Iterator
+__all__ = ("SearcherConfig",)
+
 import abc
 import typing
+from collections.abc import Iterator
+from typing import Any, Optional
 
 from ..util import dynamically_registered
 
 if typing.TYPE_CHECKING:
-    from .base import Searcher
     from ..problem import Problem
     from ..resources import ResourceUsageTracker
     from ..transformation import ProgramTransformations
+    from .base import Searcher
 
 
-@dynamically_registered(lookup='lookup')
+@dynamically_registered(lookup="lookup")
 class SearcherConfig(abc.ABC):
     """Describes a search algorithm configuration."""
-    @staticmethod
-    def __iter__() -> Iterator[str]:
-        ...
+    @classmethod
+    def __iter__(cls) -> Iterator[str]:
+        raise NotImplementedError
 
-    @staticmethod
-    def __len__() -> int:
-        ...
+    @classmethod
+    def __len__(cls) -> int:
+        raise NotImplementedError
 
-    @staticmethod
-    def lookup(name: str) -> Type['SearcherConfig']:
-        ...
+    @classmethod
+    def lookup(cls, name: str) -> type[SearcherConfig]:
+        raise NotImplementedError
 
     @classmethod
     @abc.abstractmethod
-    def from_dict(cls,
-                  d: Dict[str, Any],
-                  dir_: Optional[str] = None
-                  ) -> 'SearcherConfig':
-        name_type: str = d['type']
-        type_: Type[SearcherConfig] = SearcherConfig.lookup(name_type)
+    def from_dict(
+        cls,
+        d: dict[str, Any],
+        dir_: Optional[str] = None,
+    ) -> SearcherConfig:
+        name_type: str = d["type"]
+        type_: type[SearcherConfig] = SearcherConfig.lookup(name_type)
         return type_.from_dict(d, dir_)
 
     @abc.abstractmethod
-    def build(self,
-              problem: 'Problem',
-              resources: 'ResourceUsageTracker',
-              transformations: 'ProgramTransformations',
-              *,
-              threads: int = 1,
-              run_redundant_tests: bool = False
-              ) -> 'Searcher':
+    def build(
+        self,
+        problem: Problem,
+        resources: ResourceUsageTracker,
+        transformations: ProgramTransformations,
+        *,
+        threads: int = 1,
+        run_redundant_tests: bool = False,
+    ) -> Searcher:
         ...

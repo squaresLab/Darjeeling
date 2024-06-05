@@ -1,24 +1,29 @@
-# -*- coding: utf-8 -*-
-__all__ = ('ProgramDescription', 'ProgramDescriptionConfig')
+from __future__ import annotations
 
-from typing import Iterator, NoReturn, Mapping, Optional, Any
+__all__ = (
+    "ProgramDescription",
+    "ProgramDescriptionConfig",
+)
+
 import contextlib
 import typing as t
+from collections.abc import Iterator, Mapping
+from typing import Any, NoReturn, Optional
 
 import attr
 from bugzoo import Bug as Snapshot
 from bugzoo.core.patch import Patch
 from loguru import logger
 
-from . import exceptions as exc
-from .build_instructions import BuildInstructions
-from .core import Language, Test, TestOutcome
-from .container import ProgramContainer
-from .test import TestSuiteConfig, TestSuite
-from .exceptions import BuildFailure, FailedToApplyPatch
+import darjeeling.exceptions as exc
+from darjeeling.build_instructions import BuildInstructions
+from darjeeling.container import ProgramContainer
+from darjeeling.core import Language, Test, TestOutcome
+from darjeeling.exceptions import BuildFailure, FailedToApplyPatch
+from darjeeling.test import TestSuite, TestSuiteConfig
 
 if t.TYPE_CHECKING:
-    from .environment import Environment
+    from darjeeling.environment import Environment
 
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
@@ -33,51 +38,51 @@ class ProgramDescriptionConfig:
 
     @staticmethod
     def from_dict(dict_: Mapping[str, Any],
-                  dir_: Optional[str] = None
-                  ) -> 'ProgramDescriptionConfig':
+                  dir_: Optional[str] = None,
+                  ) -> ProgramDescriptionConfig:
         def err(message: str) -> NoReturn:
             raise exc.BadConfigurationException(message)
 
         # image
-        if 'image' not in dict_:
+        if "image" not in dict_:
             err("'image' property is missing from 'program' section")
-        if not isinstance(dict_['image'], str):
+        if not isinstance(dict_["image"], str):
             err("'image' property should be a string")
-        image: str = dict_['image']
+        image: str = dict_["image"]
 
         # source directory
-        if 'source-directory' not in dict_:
+        if "source-directory" not in dict_:
             err("'source-directory' property is missing from 'program' section")
-        if not isinstance(dict_['source-directory'], str):
+        if not isinstance(dict_["source-directory"], str):
             err("'source-directory' property should be a string")
-        source_directory: str = dict_['source-directory']
+        source_directory: str = dict_["source-directory"]
 
         # language
-        if 'language' not in dict_:
+        if "language" not in dict_:
             err("'language' property is missing from 'program' section")
-        if not isinstance(dict_['language'], str):
+        if not isinstance(dict_["language"], str):
             err("'language' property should be a string")
         try:
-            language: Language = Language.find(dict_['language'])
+            language: Language = Language.find(dict_["language"])
         except exc.LanguageNotSupported:
-            supported = ', '.join([lang.value for lang in Language])
-            supported = f'(supported languages: {supported})'
+            supported = ", ".join([lang.value for lang in Language])
+            supported = f"(supported languages: {supported})"
             err(f"unsupported language [{dict_['language']}]. {supported}")
 
         # test suite
-        if 'tests' not in dict_:
+        if "tests" not in dict_:
             err("'tests' section is missing from 'program' section")
-        if not isinstance(dict_['tests'], dict):
+        if not isinstance(dict_["tests"], dict):
             err("'tests' section should be an object")
-        tests = TestSuiteConfig.from_dict(dict_.get('tests', {}), dir_)
+        tests = TestSuiteConfig.from_dict(dict_.get("tests", {}), dir_)
 
         # build instructions
-        if 'build-instructions' not in dict_:
+        if "build-instructions" not in dict_:
             err("'build-instructions' section is missing from 'program' section")
-        if not isinstance(dict_['build-instructions'], dict):
+        if not isinstance(dict_["build-instructions"], dict):
             err("'build-instructions' section should be an object")
         build_instructions, build_instructions_for_coverage = \
-            BuildInstructions.from_dict(dict_['build-instructions'],
+            BuildInstructions.from_dict(dict_["build-instructions"],
                                         source_directory=source_directory)
 
         return ProgramDescriptionConfig(image=image,
@@ -88,7 +93,7 @@ class ProgramDescriptionConfig:
                                         snapshot=None,
                                         source_directory=source_directory)
 
-    def build(self, environment: 'Environment') -> 'ProgramDescription':
+    def build(self, environment: Environment) -> ProgramDescription:
         tests = self.tests.build(environment)
         return ProgramDescription(environment=environment,
                                   image=self.image,
@@ -123,13 +128,13 @@ class ProgramDescription:
         The absolute path to the source directory for this program inside
         its associated Docker image.
     """
-    _environment: 'Environment'
+    _environment: Environment
     image: str
     language: Language
     snapshot: Optional[Snapshot]
     build_instructions: BuildInstructions
     build_instructions_for_coverage: BuildInstructions
-    tests: 'TestSuite'
+    tests: TestSuite  # type: ignore[type-arg]
     source_directory: str
 
     def execute(

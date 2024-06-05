@@ -1,22 +1,18 @@
-# -*- coding: utf-8 -*-
 import pytest
 
-from darjeeling.core import (TestOutcome,
-                             TestCoverage,
-                             FileLine,
-                             FileLineSet)
+from darjeeling.core import FileLine, FileLineSet, TestCoverage, TestOutcome
 
 
 def ln(num: int) -> FileLine:
-    return FileLine('file.c', num)
+    return FileLine("file.c", num)
 
 
-@pytest.fixture
+@pytest.fixture()
 def coverage() -> TestCoverage:
     outcome = TestOutcome(successful=True,
                           time_taken=0.35)
     lines = FileLineSet.from_list([ln(1), ln(2), ln(3)])
-    return TestCoverage(test='foo',
+    return TestCoverage(test="foo",
                         outcome=outcome,
                         lines=lines)
 

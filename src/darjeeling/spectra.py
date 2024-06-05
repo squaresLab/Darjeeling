@@ -1,18 +1,27 @@
-# -*- coding: utf-8 -*-
-__all__ = ('Spectra', 'SpectraRow')
+from __future__ import annotations
 
-from typing import Mapping, MutableMapping, Set, Iterator
+__all__ = (
+    "Spectra",
+    "SpectraRow",
+)
 
-from loguru import logger
+import typing as t
+from collections.abc import Iterator, Mapping, MutableMapping
+
 import attr
+from loguru import logger
 
-from .core import TestCoverageMap, FileLine, FileLineMap, FileLineSet
+from darjeeling.core import (
+    FileLine,
+    FileLineMap,
+    FileLineSet,
+    TestCoverageMap,
+)
 
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
 class SpectraRow:
-    """
-    Summarises coverage for a single program location in terms of the
+    """Summarises coverage for a single program location in terms of the
     number of passing and failing tests that do and do not cover it,
     respectively.
 
@@ -34,12 +43,11 @@ class SpectraRow:
 
 
 class Spectra(Mapping[FileLine, SpectraRow]):
-    """
-    A summary of the number of passing and failing tests covering each program
+    """A summary of the number of passing and failing tests covering each program
     location.
     """
     @staticmethod
-    def from_coverage(cov: TestCoverageMap) -> 'Spectra':
+    def from_coverage(cov: TestCoverageMap) -> Spectra:
         num_fail = 0
         num_pass = 0
         tally_fail: MutableMapping[FileLine, int] = {}
@@ -59,17 +67,18 @@ class Spectra(Mapping[FileLine, SpectraRow]):
         logger.trace(f"computed spectra: {spectra}")
         return spectra
 
-    def __init__(self,
-                 num_pass: int,
-                 num_fail: int,
-                 tally_pass: Mapping[FileLine, int],
-                 tally_fail: Mapping[FileLine, int]
-                 ) -> None:
+    def __init__(
+        self,
+        num_pass: int,
+        num_fail: int,
+        tally_pass: Mapping[FileLine, int],
+        tally_fail: Mapping[FileLine, int],
+    ) -> None:
         self.__num_pass = num_pass
         self.__num_fail = num_fail
         self.__tally_pass: Mapping[FileLine, int] = FileLineMap(tally_pass)
         self.__tally_fail: Mapping[FileLine, int] = FileLineMap(tally_fail)
-        self.__locations: Set[FileLine] = \
+        self.__locations: t.AbstractSet[FileLine] = \
             FileLineSet.from_iter(tally_pass).union(tally_fail)
 
     def __getitem__(self, loc: FileLine) -> SpectraRow:
@@ -91,5 +100,5 @@ class Spectra(Mapping[FileLine, SpectraRow]):
     def __str__(self) -> str:
         output = ["LINE: (ep, ef, np, nf)"]
         for line, row in self.items():
-            output.append(f'{line}: ({row.ep}, {row.ef}, {row.np}, {row.nf})')
-        return '\n'.join(output)
+            output.append(f"{line}: ({row.ep}, {row.ef}, {row.np}, {row.nf})")
+        return "\n".join(output)

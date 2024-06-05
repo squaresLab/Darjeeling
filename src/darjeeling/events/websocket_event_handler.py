@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
-__all__ = ('WebSocketEventHandler',)
+__all__ = ("WebSocketEventHandler",)
 
 import asyncio
 import json
+import queue
 import threading
 import typing
-import queue
 
 import attr
 import websockets
@@ -31,14 +30,14 @@ class WebSocketEventHandler(DarjeelingEventHandler):
     port: int
         The port of the websocket.
     """
-    hostname: str = attr.ib(default='127.0.0.1')
+    hostname: str = attr.ib(default="127.0.0.1")
     port: int = attr.ib(default=8888)
     _server: websockets.legacy.server.Serve = \
         attr.ib(init=False, repr=False)
     _thread: threading.Thread = attr.ib(init=False, repr=False)
     _event_queue: EventQueue = attr.ib(init=False, repr=False)
 
-    async def __serve(self, websocket, path):
+    async def __serve(self, websocket, path):  # type: ignore
         # TODO WHILE OPEN
         while True:
             event = self._event_queue.get()
@@ -51,7 +50,7 @@ class WebSocketEventHandler(DarjeelingEventHandler):
         self._server = \
             websockets.serve(self.__serve, self.hostname, self.port, loop=loop)  # type: ignore
 
-        def loop_in_thread(loop) -> None:
+        def loop_in_thread(loop: asyncio.AbstractEventLoop) -> None:
             loop.run_until_complete(self._server)
             loop.run_forever()
 

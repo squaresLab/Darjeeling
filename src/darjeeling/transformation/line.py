@@ -1,23 +1,27 @@
-# -*- coding: utf-8 -*-
-"""
-This module implements GenProg-style operators for individual source code
-lines.
-"""
-__all__ = ('InsertLine', 'DeleteLine', 'ReplaceLine')
+"""Implements GenProg-style operators for individual source code lines."""
+from __future__ import annotations
 
-from typing import Any, Collection, Iterator, Mapping, Optional
+__all__ = (
+    "DeleteLine",
+    "InsertLine",
+    "ReplaceLine",
+)
+
 import abc
-import typing
+import typing as t
 
 import attr
+from overrides import overrides
 
-from .base import Transformation, TransformationSchema
-from .config import TransformationSchemaConfig
-from ..snippet import SnippetDatabase, LineSnippetDatabase
-from ..core import Replacement, FileLine, FileLocationRange, LocationRange
+from darjeeling.core import FileLine, FileLocationRange, LocationRange, Replacement
+from darjeeling.snippet import LineSnippetDatabase, SnippetDatabase
+from darjeeling.transformation.base import Transformation, TransformationSchema
+from darjeeling.transformation.config import TransformationSchemaConfig
 
-if typing.TYPE_CHECKING:
-    from ..problem import Problem
+if t.TYPE_CHECKING:
+    from collections.abc import Collection, Iterator, Mapping
+
+    from darjeeling.problem import Problem
 
 
 class LineTransformation(Transformation):
@@ -26,17 +30,18 @@ class LineTransformation(Transformation):
 
 @attr.s(frozen=True, auto_attribs=True)
 class LineTransformationSchema(TransformationSchema[LineTransformation]):
-    _problem: 'Problem' = attr.ib(hash=False)
+    _problem: Problem = attr.ib(hash=False)
     _snippets: LineSnippetDatabase = attr.ib(hash=False)
 
     def find_all_in_file(self, filename: str) -> Iterator[Transformation]:
         m = "find_all_in_file is not required or supported by this schema"
         raise NotImplementedError(m)
 
-    def find_all_at_lines_in_file(self,
-                                  filename: str,
-                                  lines: Collection[int]
-                                  ) -> Iterator[Transformation]:
+    def find_all_at_lines_in_file(
+        self,
+        filename: str,
+        lines: Collection[int],
+    ) -> Iterator[Transformation]:
         for line_number in lines:
             file_line = FileLine(filename, line_number)
             yield from self.find_all_at_line(file_line)
@@ -64,10 +69,10 @@ class DeleteLine(LineTransformation):
     def to_replacement(self) -> Replacement:
         sources = self._schema._problem.sources
         loc = sources.line_to_location_range(self.line)
-        return Replacement(loc, '')
+        return Replacement(loc, "")
 
     @property
-    def schema(self) -> TransformationSchema:
+    def schema(self) -> TransformationSchema:  # type: ignore[type-arg]
         return self._schema
 
     class Schema(LineTransformationSchema):
@@ -75,19 +80,22 @@ class DeleteLine(LineTransformation):
             yield DeleteLine(self, line)
 
     class SchemaConfig(TransformationSchemaConfig):
-        NAME = 'delete-line'
+        NAME = "delete-line"
 
         @classmethod
-        def from_dict(cls,
-                      d: Mapping[str, Any],
-                      dir_: Optional[str] = None
-                      ) -> 'TransformationSchemaConfig':
+        @overrides
+        def from_dict(
+            cls,
+            d: Mapping[str, t.Any],
+            dir_: str | None = None,
+        ) -> TransformationSchemaConfig:
             return DeleteLine.SchemaConfig()
 
-        def build(self,
-                  problem: 'Problem',
-                  snippets: SnippetDatabase
-                  ) -> 'TransformationSchema':
+        def build(
+            self,
+            problem: Problem,
+            snippets: SnippetDatabase,  # type: ignore[type-arg]
+        ) -> TransformationSchema:  # type: ignore[type-arg]
             assert isinstance(snippets, LineSnippetDatabase)
             return DeleteLine.Schema(problem=problem, snippets=snippets)
 
@@ -99,7 +107,7 @@ class ReplaceLine(LineTransformation):
     replacement: FileLine
 
     @property
-    def schema(self) -> TransformationSchema:
+    def schema(self) -> TransformationSchema:  # type: ignore[type-arg]
         return self._schema
 
     def to_replacement(self) -> Replacement:
@@ -116,19 +124,21 @@ class ReplaceLine(LineTransformation):
                     yield ReplaceLine(self, line, replacement)
 
     class SchemaConfig(TransformationSchemaConfig):
-        NAME = 'replace-line'
+        NAME = "replace-line"
 
         @classmethod
-        def from_dict(cls,
-                      d: Mapping[str, Any],
-                      dir_: Optional[str] = None
-                      ) -> 'TransformationSchemaConfig':
+        def from_dict(
+            cls,
+            d: Mapping[str, t.Any],
+            dir_: str | None = None,
+        ) -> TransformationSchemaConfig:
             return ReplaceLine.SchemaConfig()
 
-        def build(self,
-                  problem: 'Problem',
-                  snippets: SnippetDatabase
-                  ) -> 'TransformationSchema':
+        def build(
+            self,
+            problem: Problem,
+            snippets: SnippetDatabase,  # type: ignore[type-arg]
+        ) -> TransformationSchema:  # type: ignore[type-arg]
             assert isinstance(snippets, LineSnippetDatabase)
             return ReplaceLine.Schema(problem=problem, snippets=snippets)
 
@@ -140,7 +150,7 @@ class InsertLine(LineTransformation):
     insertion: FileLine
 
     @property
-    def schema(self) -> TransformationSchema:
+    def schema(self) -> TransformationSchema:  # type: ignore[type-arg]
         return self._schema
 
     def to_replacement(self) -> Replacement:
@@ -157,18 +167,21 @@ class InsertLine(LineTransformation):
                 yield InsertLine(self, line, ins)
 
     class SchemaConfig(TransformationSchemaConfig):
-        NAME = 'insert-line'
+        NAME = "insert-line"
 
         @classmethod
-        def from_dict(cls,
-                      d: Mapping[str, Any],
-                      dir_: Optional[str] = None
-                      ) -> 'TransformationSchemaConfig':
+        @overrides
+        def from_dict(
+            cls,
+            d: Mapping[str, t.Any],
+            dir_: str | None = None,
+        ) -> TransformationSchemaConfig:
             return InsertLine.SchemaConfig()
 
-        def build(self,
-                  problem: 'Problem',
-                  snippets: SnippetDatabase
-                  ) -> 'TransformationSchema':
+        def build(
+            self,
+            problem: Problem,
+            snippets: SnippetDatabase,  # type: ignore[type-arg]
+        ) -> TransformationSchema:  # type: ignore[type-arg]
             assert isinstance(snippets, LineSnippetDatabase)
             return InsertLine.Schema(problem=problem, snippets=snippets)

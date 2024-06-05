@@ -1,16 +1,15 @@
-# -*- coding: utf-8 -*-
-__all__ = ('GCovCollector',)
+__all__ = ("GCovCollector",)
 
 import os
 import typing as t
 import xml.etree.ElementTree as ET
 
-from loguru import logger
 import attr
+from loguru import logger
 
-from .collector import CoverageCollector, CoverageCollectorConfig
 from ..core import FileLineSet
 from ..source import ProgramSourceFile
+from .collector import CoverageCollector, CoverageCollectorConfig
 
 if t.TYPE_CHECKING:
     from ..container import ProgramContainer
@@ -24,7 +23,7 @@ _INSTRUMENTATION = (
     "#include <stdlib.h>\n"
     "#include <signal.h>\n"
     "#ifdef __cplusplus\n"
-    "  extern \"C\" void __gcov_dump(void);\n"
+    '  extern "C" void __gcov_dump(void);\n'
     "#else\n"
     "  void __gcov_dump(void);\n"
     "#endif\n"
@@ -61,7 +60,7 @@ _INSTRUMENTATION = (
     "}\n"
     "/* DARJEELING :: INSTRUMENTATION :: END */\n"
 )
-_NUM_INSTRUMENTATION_LINES = _INSTRUMENTATION.count('\n')
+_NUM_INSTRUMENTATION_LINES = _INSTRUMENTATION.count("\n")
 _LINES_TO_REMOVE = set(range(1, _NUM_INSTRUMENTATION_LINES))
 
 
@@ -73,7 +72,7 @@ class FileToInstrument:
     @classmethod
     def from_dict(
         cls,
-        dict_or_filename: t.Union[str, t.Dict[str, t.Any]],
+        dict_or_filename: t.Union[str, dict[str, t.Any]],
     ) -> "FileToInstrument":
         if isinstance(dict_or_filename, str):
             filename = dict_or_filename
@@ -97,23 +96,23 @@ class FileToInstrument:
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
 class GCovCollectorConfig(CoverageCollectorConfig):
-    NAME: t.ClassVar[str] = 'gcov'
+    NAME: t.ClassVar[str] = "gcov"
     files_to_instrument: t.Collection[FileToInstrument]
 
     @classmethod
     def from_dict(
         cls,
         dict_: t.Mapping[str, t.Any],
-        dir_: t.Optional[str] = None
-    ) -> 'CoverageCollectorConfig':
-        assert dict_['type'] == 'gcov'
+        dir_: t.Optional[str] = None,
+    ) -> "CoverageCollectorConfig":
+        assert dict_["type"] == "gcov"
 
         # files to instrument
         files_to_instrument: t.Collection[FileToInstrument] = frozenset()
         if "files-to-instrument" in dict_:
             files_to_instrument = [
                 FileToInstrument.from_dict(dd)
-                for dd in dict_['files-to-instrument']
+                for dd in dict_["files-to-instrument"]
             ]
 
         config = GCovCollectorConfig(files_to_instrument=files_to_instrument)
@@ -121,22 +120,22 @@ class GCovCollectorConfig(CoverageCollectorConfig):
         return config
 
     def _find_source_filenames(self,
-                               program: 'ProgramDescription'
-                               ) -> t.FrozenSet[str]:
+                               program: "ProgramDescription",
+                               ) -> frozenset[str]:
         """Determines the set of all source files within a program."""
         with program.provision() as container:
             source_directory = program.source_directory
-            endings = ('.cpp', '.cc', '.c', '.h', '.hh', '.hpp', '.cxx')
-            command = ' -o '.join([f"-name \*{e}" for e in endings])
-            command = f'find {source_directory} -type f \( {command} \)'
+            endings = (".cpp", ".cc", ".c", ".h", ".hh", ".hpp", ".cxx")
+            command = " -o ".join([rf"-name \*{e}" for e in endings])
+            command = rf"find {source_directory} -type f \( {command} \)"
             output = container.shell.check_output(command, text=True)
-            return frozenset(filename.strip() for filename in output.split('\n'))
+            return frozenset(filename.strip() for filename in output.split("\n"))
 
     def build(
         self,
-        environment: 'Environment',
-        program: 'ProgramDescription',
-    ) -> 'CoverageCollector':
+        environment: "Environment",
+        program: "ProgramDescription",
+    ) -> "CoverageCollector":
         source_directory = program.source_directory
         source_filenames = self._find_source_filenames(program)
         files_to_instrument = [
@@ -155,23 +154,23 @@ class GCovCollectorConfig(CoverageCollectorConfig):
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
 class GCovCollector(CoverageCollector):
-    program: 'ProgramDescription'
+    program: "ProgramDescription"
     _source_directory: str
     _files_to_instrument: t.Collection[FileToInstrument]
-    _source_filenames: t.FrozenSet[str]
-    _environment: 'Environment' = attr.ib(repr=False)
+    _source_filenames: frozenset[str]
+    _environment: "Environment" = attr.ib(repr=False)
 
-    def _read_line_coverage_for_class(self, xml_class: ET.Element) -> t.Set[int]:
-        xml_lines = xml_class.find('lines')
+    def _read_line_coverage_for_class(self, xml_class: ET.Element) -> set[int]:
+        xml_lines = xml_class.find("lines")
         assert xml_lines
-        lines = xml_lines.findall('line')
-        return set(int(line.attrib['number']) for line in lines
-                   if int(line.attrib['hits']) > 0)
+        lines = xml_lines.findall("line")
+        return set(int(line.attrib["number"]) for line in lines
+                   if int(line.attrib["hits"]) > 0)
 
     def _corrected_lines(self,
                          relative_filename: str,
-                         lines: t.Set[int]
-                         ) -> t.Set[int]:
+                         lines: set[int],
+                         ) -> set[int]:
         if os.path.isabs(relative_filename):
             absolute_filename = relative_filename
         else:
@@ -193,29 +192,29 @@ class GCovCollector(CoverageCollector):
     # FIXME is this a general solution?
     def _resolve_filepath(self, filename_relative: str) -> str:
         if not filename_relative:
-            raise ValueError('failed to resolve path')
+            raise ValueError("failed to resolve path")
         if self._has_source_file(filename_relative):
             return filename_relative
 
-        filename_relative_child = '/'.join(filename_relative.split('/')[1:])
+        filename_relative_child = "/".join(filename_relative.split("/")[1:])
         return self._resolve_filepath(filename_relative_child)
 
     def _parse_xml_report(self, root: ET.Element) -> FileLineSet:
-        packages_node = root.find('packages')
+        packages_node = root.find("packages")
         assert packages_node
-        package_nodes = packages_node.findall('package')
-        class_nodes = [c for p in package_nodes for c in p.find('classes').findall('class')]  # type: ignore
+        package_nodes = packages_node.findall("package")
+        class_nodes = [c for p in package_nodes for c in p.find("classes").findall("class")]  # type: ignore
 
-        filename_to_lines: t.Dict[str, t.Set[int]] = {}
+        filename_to_lines: dict[str, set[int]] = {}
         for node in class_nodes:
-            filename = node.attrib['filename']
+            filename = node.attrib["filename"]
             try:
                 filename_original = filename
                 filename = self._resolve_filepath(filename)
                 logger.trace(f"resolving path '{filename_original}' "
                              f"-> '{filename}'")
             except ValueError:
-                logger.warning(f'failed to resolve file: {filename}')
+                logger.warning(f"failed to resolve file: {filename}")
                 continue
 
             lines = self._read_line_coverage_for_class(node)
@@ -230,7 +229,7 @@ class GCovCollector(CoverageCollector):
         root = ET.fromstring(contents)
         return self._parse_xml_report(root)
 
-    def _extract(self, container: 'ProgramContainer') -> FileLineSet:
+    def _extract(self, container: "ProgramContainer") -> FileLineSet:
         files = container.filesystem
         shell = container.shell
         temporary_filename = files.mktemp()
@@ -254,18 +253,17 @@ class GCovCollector(CoverageCollector):
         contents = contents[0:inject_at_offset] + _INSTRUMENTATION + contents[inject_at_offset:]
         return contents
 
-    def _prepare(self, container: 'ProgramContainer') -> None:
-        """
-        Adds source code instrumentation and recompiles the program inside
+    def _prepare(self, container: "ProgramContainer") -> None:
+        """Adds source code instrumentation and recompiles the program inside
         a container using the appropriate GCC options. Also ensures that
         gcovr is installed inside the container.
         """
         files = container.filesystem
         for file_to_instrument in self._files_to_instrument:
             filename = file_to_instrument.filename
-            logger.trace(f'adding gcov instrumentation to {filename}')
+            logger.trace(f"adding gcov instrumentation to {filename}")
             contents_original = files.read(filename)
-            logger.trace(f'original file [{filename}]:\n{contents_original}')
+            logger.trace(f"original file [{filename}]:\n{contents_original}")
             # FIXME add instrumentation at before specified line
             # contents_instrumented = _INSTRUMENTATION + contents_original
             contents_instrumented = self._instrument(
@@ -273,7 +271,7 @@ class GCovCollector(CoverageCollector):
                 contents=contents_original,
                 inject_at_line=file_to_instrument.line,
             )
-            logger.trace(f'instrumented file [{filename}]:\n{contents_instrumented}')
+            logger.trace(f"instrumented file [{filename}]:\n{contents_instrumented}")
             files.write(filename, contents_instrumented)
 
         build_instructions = self.program.build_instructions_for_coverage

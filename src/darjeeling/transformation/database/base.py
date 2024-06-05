@@ -1,19 +1,15 @@
-# -*- coding: utf-8 -*-
-"""
-Defines the common interface that must be implemented by all transformation
-databases.
-"""
-__all__ = ('TransformationDatabase',)
+"""Defines a common interface that is implemented by all transformation databases."""
+from __future__ import annotations
 
-from typing import Collection, Iterator
+__all__ = ("TransformationDatabase",)
+
 import abc
-import typing
+from collections.abc import Collection, Iterator
 
-if typing.TYPE_CHECKING:
-    from ..base import Transformation
+from darjeeling.transformation.base import Transformation
 
 
-class TransformationDatabase(Collection['Transformation'], abc.ABC):
+class TransformationDatabase(Collection[Transformation], abc.ABC):
     """Stores the set of possible transformations for a given program."""
     @abc.abstractmethod
     def __contains__(self, transformation: object) -> bool:
@@ -21,7 +17,7 @@ class TransformationDatabase(Collection['Transformation'], abc.ABC):
         ...
 
     @abc.abstractmethod
-    def __iter__(self) -> Iterator['Transformation']:
+    def __iter__(self) -> Iterator[Transformation]:
         """Returns an iterator over all transformations in this database."""
         ...
 
@@ -31,6 +27,6 @@ class TransformationDatabase(Collection['Transformation'], abc.ABC):
         ...
 
     @abc.abstractmethod
-    def choice(self) -> 'Transformation':
+    def choice(self) -> Transformation:
         """Selects a single transformation from this database at random."""
         ...

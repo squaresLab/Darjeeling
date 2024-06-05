@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-__all__ = ('DarjeelingEventHandler',)
+__all__ = ("DarjeelingEventHandler",)
 
 import abc
 

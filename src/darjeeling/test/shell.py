@@ -1,5 +1,10 @@
-# -*- coding: utf-8 -*-
-__all__ = ('ShellTest', 'ShellTestSuite', 'ShellTestSuiteConfig')
+from __future__ import annotations
+
+__all__ = (
+    "ShellTest",
+    "ShellTestSuite",
+    "ShellTestSuiteConfig",
+)
 
 import os
 import typing as t
@@ -8,9 +13,9 @@ import attr
 from loguru import logger
 
 from .. import exceptions as exc
+from ..core import Test, TestOutcome
 from .base import TestSuite
 from .config import TestSuiteConfig
-from ..core import TestOutcome, Test
 
 if t.TYPE_CHECKING:
     from ..container import ProgramContainer
@@ -25,7 +30,7 @@ class ShellTest(Test):
 
 @attr.s(frozen=True, slots=True, auto_attribs=True)
 class ShellTestSuiteConfig(TestSuiteConfig):
-    NAME = 'shell'
+    NAME = "shell"
     workdir: str
     test_commands: t.Sequence[str]
     time_limit_seconds: int
@@ -33,8 +38,8 @@ class ShellTestSuiteConfig(TestSuiteConfig):
     @classmethod
     def from_dict(
         cls,
-        d: t.Dict[str, t.Any],
-        dir_: t.Optional[str] = None
+        d: dict[str, t.Any],
+        dir_: t.Optional[str] = None,
     ) -> TestSuiteConfig:
         workdir = d["workdir"]
         test_commands = d["tests"]
@@ -47,10 +52,10 @@ class ShellTestSuiteConfig(TestSuiteConfig):
             m = "expected 'tests' property to be a list of strings"
             raise exc.BadConfigurationException(m)
 
-        if 'time-limit' not in d:
+        if "time-limit" not in d:
             time_limit_seconds = 300
         else:
-            time_limit_seconds = d['time-limit']
+            time_limit_seconds = d["time-limit"]
 
         return ShellTestSuiteConfig(
             workdir=workdir,
@@ -58,7 +63,7 @@ class ShellTestSuiteConfig(TestSuiteConfig):
             time_limit_seconds=time_limit_seconds,
         )
 
-    def build(self, environment: "Environment") -> "TestSuite":
+    def build(self, environment: Environment) -> TestSuite:  # type: ignore[type-arg]
         return ShellTestSuite.build(
             environment=environment,
             workdir=self.workdir,
@@ -71,11 +76,11 @@ class ShellTestSuite(TestSuite[ShellTest]):
     @classmethod
     def build(
         cls,
-        environment: "Environment",
+        environment: Environment,
         workdir: str,
         test_commands: t.Sequence[str],
         time_limit_seconds: int = 300,
-    ) -> "ShellTestSuite":
+    ) -> ShellTestSuite:
         tests = tuple(
             ShellTest(f"t{n}", command)
             for (n, command) in enumerate(test_commands)
@@ -89,7 +94,7 @@ class ShellTestSuite(TestSuite[ShellTest]):
 
     def __init__(
         self,
-        environment: 'Environment',
+        environment: Environment,
         tests: t.Sequence[ShellTest],
         workdir: str,
         time_limit_seconds: int,
@@ -100,7 +105,7 @@ class ShellTestSuite(TestSuite[ShellTest]):
 
     def execute(
         self,
-        container: "ProgramContainer",
+        container: ProgramContainer,
         test: ShellTest,
         *,
         coverage: bool = False,

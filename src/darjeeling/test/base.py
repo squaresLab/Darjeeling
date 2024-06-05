@@ -1,13 +1,13 @@
-# -*- coding: utf-8 -*-
-from typing import Iterator, TypeVar, Sequence, Generic
 import abc
 import typing as t
+from collections.abc import Iterator, Sequence
+from typing import Generic, TypeVar
 
-from ..core import TestOutcome, Test
 from ..container import ProgramContainer
+from ..core import Test, TestOutcome
 from ..environment import Environment
 
-T = TypeVar('T', bound=Test)
+T = TypeVar("T", bound=Test)
 
 
 class TestSuite(Generic[T]):

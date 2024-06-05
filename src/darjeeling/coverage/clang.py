@@ -1,16 +1,11 @@
-# -*- coding: utf-8 -*-
 from __future__ import annotations
 
-__all__ = ('ClangCoverageCollector',)
+__all__ = ("ClangCoverageCollector",)
 
-from dataclasses import dataclass
 import typing as t
-
-from loguru import logger
+from dataclasses import dataclass
 
 from .collector import CoverageCollector, CoverageCollectorConfig
-from ..core import FileLineSet
-from ..source import ProgramSourceFile
 
 if t.TYPE_CHECKING:
     from ..container import ProgramContainer
@@ -27,21 +22,21 @@ class ClangCoverageCollectorConfig(CoverageCollectorConfig):
         cls,
         dict_: t.Mapping[str, t.Any],
         dir_: t.Optional[str] = None,
-    ) -> 'CoverageCollectorConfig':
+    ) -> CoverageCollectorConfig:
         assert dict_["type"] == "clang"
         raise NotImplementedError
 
     def build(
         self,
-        environment: "Environment",
-        program: "ProgramDescription",
-    ) -> "CoverageCollector":
+        environment: Environment,
+        program: ProgramDescription,
+    ) -> CoverageCollector:
         raise NotImplementedError
 
 
 @dataclass(frozen=True)
 class ClangCoverageCollector(CoverageCollector):
-    program: "ProgramDescription"
+    program: ProgramDescription
 
-    def _prepare(self, container: "ProgramContainer") -> None:
+    def _prepare(self, container: ProgramContainer) -> None:
         raise NotImplementedError
