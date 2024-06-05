@@ -1,12 +1,6 @@
 Darjeeling
 ==========
 
-.. image:: https://travis-ci.org/squaresLab/Darjeeling.svg?branch=master
-    :target: https://travis-ci.org/squaresLab/Darjeeling
-
-.. image:: https://gitq.com/badge.svg
-    :target: https://gitq.com/squaresLab/Darjeeling
-
 Darjeeling is a language-agnostic search-based program repair tool.
 Unlike other repair tools, such as GenProg, SPR, and Nopol, Darjeeling
 delegates the responsibility of generating patches, obtaining coverage,
