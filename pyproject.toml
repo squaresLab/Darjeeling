@@ -21,7 +21,7 @@ darjeeling = 'darjeeling.cli:main'
 
 [tool.poetry.dependencies]
 python = ">=3.11,<4"
-kaskara = { git = "https://github.com/ChrisTimperley/Kaskara.git", rev = "f8f49db12f04e5c4f482a1ea94b767b701710afe" }
+kaskara = { git = "https://github.com/ChrisTimperley/Kaskara.git", rev = "d4505f5" }
 attrs = ">=19.3.0"
 bugzoo = ">=2.1"
 comby = "^0.0.2"
