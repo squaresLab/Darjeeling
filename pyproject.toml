@@ -21,13 +21,13 @@ darjeeling = 'darjeeling.cli:main'
 
 [tool.poetry.dependencies]
 python = ">=3.11,<4"
-kaskara = { git = "https://github.com/ChrisTimperley/Kaskara.git", rev = "f8f49db12f04e5c4f482a1ea94b767b701710afe" }
+kaskara = ">=0.2.1"
 attrs = ">=19.3.0"
 bugzoo = ">=2.1"
 comby = "^0.0.2"
 pyroglyph = ">=0.1.0"
 cement = "^3.0"
-loguru = "^0.5"
+loguru = "^0.7"
 requests = "2.31.0"
 sourcelocation = ">=1.0.6,^1.0"
 dockerblade = "^0.6,>=0.6.2"
